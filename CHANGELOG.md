@@ -31,6 +31,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - GitHub workflows now use `actions/checkout@v6` and `actions/setup-node@v6`.
 - Release workflow now uses `actions/upload-artifact@v6` and `actions/download-artifact@v7`.
 - Dependabot now uses explicit auto-rebase policy and grouped editor dependency updates.
+- CodeQL now runs language-specific jobs only when matching source areas changed on push/PR.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.

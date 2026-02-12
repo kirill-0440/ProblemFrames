@@ -15,8 +15,47 @@ permissions:
   security-events: write
 
 jobs:
+  changes:
+    name: Detect Changed Areas
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.force-all.outputs.rust || steps.filter.outputs.rust }}
+      javascript_typescript: ${{ steps.force-all.outputs.javascript_typescript || steps.filter.outputs.javascript_typescript }}
+    steps:
+      - name: Mark all areas for scheduled/manual scans
+        id: force-all
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "rust=true" >> "$GITHUB_OUTPUT"
+          echo "javascript_typescript=true" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        uses: actions/checkout@v6
+
+      - name: Filter changed paths
+        id: filter
+        if: github.event_name == 'push' || github.event_name == 'pull_request'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            rust:
+              - "Cargo.toml"
+              - "Cargo.lock"
+              - "crates/**/*.rs"
+              - "crates/**/Cargo.toml"
+              - "crates/**/Cargo.lock"
+              - ".github/workflows/codeql.yml"
+            javascript_typescript:
+              - "editors/code/**"
+              - ".github/workflows/codeql.yml"
+
   analyze:
     name: Analyze (${{ matrix.language }})
+    needs: changes
+    if: |
+      (matrix.language == 'rust' && needs.changes.outputs.rust == 'true') ||
+      (matrix.language == 'javascript-typescript' && needs.changes.outputs.javascript_typescript == 'true')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
