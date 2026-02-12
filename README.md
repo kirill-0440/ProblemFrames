@@ -82,6 +82,22 @@ See `crates/pf_dsl/sample.pf` for a complete example.
 - Supply-chain verification procedure is documented in `docs/runbooks/supply-chain-verification.md`.
 - See `.github/workflows/release-artifacts.yml`.
 
+## Engineering Metrics and Triage
+
+- `scripts/generate_engineering_metrics_report.sh` produces weekly engineering health metrics:
+  - lead time for change
+  - change failure rate (proxy)
+  - mean time to recovery (proxy)
+  - flaky test rate (proxy)
+- `.github/workflows/weekly-engineering-triage.yml` generates a weekly metrics artifact and opens a triage issue on schedule.
+- Weekly triage process is documented in `docs/runbooks/weekly-triage.md`.
+
+Generate metrics locally:
+
+```bash
+GH_TOKEN=$(gh auth token) bash ./scripts/generate_engineering_metrics_report.sh
+```
+
 ## Changelog
 
 Project history is tracked in `CHANGELOG.md`.
