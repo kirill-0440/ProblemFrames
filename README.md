@@ -22,6 +22,7 @@ npm run compile --prefix editors/code
 
 - Dependabot tracks updates for Cargo, npm, and GitHub Actions via `.github/dependabot.yml`.
 - `.github/workflows/security-audit.yml` runs Rust and npm dependency audits on schedule and on demand.
+- `.github/workflows/codeql.yml` runs static security analysis for Rust and TypeScript.
 
 Run security checks locally:
 
@@ -68,7 +69,9 @@ See `crates/pf_dsl/sample.pf` for a complete example.
 - CI on tag push (`v*`) or manual trigger publishes:
   - `pf_lsp` binaries for Linux/macOS/Windows
   - Platform-specific VSIX packages (`linux-x64`, `darwin-x64`, `win32-x64`)
+  - `SHA256SUMS.txt` with checksums for all release files
 - On tag push (`v*`), workflow also creates a GitHub Release and attaches all generated assets.
+- On tag builds, VSIX package version is automatically aligned with the git tag (e.g. `v0.1.0` -> `0.1.0`).
 - See `.github/workflows/release-artifacts.yml`.
 
 ## Changelog

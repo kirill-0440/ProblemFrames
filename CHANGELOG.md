@@ -15,6 +15,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Contribution guide and pull request checklist template.
 - Dependabot configuration for Cargo, npm, and GitHub Actions dependency updates.
 - Scheduled/manual security audit workflow for Rust and npm dependencies.
+- CodeQL static analysis workflow for Rust and TypeScript code.
 
 ### Changed
 - LSP now uses in-memory document state for definition and diagnostics flow.
@@ -22,6 +23,11 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Validator now reports missing required requirement fields and unsupported frames.
 - DOT export now preserves all domain-pair connections from interface phenomena.
 - CI and release workflows now use Rust dependency caching and stricter default `contents: read` permissions.
+- VSIX release packaging now derives extension version from the git release tag.
+- CodeQL workflow uses `github/codeql-action@v4` to stay ahead of v3 deprecation.
+- GitHub Release now includes `SHA256SUMS.txt` with checksums for all published assets.
+- GitHub workflows now use `actions/checkout@v6` and `actions/setup-node@v6`.
+- Release workflow now uses `actions/upload-artifact@v6` and `actions/download-artifact@v7`.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.
