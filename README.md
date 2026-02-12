@@ -7,6 +7,17 @@ A comprehensive toolchain for Jackson's Problem Frames methodology, built in Rus
 -   `crates/pf_lsp`: Language Server Protocol implementation.
 -   `editors/code`: VS Code Extension.
 
+## Quality Gates
+
+Run the same checks as CI:
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo test --workspace
+npm run compile --prefix editors/code
+```
+
 ## Getting Started
 
 ### Prerequisites
@@ -38,3 +49,10 @@ cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --gen-rust > output.rs
 ## Problem Frames DSL
 The DSL allows you to define Domains, Interfaces, and Requirements.
 See `crates/pf_dsl/sample.pf` for a complete example.
+
+## Release Artifacts
+
+- CI on tag push (`v*`) or manual trigger publishes:
+  - `pf_lsp` binaries for Linux/macOS/Windows
+  - VSIX package for VS Code
+- See `.github/workflows/release-artifacts.yml`.
