@@ -2,7 +2,7 @@ use anyhow::Result;
 use lsp_server::{Connection, Message, Notification};
 use lsp_types::{
     Diagnostic, DiagnosticSeverity, InitializeParams, Position, PublishDiagnosticsParams, Range,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Uri,
 };
 use pf_dsl::resolver::resolve;
 use pf_dsl::validator::validate;
@@ -10,25 +10,26 @@ use pf_lsp::completion::get_completions;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 const JSONRPC_METHOD_NOT_FOUND: i32 = -32601;
 const JSONRPC_INVALID_PARAMS: i32 = -32602;
 
 #[derive(Default)]
 struct ServerState {
-    documents: HashMap<Url, String>,
+    documents: HashMap<Uri, String>,
 }
 
 impl ServerState {
-    fn upsert_document(&mut self, uri: Url, text: String) {
+    fn upsert_document(&mut self, uri: Uri, text: String) {
         self.documents.insert(uri, text);
     }
 
-    fn remove_document(&mut self, uri: &Url) {
+    fn remove_document(&mut self, uri: &Uri) {
         self.documents.remove(uri);
     }
 
-    fn document_text(&self, uri: &Url) -> Option<&str> {
+    fn document_text(&self, uri: &Uri) -> Option<&str> {
         self.documents.get(uri).map(String::as_str)
     }
 }
@@ -206,7 +207,7 @@ fn resolve_definition(
     let uri = params.text_document_position_params.text_document.uri;
     let position = params.text_document_position_params.position;
 
-    let path = uri.to_file_path().ok()?;
+    let path = uri_to_path(&uri)?;
     let text = if let Some(buffer_text) = state.document_text(&uri) {
         Cow::Borrowed(buffer_text)
     } else {
@@ -218,9 +219,7 @@ fn resolve_definition(
     let (source_path_opt, span) = pf_dsl::resolver::find_definition(&problem, offset)?;
 
     let target_path = source_path_opt.unwrap_or_else(|| path.clone());
-    let target_uri = Url::from_file_path(&target_path)
-        .ok()
-        .unwrap_or_else(|| uri.clone());
+    let target_uri = path_to_uri(&target_path).unwrap_or_else(|| uri.clone());
     let target_text = if target_path == path {
         Cow::Borrowed(text.as_ref())
     } else if let Some(buffer_text) = state.document_text(&target_uri) {
@@ -312,14 +311,12 @@ fn offset_at_position(text: &str, position: Position) -> usize {
     text.len() // Invalid position fallback
 }
 
-fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()> {
+fn validate_document(connection: &Connection, uri: Uri, text: &str) -> Result<()> {
     let mut diagnostics = Vec::new();
 
     // 1. Resolve (Parse + Imports)
     // We need to convert URI to Path
-    let path = uri
-        .to_file_path()
-        .map_err(|_| anyhow::anyhow!("Invalid URI scheme"))?;
+    let path = uri_to_path(&uri).ok_or_else(|| anyhow::anyhow!("Invalid URI scheme"))?;
 
     match resolve(&path, Some(text)) {
         Ok(problem) => {
@@ -406,7 +403,7 @@ fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()
 
 fn publish_diagnostics(
     connection: &Connection,
-    uri: Url,
+    uri: Uri,
     diagnostics: Vec<Diagnostic>,
 ) -> Result<()> {
     let params = PublishDiagnosticsParams {
@@ -417,6 +414,15 @@ fn publish_diagnostics(
     let not = Notification::new("textDocument/publishDiagnostics".to_string(), params);
     connection.sender.send(Message::Notification(not))?;
     Ok(())
+}
+
+fn uri_to_path(uri: &Uri) -> Option<PathBuf> {
+    url::Url::parse(uri.as_str()).ok()?.to_file_path().ok()
+}
+
+fn path_to_uri(path: &Path) -> Option<Uri> {
+    let file_url = url::Url::from_file_path(path).ok()?;
+    file_url.as_str().parse().ok()
 }
 
 #[cfg(test)]
