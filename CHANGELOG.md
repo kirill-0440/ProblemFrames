@@ -21,6 +21,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Script to generate Markdown reports from dogfooding PF models (`scripts/generate_dogfooding_reports.sh`).
 - Platform support matrix document (`docs/support-matrix.md`).
 - Release rollback runbook (`docs/runbooks/release-rollback.md`).
+- VS Code extension packaging ignore rules (`editors/code/.vscodeignore`) and local extension license file (`editors/code/LICENSE`).
 
 ### Changed
 - LSP now uses in-memory document state for definition and diagnostics flow.
@@ -43,6 +44,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - CI now uploads generated dogfooding Markdown reports as build artifacts.
 - Release workflow now includes artifact smoke checks (binary startup, VSIX contents, and release bundle integrity).
 - Windows release artifacts are temporarily paused; Linux/macOS remain supported targets.
+- Support matrix now includes explicit Windows re-enable criteria and smoke-plan checklist.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.

@@ -1,0 +1,19 @@
+# Keep only runtime extension artifacts and trim development noise.
+src/**
+tsconfig.json
+tsconfig.tsbuildinfo
+**/*.vsix
+
+# Exclude non-runtime dependency files from packaged VSIX.
+node_modules/**/test/**
+node_modules/**/tests/**
+node_modules/**/__tests__/**
+node_modules/**/example/**
+node_modules/**/examples/**
+node_modules/**/docs/**
+node_modules/**/doc/**
+node_modules/**/.github/**
+node_modules/**/.vscode/**
+node_modules/**/*.map
+node_modules/**/README*
+node_modules/**/CHANGELOG*
