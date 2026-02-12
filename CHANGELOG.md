@@ -27,6 +27,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - CodeQL workflow uses `github/codeql-action@v4` to stay ahead of v3 deprecation.
 - GitHub Release now includes `SHA256SUMS.txt` with checksums for all published assets.
 - GitHub workflows now use `actions/checkout@v6` and `actions/setup-node@v6`.
+- Release workflow now uses `actions/upload-artifact@v6` and `actions/download-artifact@v7`.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.
