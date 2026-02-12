@@ -1,19 +1,23 @@
-digraph "ProblemFramesTool" {
+digraph "PF_DSL_Tool" {
     rankdir=LR;
     node [shape=box, style=filled, fillcolor=white];
-    "PF_Tool" [label="PF_Tool <<Machine>>", shape=doublebox, fillcolor=lightgrey];
-    "User" [label="User <<Biddable>>", shape=ellipse, fillcolor=white];
+    "Developer" [label="Developer <<Biddable>>", shape=ellipse, fillcolor=white];
     "SourceFile" [label="SourceFile <<Lexical>>", shape=parallelogram, fillcolor=white];
-    "OutputFile" [label="OutputFile <<Lexical>>", shape=parallelogram, fillcolor=white];
-    "ValidationReport" [label="ValidationReport <<Lexical>>", shape=parallelogram, fillcolor=white];
-    "ParseAndTranslate" [shape=note, style=dashed, label="ParseAndTranslate\n[Transformation]"];
-    "ParseAndTranslate" -> "OutputFile" [style=dashed, arrowheaders=none, label="constrains"];
-    "ParseAndTranslate" -> "SourceFile" [style=dashed, arrowheaders=none, label="references"];
-    "ValidateConsistency" [shape=note, style=dashed, label="ValidateConsistency\n[StaticAnalysis]"];
-    "ValidateConsistency" -> "ValidationReport" [style=dashed, arrowheaders=none, label="constrains"];
-    "ValidateConsistency" -> "SourceFile" [style=dashed, arrowheaders=none, label="references"];
-    "User" -> "PF_Tool" [dir=both, label="RunCommand [E]\nViewErrors [E]"];
-    "SourceFile" -> "PF_Tool" [dir=both, label="FileContent [V]"];
-    "PF_Tool" -> "OutputFile" [dir=both, label="GraphContent [V]\nErrorLog [V]"];
+    "Tool" [label="Tool <<Machine>>", shape=doublebox, fillcolor=lightgrey];
+    "Editor" [label="Editor <<Causal>>", shape=box, fillcolor=white];
+    "GeneratedCode" [label="GeneratedCode <<Lexical>>", shape=parallelogram, fillcolor=white];
+    "ImmediateFeedback" [shape=note, style=dashed, label="ImmediateFeedback\n[RequiredBehavior]"];
+    "ImmediateFeedback" -> "Editor" [style=dashed, arrowhead=none, label="constrains"];
+    "ImmediateFeedback" -> "Tool" [style=dashed, arrowhead=none, label="references"];
+    "ScaffoldGeneration" [shape=note, style=dashed, label="ScaffoldGeneration\n[CommandedBehavior]"];
+    "ScaffoldGeneration" -> "GeneratedCode" [style=dashed, arrowhead=none, label="constrains"];
+    "ScaffoldGeneration" -> "Developer" [style=dashed, arrowhead=none, label="references"];
+    "Developer" -> "Editor" [dir=both, label="Editor -> Developer: SeeSquiggles [E]"];
+    "Developer" -> "GeneratedCode" [dir=both, label="GeneratedCode -> Developer: ReadCode [V]"];
+    "Developer" -> "SourceFile" [dir=both, label="Developer -> SourceFile: Edit [E]"];
+    "Developer" -> "Tool" [dir=both, label="Developer -> Tool: RunValidation [C]"];
+    "Editor" -> "Tool" [dir=both, label="Editor -> Tool: DidOpen [E]\nEditor -> Tool: DidChange [E]\nTool -> Editor: PublishDiagnostics [E]\nEditor -> Tool: Hover [E]\nTool -> Editor: HoverInfo [V]"];
+    "GeneratedCode" -> "Tool" [dir=both, label="Tool -> GeneratedCode: WriteFile [E]\nTool -> GeneratedCode: CodeStructure [V]"];
+    "SourceFile" -> "Tool" [dir=both, label="SourceFile -> Tool: FileContent [V]\nSourceFile -> Tool: FileExists [S]"];
 }
 

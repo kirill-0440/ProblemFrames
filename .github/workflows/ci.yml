@@ -44,6 +44,15 @@ jobs:
       - name: Lint
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
+      - name: Validate dogfooding models
+        shell: bash
+        run: |
+          set -euo pipefail
+          find crates/pf_dsl/dogfooding -type f -name "*.pf" | sort | while read -r model; do
+            echo "Validating ${model}"
+            cargo run -p pf_dsl -- "${model}" --report >/dev/null
+          done
+
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 

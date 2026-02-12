@@ -1,0 +1,87 @@
+problem: ProblemFramesRoadmapQ1
+
+// 1. Domains
+domain Maintainer [Biddable]
+domain EngineeringTeam [Biddable]
+domain RoadmapBoard [Machine]
+domain CI [Machine]
+domain Repository [Lexical]
+domain ProposalSet [Lexical]
+domain Metrics [Causal]
+domain Users [Biddable]
+domain ReleaseArtifacts [Lexical]
+
+// 2. Interfaces
+
+// Planning intent and prioritization decisions.
+interface "Maintainer-RoadmapBoard" {
+    shared: {
+        command PrioritizeMilestone [Maintainer -> RoadmapBoard]
+        event MilestoneCommitted [RoadmapBoard -> Maintainer]
+    }
+}
+
+// Proposals are prepared by the team and read by planning board.
+interface "Team-Proposals" {
+    shared: {
+        event DraftProposal [EngineeringTeam -> ProposalSet]
+        value ProposalSnapshot [ProposalSet -> RoadmapBoard]
+    }
+}
+
+// Delivery loop from repository state into CI and team feedback.
+interface "Repository-CI" {
+    shared: {
+        value RepositoryState [Repository -> CI]
+        event CheckResult [CI -> EngineeringTeam]
+    }
+}
+
+// Quality metrics continuously inform planning.
+interface "Metrics-RoadmapBoard" {
+    shared: {
+        value QualitySignals [Metrics -> RoadmapBoard]
+    }
+}
+
+// User feedback closes the planning loop.
+interface "Users-RoadmapBoard" {
+    shared: {
+        event ReportPainPoint [Users -> RoadmapBoard]
+        event PublishRoadmapUpdate [RoadmapBoard -> Users]
+    }
+}
+
+// Release intent and resulting artifacts.
+interface "RoadmapBoard-ReleaseArtifacts" {
+    shared: {
+        event PlanRelease [RoadmapBoard -> ReleaseArtifacts]
+        value ReleaseDigest [ReleaseArtifacts -> Maintainer]
+    }
+}
+
+// 3. Requirements
+
+// Maintainer commands must drive roadmap prioritization.
+requirement "RoadmapPrioritization" {
+    frame: CommandedBehavior
+    constraint: "Prioritization decisions originate from maintainer intent"
+    constrains: Repository
+    reference: Maintainer
+}
+
+// Planning must be continuously informed by metrics.
+requirement "QualityDrivenPlanning" {
+    frame: RequiredBehavior
+    constraint: "Roadmap uses quality signals when selecting milestones"
+    constrains: Metrics
+    reference: RoadmapBoard
+}
+
+// Team must receive fast quality feedback from CI.
+requirement "FastFeedbackLoop" {
+    frame: RequiredBehavior
+    constraint: "Engineering team gets rapid CI check outcomes"
+    constrains: EngineeringTeam
+    reference: CI
+}

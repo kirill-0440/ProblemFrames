@@ -3,7 +3,7 @@ problem: PF_DSL_Tool
 // 1. Domains
 domain Developer [Biddable] // The user of the tool
 domain SourceFile [Lexical] // The .pf file on disk
-domain Tool [Designed]       // The CLI/LSP tool (The Machine)
+domain Tool [Machine]       // The CLI/LSP tool
 domain Editor [Causal]      // VS Code or other editor (interacting with LSP)
 domain GeneratedCode [Lexical] // The Rust code or DOT output
 
@@ -13,6 +13,13 @@ domain GeneratedCode [Lexical] // The Rust code or DOT output
 interface "Dev-Source" {
     shared: {
         event Edit [Developer -> SourceFile]
+    }
+}
+
+// Developer invokes tool actions
+interface "Dev-Tool" {
+    shared: {
+        command RunValidation [Developer -> Tool]
     }
 }
 
@@ -29,7 +36,7 @@ interface "Tool-Editor" {
     shared: {
         event DidOpen [Editor -> Tool]
         event DidChange [Editor -> Tool]
-        command PublishDiagnostics [Tool -> Editor]
+        event PublishDiagnostics [Tool -> Editor]
         event Hover [Editor -> Tool]
         value HoverInfo [Tool -> Editor]
     }
@@ -38,7 +45,7 @@ interface "Tool-Editor" {
 // Tool generates output (Code or DOT)
 interface "Tool-Output" {
     shared: {
-        command WriteFile [Tool -> GeneratedCode]
+        event WriteFile [Tool -> GeneratedCode]
         value CodeStructure [Tool -> GeneratedCode]
     }
 }
@@ -47,26 +54,26 @@ interface "Tool-Output" {
 interface "Dev-View" {
     shared: {
         event SeeSquiggles [Editor -> Developer]
-        event ReadCode [GeneratedCode -> Developer]
+        value ReadCode [GeneratedCode -> Developer]
     }
 }
 
 // 3. Requirements
 
 // Requirement 1: Feedback on Validity
-// Frame: Information Display / Transformation
+// Frame: RequiredBehavior
 requirement "ImmediateFeedback" {
-    frame Transformation
-    constraint "Developer sees errors immediately"
-    constrains Editor
-    reference Tool // Tool computes validity
+    frame: RequiredBehavior
+    constraint: "Developer sees errors immediately"
+    constrains: Editor
+    reference: Tool
 }
 
 // Requirement 2: Correct Code Generation
-// Frame: Transformation
+// Frame: CommandedBehavior
 requirement "ScaffoldGeneration" {
-    frame Transformation
-    constraint "Generated Code matches Domain Definitions"
-    constrains GeneratedCode
-    reference SourceFile
+    frame: CommandedBehavior
+    constraint: "Generated code matches domain definitions"
+    constrains: GeneratedCode
+    reference: Developer
 }
