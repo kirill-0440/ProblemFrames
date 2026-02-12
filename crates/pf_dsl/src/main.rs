@@ -1,8 +1,6 @@
 use anyhow::Result;
-use pf_dsl::parser::parse;
 use pf_dsl::validator::validate;
 use std::env;
-use std::fs;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -13,9 +11,10 @@ fn main() -> Result<()> {
 
     let mode = if args.len() > 2 { &args[2] } else { "--dot" };
     let filename = &args[1];
-    let content = fs::read_to_string(filename)?;
+    let path = std::path::Path::new(filename);
 
-    match parse(&content) {
+    // Use resolver to handle imports
+    match pf_dsl::resolver::resolve(path, None) {
         Ok(problem) => match validate(&problem) {
             Ok(_) => {
                 if mode == "--report" {

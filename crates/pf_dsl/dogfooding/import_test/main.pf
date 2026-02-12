@@ -1,0 +1,11 @@
+problem: ImportTest
+
+import "hardware.pf"
+
+domain Controller [Machine]
+
+interface "Controller-Sensor" {
+    shared: {
+        event read [Sensor -> Controller]
+    }
+}

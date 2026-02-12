@@ -27,6 +27,7 @@ pub fn parse(input: &str) -> Result<Problem> {
     let mut problem = Problem {
         name: "".to_string(),
         span: problem_span,
+        imports: vec![],
         domains: vec![],
         interfaces: vec![],
         requirements: vec![],
@@ -35,6 +36,13 @@ pub fn parse(input: &str) -> Result<Problem> {
     for pair in program_pair.into_inner() {
         let span = pair_to_span(&pair);
         match pair.as_rule() {
+            Rule::import_decl => {
+                // inner: "import" ~ string_literal
+                let mut inner = pair.into_inner();
+                let path_literal = inner.next().unwrap().as_str();
+                let path = path_literal.trim_matches('"').to_string();
+                problem.imports.push(path);
+            }
             Rule::problem_decl => {
                 // inner: "problem:" ~ identifier
                 let mut inner = pair.into_inner();

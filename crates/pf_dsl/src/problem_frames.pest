@@ -1,7 +1,9 @@
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
 COMMENT = _{ "//" ~ (!"\n" ~ ANY)* ~ "\n" }
 
-program = { SOI ~ (problem_decl | domain_decl | interface_decl | requirement_decl)* ~ EOI }
+program = { SOI ~ (import_decl | problem_decl | domain_decl | interface_decl | requirement_decl)* ~ EOI }
+
+import_decl = { "import" ~ string_literal }
 
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 string_literal = @{ "\"" ~ (!"\"" ~ ANY)* ~ "\"" }

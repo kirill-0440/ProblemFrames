@@ -8,6 +8,7 @@ pub struct Span {
 pub struct Problem {
     pub name: String,
     pub span: Span,
+    pub imports: Vec<String>,
     pub domains: Vec<Domain>,
     pub interfaces: Vec<Interface>,
     pub requirements: Vec<Requirement>,

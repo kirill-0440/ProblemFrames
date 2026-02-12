@@ -4,7 +4,7 @@ use lsp_types::{
     Diagnostic, DiagnosticSeverity, InitializeParams, Position, PublishDiagnosticsParams, Range,
     ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
-use pf_dsl::parser::parse;
+use pf_dsl::resolver::resolve;
 use pf_dsl::validator::validate;
 use serde_json::Value;
 
@@ -136,8 +136,13 @@ fn position_at_byte(text: &str, offset: usize) -> Position {
 fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()> {
     let mut diagnostics = Vec::new();
 
-    // 1. Parse
-    match parse(text) {
+    // 1. Resolve (Parse + Imports)
+    // We need to convert URI to Path
+    let path = uri
+        .to_file_path()
+        .map_err(|_| anyhow::anyhow!("Invalid URI scheme"))?;
+
+    match resolve(&path, Some(text)) {
         Ok(problem) => {
             // 2. Semantic Validate
             match validate(&problem) {
