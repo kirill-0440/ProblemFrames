@@ -16,7 +16,28 @@ jobs:
   dependency-review:
     runs-on: ubuntu-latest
     steps:
+      - name: Check dependency graph support
+        id: support
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set +e
+          gh api "repos/${GITHUB_REPOSITORY}/dependency-graph/sbom" --silent
+          rc=$?
+          set -e
+          if [ "${rc}" -eq 0 ]; then
+            echo "supported=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "supported=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Review dependency changes
+        if: steps.support.outputs.supported == 'true'
         uses: actions/dependency-review-action@46a3c492319c890177366b6ef46d6b4f89743ed4 # v4
         with:
           fail-on-severity: high
+
+      - name: Skip dependency review when unsupported
+        if: steps.support.outputs.supported != 'true'
+        run: echo "::warning::Dependency graph is unavailable in this repository; dependency review was skipped."
