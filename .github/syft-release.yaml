@@ -1,0 +1,7 @@
+file:
+  metadata:
+    # Include all release files in SPDX instead of only package-owned files.
+    selection: all
+    digests:
+      - sha1
+      - sha256

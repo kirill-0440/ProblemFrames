@@ -197,6 +197,49 @@ jobs:
           path: release-bundle
           format: spdx-json
           output-file: release-bundle/SBOM.spdx.json
+          syft-version: v1.38.0
+          config: .github/syft-release.yaml
+
+      - name: Validate SBOM checksums for release binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import sys
+
+          sbom_path = "release-bundle/SBOM.spdx.json"
+          with open(sbom_path, "r", encoding="utf-8") as f:
+              sbom = json.load(f)
+
+          files = {
+              entry.get("fileName"): entry
+              for entry in sbom.get("files", [])
+              if isinstance(entry, dict) and entry.get("fileName")
+          }
+
+          required = ("pf_lsp-linux-x64", "pf_lsp-macos-x64")
+          missing = [name for name in required if name not in files]
+          if missing:
+              print(f"Missing required file entries in SBOM: {missing}")
+              sys.exit(1)
+
+          def has_non_zero_sha256(entry: dict) -> bool:
+              for checksum in entry.get("checksums", []):
+                  if checksum.get("algorithm") != "SHA256":
+                      continue
+                  value = (checksum.get("checksumValue") or "").lower()
+                  if value and set(value) != {"0"}:
+                      return True
+              return False
+
+          invalid = [name for name in required if not has_non_zero_sha256(files[name])]
+          if invalid:
+              print(f"Invalid or zero SHA256 checksum in SBOM for: {invalid}")
+              sys.exit(1)
+
+          print("SBOM checksum validation passed.")
+          PY
 
       - name: Attest release bundle provenance
         uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45 # v2
