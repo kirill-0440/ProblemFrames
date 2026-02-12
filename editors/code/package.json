@@ -4,6 +4,11 @@
   "description": "Language support for Problem Frames DSL",
   "version": "0.0.1",
   "publisher": "pf-dsl",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pf-dsl/problem-frames"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -15,8 +20,13 @@
     "languages": [
       {
         "id": "pf",
-        "aliases": ["Problem Frames", "pf"],
-        "extensions": [".pf"],
+        "aliases": [
+          "Problem Frames",
+          "pf"
+        ],
+        "extensions": [
+          ".pf"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],

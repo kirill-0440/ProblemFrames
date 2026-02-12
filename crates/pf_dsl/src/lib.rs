@@ -1,6 +1,6 @@
 pub mod ast;
-pub mod parser;
-pub mod validator;
-pub mod dot_export;
 pub mod codegen;
+pub mod dot_export;
+pub mod parser;
 pub mod report_gen;
+pub mod validator;

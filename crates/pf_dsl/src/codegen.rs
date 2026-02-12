@@ -15,16 +15,29 @@ pub fn generate_rust(problem: &Problem) -> Result<String> {
         writeln!(code, "/// Interface: {}", interface.name)?;
         writeln!(code, "#[derive(Debug, Clone, PartialEq)]")?;
         writeln!(code, "pub enum {} {{", enum_name)?;
-        
+
         for p in &interface.shared_phenomena {
             // e.g. Open(String) or just Open
             // For now, unit variants for Events, maybe wrap value for Value?
             match p.type_ {
                 PhenomenonType::Value => {
-                    writeln!(code, "    {}(String), // Value from {} -> {}", sanitize_name(&p.name), p.from, p.to)?;
+                    writeln!(
+                        code,
+                        "    {}(String), // Value from {} -> {}",
+                        sanitize_name(&p.name),
+                        p.from,
+                        p.to
+                    )?;
                 }
                 _ => {
-                    writeln!(code, "    {}, // {:?} from {} -> {}", sanitize_name(&p.name), p.type_, p.from, p.to)?;
+                    writeln!(
+                        code,
+                        "    {}, // {:?} from {} -> {}",
+                        sanitize_name(&p.name),
+                        p.type_,
+                        p.from,
+                        p.to
+                    )?;
                 }
             }
         }
@@ -34,13 +47,17 @@ pub fn generate_rust(problem: &Problem) -> Result<String> {
 
     // 2. Generate Structs for Domains
     for domain in &problem.domains {
-        writeln!(code, "/// Domain: {} [{:?}]", domain.name, domain.domain_type)?;
+        writeln!(
+            code,
+            "/// Domain: {} [{:?}]",
+            domain.name, domain.domain_type
+        )?;
         writeln!(code, "#[derive(Debug)]")?;
         writeln!(code, "pub struct {} {{", sanitize_name(&domain.name))?;
         writeln!(code, "    // TODO: Add internal state")?;
         writeln!(code, "}}")?;
         writeln!(code, "")?;
-        
+
         // Generate impl stub
         writeln!(code, "impl {} {{", sanitize_name(&domain.name))?;
         writeln!(code, "    pub fn new() -> Self {{")?;

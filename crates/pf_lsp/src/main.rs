@@ -1,16 +1,16 @@
-use lsp_server::{Connection, Message, Request, Response, Notification};
+use anyhow::Result;
+use lsp_server::{Connection, Message, Notification};
 use lsp_types::{
-    InitializeParams, ServerCapabilities, TextDocumentSyncKind, TextDocumentSyncCapability,
-    Url, Diagnostic, DiagnosticSeverity, Range, Position, PublishDiagnosticsParams,
+    Diagnostic, DiagnosticSeverity, InitializeParams, Position, PublishDiagnosticsParams, Range,
+    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Url,
 };
-use serde_json::Value;
 use pf_dsl::parser::parse;
 use pf_dsl::validator::validate;
-use anyhow::Result;
+use serde_json::Value;
 
 fn main() -> Result<()> {
     eprintln!("Starting PF LSP Server...");
-    
+
     // Create the transport
     let (connection, io_threads) = Connection::stdio();
 
@@ -40,18 +40,24 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                 }
                 // Handle requests (none for now)
             }
-            Message::Response(resp) => {
+            Message::Response(_resp) => {
                 // handle responses
             }
             Message::Notification(not) => {
                 // handle notifications
-                 match not.method.as_str() {
+                match not.method.as_str() {
                     "textDocument/didOpen" => {
-                        let params: lsp_types::DidOpenTextDocumentParams = serde_json::from_value(not.params)?;
-                        validate_document(&connection, params.text_document.uri, &params.text_document.text)?;
+                        let params: lsp_types::DidOpenTextDocumentParams =
+                            serde_json::from_value(not.params)?;
+                        validate_document(
+                            &connection,
+                            params.text_document.uri,
+                            &params.text_document.text,
+                        )?;
                     }
                     "textDocument/didChange" => {
-                        let params: lsp_types::DidChangeTextDocumentParams = serde_json::from_value(not.params)?;
+                        let params: lsp_types::DidChangeTextDocumentParams =
+                            serde_json::from_value(not.params)?;
                         // FULL sync, so content_changes[0].text is the whole file
                         if let Some(change) = params.content_changes.first() {
                             validate_document(&connection, params.text_document.uri, &change.text)?;
@@ -66,14 +72,14 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
 }
 
 fn span_to_range(text: &str, span: pf_dsl::ast::Span) -> Range {
-    // This is a naive implementation. 
+    // This is a naive implementation.
     // Ideally we should use a line index to be faster.
     // Be careful with byte indices vs char indices if utf8.
     // pest Span is byte offsets.
-    
+
     let start_byte = span.start;
     let end_byte = span.end;
-    
+
     let start = position_at_byte(text, start_byte);
     let end = position_at_byte(text, end_byte);
 
@@ -97,17 +103,16 @@ fn position_at_byte(text: &str, offset: usize) -> Position {
         }
         current_byte = i + c.len_utf8();
     }
-    
+
     // If offset is passed the last char
     if offset > current_byte && offset <= text.len() {
-         // This logic is a bit linear and slow for large files but fine for now.
-         // We might be slightly off if we broke early.
-         // A better approach is `line_index` crate.
+        // This logic is a bit linear and slow for large files but fine for now.
+        // We might be slightly off if we broke early.
+        // A better approach is `line_index` crate.
     }
-    
+
     Position { line, character }
 }
-
 
 fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()> {
     let mut diagnostics = Vec::new();
@@ -117,14 +122,24 @@ fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()
         Ok(problem) => {
             // 2. Semantic Validate
             match validate(&problem) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(errors) => {
                     for err in errors {
                         // Extract Span from ValidationError
                         let span = match &err {
-                            pf_dsl::validator::ValidationError::UndefinedDomainInInterface(_, _, s) => *s,
-                            pf_dsl::validator::ValidationError::UndefinedDomainInRequirement(_, _, s) => *s,
-                            pf_dsl::validator::ValidationError::InvalidFrameDomain(_, _, _, s) => *s,
+                            pf_dsl::validator::ValidationError::UndefinedDomainInInterface(
+                                _,
+                                _,
+                                s,
+                            ) => *s,
+                            pf_dsl::validator::ValidationError::UndefinedDomainInRequirement(
+                                _,
+                                _,
+                                s,
+                            ) => *s,
+                            pf_dsl::validator::ValidationError::InvalidFrameDomain(_, _, _, s) => {
+                                *s
+                            }
                         };
 
                         let diagnostic = Diagnostic {
@@ -142,16 +157,22 @@ fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()
                     }
                 }
             }
-        },
+        }
         Err(e) => {
             // Parser error
             // We can parse generic pest error to get location if we want
             // For now, default to top of file or try to extract location
-             let range = Range {
-                start: Position { line: 0, character: 0 },
-                end: Position { line: 0, character: 1 },
+            let range = Range {
+                start: Position {
+                    line: 0,
+                    character: 0,
+                },
+                end: Position {
+                    line: 0,
+                    character: 1,
+                },
             };
-            
+
             let diagnostic = Diagnostic {
                 range,
                 severity: Some(DiagnosticSeverity::ERROR),
@@ -172,7 +193,7 @@ fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()
         diagnostics,
         version: None,
     };
-    
+
     let not = Notification::new("textDocument/publishDiagnostics".to_string(), params);
     connection.sender.send(Message::Notification(not))?;
 

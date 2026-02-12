@@ -39,17 +39,17 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     // 2. Validate Requirements
     for req in &problem.requirements {
         if !req.constrains.is_empty() && !defined_domains.contains(&req.constrains) {
-             errors.push(ValidationError::UndefinedDomainInRequirement(
+            errors.push(ValidationError::UndefinedDomainInRequirement(
                 req.constrains.clone(),
                 req.name.clone(),
                 req.span, // We could be more precise if we parsed specific fields with spans
             ));
         }
         if !req.reference.is_empty() && !defined_domains.contains(&req.reference) {
-             errors.push(ValidationError::UndefinedDomainInRequirement(
+            errors.push(ValidationError::UndefinedDomainInRequirement(
                 req.reference.clone(),
                 req.name.clone(),
-                req.span, 
+                req.span,
             ));
         }
     }
@@ -62,31 +62,37 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                 if !req.reference.is_empty() {
                     if let Some(domain) = problem.domains.iter().find(|d| d.name == req.reference) {
                         if domain.domain_type != DomainType::Biddable {
-                             errors.push(ValidationError::InvalidFrameDomain(
+                            errors.push(ValidationError::InvalidFrameDomain(
                                 req.name.clone(),
                                 "CommandedBehavior".to_string(),
-                                format!("Reference domain '{}' should be Biddable, found {:?}", req.reference, domain.domain_type),
+                                format!(
+                                    "Reference domain '{}' should be Biddable, found {:?}",
+                                    req.reference, domain.domain_type
+                                ),
                                 req.span,
                             ));
                         }
                     }
                 }
-            },
+            }
             FrameType::RequiredBehavior => {
                 // Should constrain a Causal or Biddable domain
                 if !req.constrains.is_empty() {
-                    if let Some(domain) = problem.domains.iter().find(|d| d.name == req.constrains) {
-                         if domain.domain_type != DomainType::Causal && domain.domain_type != DomainType::Biddable {
-                             errors.push(ValidationError::InvalidFrameDomain(
+                    if let Some(domain) = problem.domains.iter().find(|d| d.name == req.constrains)
+                    {
+                        if domain.domain_type != DomainType::Causal
+                            && domain.domain_type != DomainType::Biddable
+                        {
+                            errors.push(ValidationError::InvalidFrameDomain(
                                 req.name.clone(),
                                 "RequiredBehavior".to_string(),
                                 format!("Constrained domain '{}' should be Causal or Biddable, found {:?}", req.constrains, domain.domain_type),
                                 req.span,
                             ));
-                         }
+                        }
                     }
                 }
-            },
+            }
             _ => {} // Other frames to be implemented
         }
     }

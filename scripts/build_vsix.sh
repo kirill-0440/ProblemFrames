@@ -1,11 +1,7 @@
 #!/bin/bash
 set -e
 
-# Ensure vsce is installed (or use npx)
-if ! command -v vsce &> /dev/null; then
-    echo "Installing vsce..."
-    npm install -g @vscode/vsce
-fi
+# npx will handle vsce execution
 
 echo "Building LSP binary..."
 cd crates/pf_lsp
@@ -17,6 +13,6 @@ echo "Packaging VSIX..."
 cd ../../editors/code
 npm install
 npm run compile
-npx vsce package
+npx -y @vscode/vsce package
 
 echo "VSIX created at editors/code/problem-frames-0.0.1.vsix"
