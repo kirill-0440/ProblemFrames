@@ -180,8 +180,8 @@ jobs:
           test -s release-bundle/pf_lsp-macos-x64
 
           shopt -s nullglob
-          linux_vsix=(release-bundle/*-linux-x64.vsix)
-          mac_vsix=(release-bundle/*-darwin-x64.vsix)
+          linux_vsix=(release-bundle/*linux-x64*.vsix)
+          mac_vsix=(release-bundle/*darwin-x64*.vsix)
           if [ "${#linux_vsix[@]}" -eq 0 ] || [ "${#mac_vsix[@]}" -eq 0 ]; then
             echo "Expected linux and macOS VSIX artifacts in release-bundle"
             ls -la release-bundle
