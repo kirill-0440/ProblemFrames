@@ -52,6 +52,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Support matrix now includes explicit Windows re-enable criteria and smoke-plan checklist.
 
 ### Fixed
+- Release bundle smoke-check now matches VSIX filenames that include target plus version suffix.
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.
 - Build/install scripts now copy platform-specific binary names (`pf_lsp`/`pf_lsp.exe`).
 - VS Code extension compile no longer fails on modern Node type definitions (`skipLibCheck` in `tsconfig`).
