@@ -22,6 +22,7 @@ npm run compile --prefix editors/code
 
 - Dependabot tracks updates for Cargo, npm, and GitHub Actions via `.github/dependabot.yml`.
 - `.github/workflows/security-audit.yml` runs Rust and npm dependency audits on schedule and on demand.
+- `.github/workflows/codeql.yml` runs static security analysis for Rust and TypeScript.
 
 Run security checks locally:
 

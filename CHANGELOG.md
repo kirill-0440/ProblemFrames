@@ -15,6 +15,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Contribution guide and pull request checklist template.
 - Dependabot configuration for Cargo, npm, and GitHub Actions dependency updates.
 - Scheduled/manual security audit workflow for Rust and npm dependencies.
+- CodeQL static analysis workflow for Rust and TypeScript code.
 
 ### Changed
 - LSP now uses in-memory document state for definition and diagnostics flow.
