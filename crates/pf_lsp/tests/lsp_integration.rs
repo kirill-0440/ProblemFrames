@@ -141,7 +141,7 @@ fn make_temp_dir(prefix: &str) -> PathBuf {
 }
 
 fn file_uri(path: &Path) -> String {
-    lsp_types::Url::from_file_path(path)
+    url::Url::from_file_path(path)
         .expect("failed to build file uri")
         .to_string()
 }
