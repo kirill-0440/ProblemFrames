@@ -57,6 +57,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Support matrix now includes explicit Windows re-enable criteria and smoke-plan checklist.
 
 ### Fixed
+- Incident note (February 12, 2026): `v0.1.2` tag was withdrawn after release publication failed in `publish-release` because `.github/syft-release.yaml` was unavailable without a repository checkout. Fixed in `v0.1.3` by adding `actions/checkout` to the publish job.
 - Release bundle smoke-check now matches VSIX filenames that include target plus version suffix.
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.
 - Build/install scripts now copy platform-specific binary names (`pf_lsp`/`pf_lsp.exe`).
