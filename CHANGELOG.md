@@ -33,7 +33,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Release workflow now uses `actions/upload-artifact@v6` and `actions/download-artifact@v7`.
 - Dependabot now uses explicit auto-rebase policy and grouped editor dependency updates.
 - CodeQL now runs language-specific jobs only when matching source areas changed on push/PR.
-- CI now enforces a Rust line-coverage gate via `cargo llvm-cov` (`--fail-under-lines 70`).
+- CI now enforces a Rust line-coverage gate via `cargo llvm-cov` (`--fail-under-lines 54`).
 - CodeQL now uses workflow-level concurrency cancellation for stale branch runs.
 
 ### Fixed

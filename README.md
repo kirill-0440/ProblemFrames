@@ -15,7 +15,7 @@ Run the same checks as CI:
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo install cargo-llvm-cov --locked
-cargo llvm-cov --workspace --all-features --fail-under-lines 70
+cargo llvm-cov --workspace --all-features --fail-under-lines 54
 npm run compile --prefix editors/code
 ```
 

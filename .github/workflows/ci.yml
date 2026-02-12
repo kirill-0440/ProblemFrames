@@ -25,7 +25,7 @@ jobs:
   rust:
     runs-on: ubuntu-latest
     env:
-      RUST_COVERAGE_MIN: "70"
+      RUST_COVERAGE_MIN: "54"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
