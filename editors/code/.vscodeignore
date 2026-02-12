@@ -2,7 +2,9 @@
 src/**
 tsconfig.json
 tsconfig.tsbuildinfo
+esbuild.js
 **/*.vsix
+node_modules/**
 
 # Exclude non-runtime dependency files from packaged VSIX.
 node_modules/**/test/**
