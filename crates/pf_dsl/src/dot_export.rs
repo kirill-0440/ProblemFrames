@@ -94,6 +94,7 @@ pub fn to_dot(problem: &Problem) -> String {
             }
             let symbol = match phen.type_ {
                 PhenomenonType::Event => "E",
+                PhenomenonType::Command => "C",
                 PhenomenonType::State => "S",
                 PhenomenonType::Value => "V",
             };

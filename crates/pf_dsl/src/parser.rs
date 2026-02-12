@@ -61,6 +61,7 @@ pub fn parse(input: &str) -> Result<Problem> {
                     "Causal" => DomainType::Causal,
                     "Biddable" => DomainType::Biddable,
                     "Lexical" => DomainType::Lexical,
+                    "Designed" => DomainType::Designed,
                     _ => DomainType::Unknown(domain_type_str.to_string()),
                 };
                 problem.domains.push(Domain {
@@ -91,6 +92,7 @@ pub fn parse(input: &str) -> Result<Problem> {
 
                         let p_type = match type_str {
                             "event" => PhenomenonType::Event,
+                            "command" => PhenomenonType::Command,
                             "state" => PhenomenonType::State,
                             "value" => PhenomenonType::Value,
                             _ => PhenomenonType::Event, // default or error

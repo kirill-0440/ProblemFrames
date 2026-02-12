@@ -17,6 +17,7 @@ pub fn generate_report(problem: &Problem) -> String {
         for p in &i.shared_phenomena {
             let symbol = match p.type_ {
                 PhenomenonType::Event => "Event",
+                PhenomenonType::Command => "Command",
                 PhenomenonType::State => "State",
                 PhenomenonType::Value => "Value",
             };

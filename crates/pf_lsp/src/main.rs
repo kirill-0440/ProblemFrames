@@ -167,6 +167,9 @@ fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()
                             pf_dsl::validator::ValidationError::DuplicateDomain(_, s) => *s,
                             pf_dsl::validator::ValidationError::DuplicateInterface(_, s) => *s,
                             pf_dsl::validator::ValidationError::MissingConnection(_, _, _, s) => *s,
+                            pf_dsl::validator::ValidationError::InvalidCausality(_, _, _, _, s) => {
+                                *s
+                            }
                         };
 
                         let diagnostic = Diagnostic {

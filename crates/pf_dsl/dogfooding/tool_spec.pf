@@ -3,7 +3,7 @@ problem: PF_DSL_Tool
 // 1. Domains
 domain Developer [Biddable] // The user of the tool
 domain SourceFile [Lexical] // The .pf file on disk
-domain Tool [Machine]       // The CLI/LSP tool (The Machine)
+domain Tool [Designed]       // The CLI/LSP tool (The Machine)
 domain Editor [Causal]      // VS Code or other editor (interacting with LSP)
 domain GeneratedCode [Lexical] // The Rust code or DOT output
 
@@ -29,7 +29,7 @@ interface "Tool-Editor" {
     shared: {
         event DidOpen [Editor -> Tool]
         event DidChange [Editor -> Tool]
-        event PublishDiagnostics [Tool -> Editor]
+        command PublishDiagnostics [Tool -> Editor]
         event Hover [Editor -> Tool]
         value HoverInfo [Tool -> Editor]
     }
@@ -38,7 +38,7 @@ interface "Tool-Editor" {
 // Tool generates output (Code or DOT)
 interface "Tool-Output" {
     shared: {
-        event WriteFile [Tool -> GeneratedCode]
+        command WriteFile [Tool -> GeneratedCode]
         value CodeStructure [Tool -> GeneratedCode]
     }
 }

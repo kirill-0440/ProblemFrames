@@ -13,7 +13,7 @@ problem_decl = { "problem:" ~ identifier }
 
 // 2. Domain Declaration
 // domain Controller [Machine]
-domain_type = { "Machine" | "Causal" | "Biddable" | "Lexical" }
+domain_type = { "Machine" | "Causal" | "Biddable" | "Lexical" | "Designed" }
 domain_decl = { "domain" ~ identifier ~ "[" ~ domain_type ~ "]" }
 
 // 3. Interface Declaration
@@ -21,7 +21,7 @@ domain_decl = { "domain" ~ identifier ~ "[" ~ domain_type ~ "]" }
 interface_decl = { "interface" ~ string_literal ~ "{" ~ shared_phenomena ~ "}" }
 shared_phenomena = { "shared:" ~ "{" ~ phenomenon* ~ "}" }
 
-phenomenon_type = { "event" | "state" | "value" }
+phenomenon_type = { "event" | "command" | "state" | "value" }
 phenomenon = { phenomenon_type ~ identifier ~ "[" ~ identifier ~ "->" ~ identifier ~ "]" }
 
 // 4. Requirement Declaration

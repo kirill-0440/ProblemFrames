@@ -42,6 +42,25 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_new_types() {
+        let input = r#"
+            problem: NewTypes
+            domain Des [Designed]
+            interface "Des-Mac" {
+                shared: {
+                    command Cmd1 [Des->Mac]
+                }
+            }
+        "#;
+        let problem = parse(input).expect("Failed to parse");
+        assert_eq!(problem.domains[0].domain_type, DomainType::Designed);
+        assert!(matches!(
+            problem.interfaces[0].shared_phenomena[0].type_,
+            PhenomenonType::Command
+        ));
+    }
+
+    #[test]
     fn test_parse_invalid_input() {
         let input = "prob: BadKeyword"; // typo in keyword
         let result = parse(input);

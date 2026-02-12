@@ -20,6 +20,7 @@ pub enum DomainType {
     Causal,
     Biddable,
     Lexical,
+    Designed,
     Unknown(String),
 }
 
@@ -40,6 +41,7 @@ pub struct Interface {
 #[derive(Debug, Clone, PartialEq)]
 pub enum PhenomenonType {
     Event,
+    Command,
     State,
     Value,
 }

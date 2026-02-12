@@ -16,6 +16,8 @@ pub enum ValidationError {
     DuplicateInterface(String, Span),
     #[error("Missing connection between '{0}' and '{1}' required by frame '{2}'")]
     MissingConnection(String, String, String, Span),
+    #[error("Invalid causality: Phenomenon '{0}' ({1:?}) cannot originate from '{2}' ({3:?}). Events must come from active domains.")]
+    InvalidCausality(String, PhenomenonType, String, DomainType, Span),
 }
 
 fn is_connected(problem: &Problem, domain1: &str, domain2: &str) -> bool {
@@ -57,6 +59,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     // 1. Validate Interfaces
     for interface in &problem.interfaces {
         for phenomenon in &interface.shared_phenomena {
+            // Check existence of domains
             if !defined_domains.contains(&phenomenon.from) {
                 errors.push(ValidationError::UndefinedDomainInInterface(
                     phenomenon.from.clone(),
@@ -70,6 +73,41 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     interface.name.clone(),
                     phenomenon.span,
                 ));
+            }
+
+            // CAUSALITY CHECKS
+            if let Some(from_domain) = problem.domains.iter().find(|d| d.name == phenomenon.from) {
+                match phenomenon.type_ {
+                    PhenomenonType::Event | PhenomenonType::Command => {
+                        // 1. Active Domain Check
+                        // Events/Commands cannot originate from Lexical or Designed domains (inert)
+                        if from_domain.domain_type == DomainType::Lexical
+                            || from_domain.domain_type == DomainType::Designed
+                        {
+                            errors.push(ValidationError::InvalidCausality(
+                                phenomenon.name.clone(),
+                                phenomenon.type_.clone(),
+                                from_domain.name.clone(),
+                                from_domain.domain_type.clone(),
+                                phenomenon.span,
+                            ));
+                        }
+
+                        // 2. Operator Command Check
+                        if phenomenon.type_ == PhenomenonType::Command {
+                            if from_domain.domain_type != DomainType::Biddable {
+                                errors.push(ValidationError::InvalidCausality(
+                                    phenomenon.name.clone(),
+                                    phenomenon.type_.clone(), // "Command"
+                                    from_domain.name.clone(),
+                                    from_domain.domain_type.clone(),
+                                    phenomenon.span,
+                                ));
+                            }
+                        }
+                    }
+                    _ => {} // State/Value can exist/originate anywhere
+                }
             }
         }
     }
