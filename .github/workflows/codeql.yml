@@ -50,18 +50,11 @@ jobs:
               - "editors/code/**"
               - ".github/workflows/codeql.yml"
 
-  analyze:
-    name: Analyze (${{ matrix.language }})
+  analyze-rust:
+    name: Analyze (rust)
     needs: changes
-    if: |
-      (matrix.language == 'rust' && needs.changes.outputs.rust == 'true') ||
-      (matrix.language == 'javascript-typescript' && needs.changes.outputs.javascript_typescript == 'true')
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [rust, javascript-typescript]
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -69,18 +62,32 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: ${{ matrix.language }}
+          languages: rust
 
       - name: Install Rust
-        if: matrix.language == 'rust'
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build Rust workspace
-        if: matrix.language == 'rust'
         run: cargo build --workspace
 
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+
+  analyze-javascript-typescript:
+    name: Analyze (javascript-typescript)
+    needs: changes
+    if: needs.changes.outputs.javascript_typescript == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+
       - name: Setup Node
-        if: matrix.language == 'javascript-typescript'
         uses: actions/setup-node@v6
         with:
           node-version: "20"
@@ -88,7 +95,6 @@ jobs:
           cache-dependency-path: editors/code/package-lock.json
 
       - name: Build VS Code extension
-        if: matrix.language == 'javascript-typescript'
         run: |
           npm ci --prefix editors/code
           npm run compile --prefix editors/code
