@@ -4,6 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    rebase-strategy: "auto"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -13,6 +14,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    rebase-strategy: "auto"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -22,6 +24,7 @@ updates:
     directory: "/crates/pf_dsl"
     schedule:
       interval: "weekly"
+    rebase-strategy: "auto"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -31,6 +34,7 @@ updates:
     directory: "/crates/pf_lsp"
     schedule:
       interval: "weekly"
+    rebase-strategy: "auto"
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
@@ -40,7 +44,17 @@ updates:
     directory: "/editors/code"
     schedule:
       interval: "weekly"
+    rebase-strategy: "auto"
     open-pull-requests-limit: 5
+    groups:
+      editor-types-and-toolchain:
+        patterns:
+          - "@types/node"
+          - "@types/vscode"
+          - "typescript"
+      editor-lsp-client:
+        patterns:
+          - "vscode-languageclient"
     labels:
       - "dependencies"
       - "npm"

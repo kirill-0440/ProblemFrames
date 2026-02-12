@@ -63,6 +63,15 @@ bash ./scripts/smoke_test_scripts.sh
 - Security audit workflow (`.github/workflows/security-audit.yml`) runs weekly and can be triggered manually.
 - CodeQL workflow (`.github/workflows/codeql.yml`) runs static analysis on pushes/PRs to `main`.
 
+## Dependabot Merge/Rebase Policy
+
+- Preferred merge method for Dependabot PRs: `squash`.
+- Rebase policy: keep Dependabot branches rebased on latest `main` (`rebase-strategy: auto` in `.github/dependabot.yml`).
+- Batch handling:
+  - Merge PRs with green CI/CodeQL and no behavioral regressions.
+  - For API-breaking dependency updates, push compatibility fixes to the Dependabot branch, then merge.
+  - If duplicate PRs exist for the same dependency, merge the primary PR and close duplicates as superseded.
+
 ## Pull Requests
 
 - Keep PR scope focused.

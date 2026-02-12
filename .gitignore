@@ -8,6 +8,7 @@
 !editors/code/.vscode/ # Keep extension specific settings if any
 node_modules/
 out/
+*.tsbuildinfo
 *.vsix
 editors/code/pf_lsp
 editors/code/pf_lsp.exe

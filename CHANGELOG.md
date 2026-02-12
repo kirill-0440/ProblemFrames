@@ -22,13 +22,17 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Position mapping in LSP updated to UTF-16 semantics.
 - Validator now reports missing required requirement fields and unsupported frames.
 - DOT export now preserves all domain-pair connections from interface phenomena.
+- `pf_lsp` now supports `lsp-types` 0.97 `Uri` API for path/URI handling.
+- VS Code extension toolchain updated (`typescript` 5.9, `vscode-languageclient` 9.x, `@types/node` 25.x).
 - CI and release workflows now use Rust dependency caching and stricter default `contents: read` permissions.
 - VSIX release packaging now derives extension version from the git release tag.
 - CodeQL workflow uses `github/codeql-action@v4` to stay ahead of v3 deprecation.
 - GitHub Release now includes `SHA256SUMS.txt` with checksums for all published assets.
 - GitHub workflows now use `actions/checkout@v6` and `actions/setup-node@v6`.
 - Release workflow now uses `actions/upload-artifact@v6` and `actions/download-artifact@v7`.
+- Dependabot now uses explicit auto-rebase policy and grouped editor dependency updates.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.
 - Build/install scripts now copy platform-specific binary names (`pf_lsp`/`pf_lsp.exe`).
+- VS Code extension compile no longer fails on modern Node type definitions (`skipLibCheck` in `tsconfig`).
