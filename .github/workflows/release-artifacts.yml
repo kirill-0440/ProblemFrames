@@ -32,13 +32,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          toolchain: stable
 
       - name: Cache Rust artifacts
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
 
       - name: Build pf_lsp
         run: cargo build --release -p pf_lsp
@@ -64,7 +66,7 @@ jobs:
           cp "${{ matrix.binary_path }}" "dist/${{ matrix.release_asset_name }}"
 
       - name: Upload pf_lsp binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: ${{ matrix.artifact_name }}
           path: dist/${{ matrix.release_asset_name }}
@@ -85,20 +87,22 @@ jobs:
             binary_name: pf_lsp
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: editors/code/package-lock.json
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          toolchain: stable
 
       - name: Cache Rust artifacts
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
 
       - name: Build LSP binary
         run: cargo build --release -p pf_lsp
@@ -133,7 +137,7 @@ jobs:
           unzip -l "${vsix_file}" | grep -q "extension/pf_lsp"
 
       - name: Upload VSIX
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: problem-frames-vsix-${{ matrix.vsix_target }}
           path: editors/code/*.vsix
@@ -146,9 +150,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      attestations: write
+      id-token: write
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           path: release-assets
 
@@ -185,8 +191,40 @@ jobs:
           grep -q "pf_lsp-linux-x64" release-bundle/SHA256SUMS.txt
           grep -q "pf_lsp-macos-x64" release-bundle/SHA256SUMS.txt
 
+      - name: Generate release SBOM
+        uses: anchore/sbom-action@28d71544de8eaf1b958d335707167c5f783590ad # v0
+        with:
+          path: release-bundle
+          format: spdx-json
+          output-file: release-bundle/SBOM.spdx.json
+
+      - name: Attest release bundle provenance
+        uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45 # v2
+        with:
+          subject-path: release-bundle/*
+
+      - name: Export provenance bundles
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp_dir="$(mktemp -d)"
+          cp release-bundle/* "${tmp_dir}/"
+          pushd "${tmp_dir}" >/dev/null
+          for subject in *; do
+            [ -f "${subject}" ] || continue
+            gh attestation download "${subject}" --repo "${GITHUB_REPOSITORY}"
+          done
+          gh attestation trusted-root > trusted_root.jsonl
+          for bundle in *.jsonl; do
+            safe_name="${bundle//:/-}"
+            mv "${bundle}" "${GITHUB_WORKSPACE}/release-bundle/${safe_name}"
+          done
+          popd >/dev/null
+
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         with:
           name: Release ${{ github.ref_name }}
           generate_release_notes: true

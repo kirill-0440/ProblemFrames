@@ -25,6 +25,7 @@ npm run compile --prefix editors/code
 - Dependabot policy uses automatic rebases and grouped editor dependency updates to reduce PR conflicts.
 - `.github/workflows/security-audit.yml` runs Rust and npm dependency audits on schedule and on demand.
 - `.github/workflows/codeql.yml` runs static security analysis for Rust and TypeScript.
+- `.github/workflows/dependency-review.yml` gates pull requests on high-severity dependency risks.
 
 Run security checks locally:
 
@@ -72,11 +73,13 @@ See `crates/pf_dsl/sample.pf` for a complete example.
   - `pf_lsp` binaries for Linux/macOS
   - Platform-specific VSIX packages (`linux-x64`, `darwin-x64`)
   - `SHA256SUMS.txt` with checksums for all release files
+  - `SBOM.spdx.json` and provenance bundles (`sha256-*.jsonl`, `trusted_root.jsonl`)
 - On tag push (`v*`), workflow also creates a GitHub Release and attaches all generated assets.
 - On tag builds, VSIX package version is automatically aligned with the git tag (e.g. `v0.1.0` -> `0.1.0`).
 - Release workflow includes smoke checks for `pf_lsp` startup, VSIX contents, and release bundle completeness.
 - Platform support policy is documented in `docs/support-matrix.md`.
 - Rollback procedure is documented in `docs/runbooks/release-rollback.md`.
+- Supply-chain verification procedure is documented in `docs/runbooks/supply-chain-verification.md`.
 - See `.github/workflows/release-artifacts.yml`.
 
 ## Changelog

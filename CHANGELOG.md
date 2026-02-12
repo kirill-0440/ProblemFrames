@@ -8,6 +8,9 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 ## [Unreleased]
 
 ### Added
+- Dependency review workflow for pull requests (`.github/workflows/dependency-review.yml`) with high-severity gate.
+- Release pipeline now generates SBOM (`SBOM.spdx.json`) and provenance bundles (`sha256-*.jsonl`, `trusted_root.jsonl`).
+- Supply-chain verification runbook (`docs/runbooks/supply-chain-verification.md`) for checksum + provenance validation.
 - CI quality gates for formatting, linting, tests, and VS Code extension build.
 - Release artifact workflow for `pf_lsp` binaries and platform-specific VSIX packages.
 - Automated GitHub Release publishing with attached artifacts on version tags (`v*`).
@@ -24,6 +27,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - VS Code extension packaging ignore rules (`editors/code/.vscodeignore`) and local extension license file (`editors/code/LICENSE`).
 
 ### Changed
+- Critical GitHub Actions workflows now pin action refs to immutable commit SHAs.
+- CI now installs `cargo-llvm-cov` via `cargo install --locked` instead of a floating action ref.
 - LSP now uses in-memory document state for definition and diagnostics flow.
 - Position mapping in LSP updated to UTF-16 semantics.
 - Validator now reports missing required requirement fields and unsupported frames.
