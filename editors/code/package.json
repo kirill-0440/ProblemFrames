@@ -1,0 +1,55 @@
+{
+  "name": "problem-frames",
+  "displayName": "Problem Frames DSL",
+  "description": "Language support for Problem Frames DSL",
+  "version": "0.0.1",
+  "publisher": "pf-dsl",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "pf",
+        "aliases": ["Problem Frames", "pf"],
+        "extensions": [".pf"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "pf",
+        "scopeName": "source.pf",
+        "path": "./syntaxes/pf.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Problem Frames",
+      "properties": {
+        "problemFrames.serverPath": {
+          "type": "string",
+          "default": "pf_lsp",
+          "description": "Path to the pf_lsp executable"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@types/node": "^16.11.7",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^8.1.0"
+  }
+}

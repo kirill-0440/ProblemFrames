@@ -1,0 +1,19 @@
+digraph "ProblemFramesTool" {
+    rankdir=LR;
+    node [shape=box, style=filled, fillcolor=white];
+    "PF_Tool" [label="PF_Tool <<Machine>>", shape=doublebox, fillcolor=lightgrey];
+    "User" [label="User <<Biddable>>", shape=ellipse, fillcolor=white];
+    "SourceFile" [label="SourceFile <<Lexical>>", shape=parallelogram, fillcolor=white];
+    "OutputFile" [label="OutputFile <<Lexical>>", shape=parallelogram, fillcolor=white];
+    "ValidationReport" [label="ValidationReport <<Lexical>>", shape=parallelogram, fillcolor=white];
+    "ParseAndTranslate" [shape=note, style=dashed, label="ParseAndTranslate\n[Transformation]"];
+    "ParseAndTranslate" -> "OutputFile" [style=dashed, arrowheaders=none, label="constrains"];
+    "ParseAndTranslate" -> "SourceFile" [style=dashed, arrowheaders=none, label="references"];
+    "ValidateConsistency" [shape=note, style=dashed, label="ValidateConsistency\n[StaticAnalysis]"];
+    "ValidateConsistency" -> "ValidationReport" [style=dashed, arrowheaders=none, label="constrains"];
+    "ValidateConsistency" -> "SourceFile" [style=dashed, arrowheaders=none, label="references"];
+    "User" -> "PF_Tool" [dir=both, label="RunCommand [E]\nViewErrors [E]"];
+    "SourceFile" -> "PF_Tool" [dir=both, label="FileContent [V]"];
+    "PF_Tool" -> "OutputFile" [dir=both, label="GraphContent [V]\nErrorLog [V]"];
+}
+

@@ -1,0 +1,12 @@
+/target/
+/crates/*/target/
+**/*.rs.bk
+*.swp
+*.iml
+.idea/
+.vscode/
+!editors/code/.vscode/ # Keep extension specific settings if any
+node_modules/
+out/
+*.vsix
+.DS_Store

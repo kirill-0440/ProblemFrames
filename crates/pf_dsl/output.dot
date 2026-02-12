@@ -1,0 +1,13 @@
+digraph "SluiceGateControl" {
+    rankdir=LR;
+    node [shape=box, style=filled, fillcolor=white];
+    "Controller" [label="Controller <<Machine>>", shape=doublebox, fillcolor=lightgrey];
+    "Gate" [label="Gate <<Causal>>", shape=box, fillcolor=white];
+    "Operator" [label="Operator <<Biddable>>", shape=ellipse, fillcolor=white];
+    "SafeOperation" [shape=note, style=dashed, label="SafeOperation\n[CommandedBehavior]"];
+    "SafeOperation" -> "Gate" [style=dashed, arrowheaders=none, label="constrains"];
+    "SafeOperation" -> "Operator" [style=dashed, arrowheaders=none, label="references"];
+    "Operator" -> "Controller" [dir=both, label="OpenCommand [E]\nCloseCommand [E]"];
+    "Controller" -> "Gate" [dir=both, label="PulseOpen [E]\nPulseClose [E]\nTopPos [S]\nBottomPos [S]"];
+}
+

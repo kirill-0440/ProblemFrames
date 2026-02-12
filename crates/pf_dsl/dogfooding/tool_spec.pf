@@ -1,0 +1,72 @@
+problem: PF_DSL_Tool
+
+// 1. Domains
+domain Developer [Biddable] // The user of the tool
+domain SourceFile [Lexical] // The .pf file on disk
+domain Tool [Machine]       // The CLI/LSP tool (The Machine)
+domain Editor [Causal]      // VS Code or other editor (interacting with LSP)
+domain GeneratedCode [Lexical] // The Rust code or DOT output
+
+// 2. Interfaces
+
+// Developer edits the SourceFile
+interface "Dev-Source" {
+    shared: {
+        event Edit [Developer -> SourceFile]
+    }
+}
+
+// Tool reads the SourceFile
+interface "Tool-Source" {
+    shared: {
+        value FileContent [SourceFile -> Tool]
+        state FileExists [SourceFile -> Tool]
+    }
+}
+
+// Tool interacts with Editor via LSP
+interface "Tool-Editor" {
+    shared: {
+        event DidOpen [Editor -> Tool]
+        event DidChange [Editor -> Tool]
+        event PublishDiagnostics [Tool -> Editor]
+        event Hover [Editor -> Tool]
+        value HoverInfo [Tool -> Editor]
+    }
+}
+
+// Tool generates output (Code or DOT)
+interface "Tool-Output" {
+    shared: {
+        event WriteFile [Tool -> GeneratedCode]
+        value CodeStructure [Tool -> GeneratedCode]
+    }
+}
+
+// Developer views the Output/Editor
+interface "Dev-View" {
+    shared: {
+        event SeeSquiggles [Editor -> Developer]
+        event ReadCode [GeneratedCode -> Developer]
+    }
+}
+
+// 3. Requirements
+
+// Requirement 1: Feedback on Validity
+// Frame: Information Display / Transformation
+requirement "ImmediateFeedback" {
+    frame Transformation
+    constraint "Developer sees errors immediately"
+    constrains Editor
+    reference Tool // Tool computes validity
+}
+
+// Requirement 2: Correct Code Generation
+// Frame: Transformation
+requirement "ScaffoldGeneration" {
+    frame Transformation
+    constraint "Generated Code matches Domain Definitions"
+    constrains GeneratedCode
+    reference SourceFile
+}

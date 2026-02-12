@@ -1,0 +1,31 @@
+problem: SluiceGateControl
+
+// 1. Define Domains
+domain Controller [Machine]    
+domain Gate      [Causal]     
+domain Operator  [Biddable]   
+
+// 2. Define Shared Phenomena (Interfaces)
+interface "Operator-Controller" {
+    shared: {
+        event OpenCommand   [Operator -> Controller]
+        event CloseCommand  [Operator -> Controller]
+    }
+}
+
+interface "Controller-Gate" {
+    shared: {
+        event PulseOpen     [Controller -> Gate]
+        event PulseClose    [Controller -> Gate]
+        state TopPos        [Gate -> Controller]
+        state BottomPos     [Gate -> Controller]
+    }
+}
+
+// 3. Define Requirement
+requirement "SafeOperation" {
+    frame: CommandedBehavior
+    constraint: "Gate must open when Operator sends OpenCommand"
+    constrains: Gate
+    reference: Operator
+}

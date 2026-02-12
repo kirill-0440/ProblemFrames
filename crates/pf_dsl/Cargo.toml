@@ -1,0 +1,10 @@
+[package]
+name = "pf_dsl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pest = "2.6"
+pest_derive = "2.6"
+thiserror = "1.0"
+anyhow = "1.0"
