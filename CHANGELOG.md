@@ -18,6 +18,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - CodeQL static analysis workflow for Rust and TypeScript code.
 - Dependabot policy workflow to enforce expected metadata on Dependabot PRs.
 - Dogfooding roadmap model (`crates/pf_dsl/dogfooding/roadmap_q1.pf`) for planning system evolution in PF DSL.
+- Script to generate Markdown reports from dogfooding PF models (`scripts/generate_dogfooding_reports.sh`).
 
 ### Changed
 - LSP now uses in-memory document state for definition and diagnostics flow.
@@ -37,6 +38,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - CI now enforces a Rust line-coverage gate via `cargo llvm-cov` (`--fail-under-lines 54`).
 - CodeQL now uses workflow-level concurrency cancellation for stale branch runs.
 - CI now validates all dogfooding `.pf` models to keep self-models parseable and semantically valid.
+- CI now uploads generated dogfooding Markdown reports as build artifacts.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.

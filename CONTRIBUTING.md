@@ -54,6 +54,12 @@ Smoke test scripts (without heavy build/install side effects):
 bash ./scripts/smoke_test_scripts.sh
 ```
 
+Generate dogfooding reports from PF models:
+
+```bash
+bash ./scripts/generate_dogfooding_reports.sh
+```
+
 ## Release Process
 
 - Update `CHANGELOG.md` under `[Unreleased]`.

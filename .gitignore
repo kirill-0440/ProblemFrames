@@ -13,3 +13,4 @@ out/
 editors/code/pf_lsp
 editors/code/pf_lsp.exe
 .DS_Store
+.ci-artifacts*/
