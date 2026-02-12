@@ -10,4 +10,5 @@ node_modules/
 out/
 *.vsix
 editors/code/pf_lsp
+editors/code/pf_lsp.exe
 .DS_Store

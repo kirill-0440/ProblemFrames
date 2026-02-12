@@ -13,10 +13,14 @@ let client: LanguageClient;
 export function activate(context: ExtensionContext) {
   // Prefer bundled binary from the extension package, fallback to PATH.
   const config = workspace.getConfiguration("problemFrames");
-  const bundledServerPath = context.asAbsolutePath("pf_lsp");
-  const defaultServerPath = fs.existsSync(bundledServerPath)
-    ? bundledServerPath
-    : "pf_lsp";
+  const bundledCandidates =
+    process.platform === "win32"
+      ? ["pf_lsp.exe", "pf_lsp"]
+      : ["pf_lsp", "pf_lsp.exe"];
+  const bundledServerPath = bundledCandidates
+    .map((candidate) => context.asAbsolutePath(candidate))
+    .find((candidatePath) => fs.existsSync(candidatePath));
+  const defaultServerPath = bundledServerPath ?? "pf_lsp";
   const serverPath = config.get<string>("serverPath") || defaultServerPath;
 
   const run: Executable = {

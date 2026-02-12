@@ -54,5 +54,5 @@ See `crates/pf_dsl/sample.pf` for a complete example.
 
 - CI on tag push (`v*`) or manual trigger publishes:
   - `pf_lsp` binaries for Linux/macOS/Windows
-  - VSIX package for VS Code
+  - Platform-specific VSIX packages (`linux-x64`, `darwin-x64`, `win32-x64`)
 - See `.github/workflows/release-artifacts.yml`.
