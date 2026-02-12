@@ -39,6 +39,12 @@ Install extension locally:
 ./scripts/install_extension.sh
 ```
 
+## Release Process
+
+- Update `CHANGELOG.md` under `[Unreleased]`.
+- Create a version tag in the form `vX.Y.Z`.
+- Push the tag; CI publishes release artifacts from `.github/workflows/release-artifacts.yml`.
+
 ## Pull Requests
 
 - Keep PR scope focused.

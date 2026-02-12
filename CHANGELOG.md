@@ -1,0 +1,24 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- CI quality gates for formatting, linting, tests, and VS Code extension build.
+- Release artifact workflow for `pf_lsp` binaries and platform-specific VSIX packages.
+- LSP integration tests for diagnostics and go-to-definition behavior.
+- Contribution guide and pull request checklist template.
+
+### Changed
+- LSP now uses in-memory document state for definition and diagnostics flow.
+- Position mapping in LSP updated to UTF-16 semantics.
+- Validator now reports missing required requirement fields and unsupported frames.
+- DOT export now preserves all domain-pair connections from interface phenomena.
+
+### Fixed
+- VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.
+- Build/install scripts now copy platform-specific binary names (`pf_lsp`/`pf_lsp.exe`).

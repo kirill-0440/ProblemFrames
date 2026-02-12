@@ -56,3 +56,7 @@ See `crates/pf_dsl/sample.pf` for a complete example.
   - `pf_lsp` binaries for Linux/macOS/Windows
   - Platform-specific VSIX packages (`linux-x64`, `darwin-x64`, `win32-x64`)
 - See `.github/workflows/release-artifacts.yml`.
+
+## Changelog
+
+Project history is tracked in `CHANGELOG.md`.
