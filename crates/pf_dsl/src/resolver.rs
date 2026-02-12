@@ -41,25 +41,38 @@ fn resolve_recursive(
     let imports = problem.imports.clone();
 
     for import_path_str in imports {
-        let import_path = base_dir.join(&import_path_str);
+        let (content, import_source_path) = if import_path_str.starts_with("std/") {
+            // Handle Standard Library
+            let content = match import_path_str.as_str() {
+                "std/RequiredBehavior.pf" => include_str!("std/RequiredBehavior.pf").to_string(),
+                "std/CommandedBehavior.pf" => include_str!("std/CommandedBehavior.pf").to_string(),
+                _ => anyhow::bail!("Standard library file not found: {}", import_path_str),
+            };
+            // For std imports, we use the import string itself as a unique identifier
+            // and a dummy path for recursion context.
+            (content, PathBuf::from(import_path_str.clone()))
+        } else {
+            let import_path = base_dir.join(&import_path_str);
 
-        let canonical_path = fs::canonicalize(&import_path)
-            .with_context(|| format!("Failed to resolve import path: {:?}", import_path))?;
+            let canonical_path = fs::canonicalize(&import_path)
+                .with_context(|| format!("Failed to resolve import path: {:?}", import_path))?;
 
-        if loaded.contains(&canonical_path) {
-            // Cycle detected or already loaded. For v1 we just skip (idempotent include)
-            continue;
-        }
-        loaded.insert(canonical_path.clone());
+            if loaded.contains(&canonical_path) {
+                // Cycle detected or already loaded. For v1 we just skip (idempotent include)
+                continue;
+            }
+            loaded.insert(canonical_path.clone());
 
-        let content = fs::read_to_string(&canonical_path)
-            .with_context(|| format!("Failed to read imported file: {:?}", canonical_path))?;
+            let content = fs::read_to_string(&canonical_path)
+                .with_context(|| format!("Failed to read imported file: {:?}", canonical_path))?;
+            (content, canonical_path)
+        };
 
         let mut imported_problem = parse(&content)
-            .with_context(|| format!("Failed to parse imported file: {:?}", canonical_path))?;
+            .with_context(|| format!("Failed to parse imported file: {:?}", import_source_path))?;
 
         // Recursively resolve imports of the imported problem
-        resolve_recursive(&mut imported_problem, &canonical_path, loaded)?;
+        resolve_recursive(&mut imported_problem, &import_source_path, loaded)?;
 
         // MERGE LOGIC:
         // Append domains, interfaces, requirements to the main problem

@@ -1,0 +1,22 @@
+domain Machine [Machine]
+domain ControlledDomain [Causal]
+domain Operator [Biddable]
+
+interface "Machine-ControlledDomain" {
+    shared: {
+        event control [Machine -> ControlledDomain]
+        event feedback [ControlledDomain -> Machine]
+    }
+}
+
+interface "Operator-Machine" {
+    shared: {
+        event command [Operator -> Machine]
+    }
+}
+
+requirement "CommandedBehavior" {
+    frame: CommandedBehavior
+    constrains: ControlledDomain
+    reference: Operator
+}

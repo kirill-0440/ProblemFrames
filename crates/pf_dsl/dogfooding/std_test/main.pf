@@ -1,0 +1,11 @@
+problem: StdTest
+import "std/RequiredBehavior.pf"
+
+// "Machine" and "ControlledDomain" should be available from std lib
+interface "Operator-Machine" {
+    shared: {
+        event start [Operator -> Machine]
+    }
+}
+
+domain Operator [Biddable]
