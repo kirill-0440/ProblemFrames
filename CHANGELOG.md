@@ -21,6 +21,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Position mapping in LSP updated to UTF-16 semantics.
 - Validator now reports missing required requirement fields and unsupported frames.
 - DOT export now preserves all domain-pair connections from interface phenomena.
+- CI and release workflows now use Rust dependency caching and stricter default `contents: read` permissions.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.

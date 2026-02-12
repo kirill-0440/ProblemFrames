@@ -6,6 +6,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   pf-lsp-binaries:
     name: Build pf_lsp (${{ matrix.os }})
@@ -33,6 +36,9 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
 
       - name: Build pf_lsp
         run: cargo build --release -p pf_lsp
@@ -79,6 +85,9 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
 
       - name: Build LSP binary
         run: cargo build --release -p pf_lsp
