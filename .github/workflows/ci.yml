@@ -6,6 +6,15 @@ on:
   pull_request:
 
 jobs:
+  scripts-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Smoke test scripts
+        run: bash ./scripts/smoke_test_scripts.sh
+
   rust:
     runs-on: ubuntu-latest
     steps:

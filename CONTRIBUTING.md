@@ -39,6 +39,12 @@ Install extension locally:
 ./scripts/install_extension.sh
 ```
 
+Smoke test scripts (without heavy build/install side effects):
+
+```bash
+bash ./scripts/smoke_test_scripts.sh
+```
+
 ## Release Process
 
 - Update `CHANGELOG.md` under `[Unreleased]`.
