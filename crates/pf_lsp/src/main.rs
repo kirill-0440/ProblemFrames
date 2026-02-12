@@ -8,6 +8,9 @@ use pf_dsl::parser::parse;
 use pf_dsl::validator::validate;
 use serde_json::Value;
 
+mod completion;
+use completion::get_completions;
+
 fn main() -> Result<()> {
     eprintln!("Starting PF LSP Server...");
 
@@ -17,6 +20,13 @@ fn main() -> Result<()> {
     // Initialize
     let server_capabilities = serde_json::to_value(&ServerCapabilities {
         text_document_sync: Some(TextDocumentSyncCapability::Kind(TextDocumentSyncKind::FULL)),
+        completion_provider: Some(lsp_types::CompletionOptions {
+            resolve_provider: Some(false),
+            trigger_characters: Some(vec![".".to_string(), " ".to_string()]),
+            work_done_progress_options: Default::default(),
+            all_commit_characters: None,
+            completion_item: None,
+        }),
         ..Default::default()
     })?;
 
@@ -38,7 +48,16 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                 if connection.handle_shutdown(&req)? {
                     return Ok(());
                 }
-                // Handle requests (none for now)
+                match req.method.as_str() {
+                    "textDocument/completion" => {
+                        let _params: lsp_types::CompletionParams =
+                            serde_json::from_value(req.params)?;
+                        let completion_list = get_completions();
+                        let resp = lsp_server::Response::new_ok(req.id, completion_list);
+                        connection.sender.send(Message::Response(resp))?;
+                    }
+                    _ => {}
+                }
             }
             Message::Response(_resp) => {
                 // handle responses
