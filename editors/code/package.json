@@ -2,12 +2,12 @@
   "name": "problem-frames",
   "displayName": "Problem Frames DSL",
   "description": "Language support for Problem Frames DSL",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "pf-dsl",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pf-dsl/problem-frames"
+    "url": "https://github.com/kirill-0440/ProblemFrames"
   },
   "engines": {
     "vscode": "^1.75.0"

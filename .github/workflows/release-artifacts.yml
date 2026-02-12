@@ -92,6 +92,14 @@ jobs:
       - name: Build LSP binary
         run: cargo build --release -p pf_lsp
 
+      - name: Align extension version with tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        working-directory: editors/code
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          npm version "${version}" --no-git-tag-version --allow-same-version
+
       - name: Prepare extension bundle
         shell: bash
         run: |

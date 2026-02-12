@@ -22,6 +22,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Validator now reports missing required requirement fields and unsupported frames.
 - DOT export now preserves all domain-pair connections from interface phenomena.
 - CI and release workflows now use Rust dependency caching and stricter default `contents: read` permissions.
+- VSIX release packaging now derives extension version from the git release tag.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.

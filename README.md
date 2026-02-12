@@ -69,6 +69,7 @@ See `crates/pf_dsl/sample.pf` for a complete example.
   - `pf_lsp` binaries for Linux/macOS/Windows
   - Platform-specific VSIX packages (`linux-x64`, `darwin-x64`, `win32-x64`)
 - On tag push (`v*`), workflow also creates a GitHub Release and attaches all generated assets.
+- On tag builds, VSIX package version is automatically aligned with the git tag (e.g. `v0.1.0` -> `0.1.0`).
 - See `.github/workflows/release-artifacts.yml`.
 
 ## Changelog
