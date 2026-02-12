@@ -55,6 +55,7 @@ See `crates/pf_dsl/sample.pf` for a complete example.
 - CI on tag push (`v*`) or manual trigger publishes:
   - `pf_lsp` binaries for Linux/macOS/Windows
   - Platform-specific VSIX packages (`linux-x64`, `darwin-x64`, `win32-x64`)
+- On tag push (`v*`), workflow also creates a GitHub Release and attaches all generated assets.
 - See `.github/workflows/release-artifacts.yml`.
 
 ## Changelog

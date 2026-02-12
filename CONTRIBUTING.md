@@ -49,7 +49,7 @@ bash ./scripts/smoke_test_scripts.sh
 
 - Update `CHANGELOG.md` under `[Unreleased]`.
 - Create a version tag in the form `vX.Y.Z`.
-- Push the tag; CI publishes release artifacts from `.github/workflows/release-artifacts.yml`.
+- Push the tag; CI publishes release artifacts and creates a GitHub Release from `.github/workflows/release-artifacts.yml`.
 
 ## Pull Requests
 

@@ -10,6 +10,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 ### Added
 - CI quality gates for formatting, linting, tests, and VS Code extension build.
 - Release artifact workflow for `pf_lsp` binaries and platform-specific VSIX packages.
+- Automated GitHub Release publishing with attached artifacts on version tags (`v*`).
 - LSP integration tests for diagnostics and go-to-definition behavior.
 - Contribution guide and pull request checklist template.
 
