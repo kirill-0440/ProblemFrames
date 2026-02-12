@@ -6,12 +6,10 @@ use lsp_types::{
 };
 use pf_dsl::resolver::resolve;
 use pf_dsl::validator::validate;
+use pf_lsp::completion::get_completions;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::collections::HashMap;
-
-mod completion;
-use completion::get_completions;
 
 const JSONRPC_METHOD_NOT_FOUND: i32 = -32601;
 const JSONRPC_INVALID_PARAMS: i32 = -32602;

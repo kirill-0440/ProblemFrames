@@ -31,7 +31,7 @@
       "patterns": [
         {
           "name": "keyword.control.pf",
-          "match": "\\b(problem|domain|interface|requirement|shared)\\b"
+          "match": "\\b(problem|domain|interface|requirement|shared|frame|constraint|constrains|reference)\\b"
         }
       ]
     },

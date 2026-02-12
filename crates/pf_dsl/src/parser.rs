@@ -1,4 +1,5 @@
 use crate::ast::*;
+use crate::language::{parse_domain_type, parse_frame_type, parse_phenomenon_type};
 use anyhow::Result;
 use pest::Parser;
 use pest_derive::Parser;
@@ -56,14 +57,7 @@ pub fn parse(input: &str) -> Result<Problem> {
                 let type_pair = inner.next().unwrap();
                 let domain_type_str = type_pair.as_str(); // e.g. "Machine"
 
-                let domain_type = match domain_type_str {
-                    "Machine" => DomainType::Machine,
-                    "Causal" => DomainType::Causal,
-                    "Biddable" => DomainType::Biddable,
-                    "Lexical" => DomainType::Lexical,
-                    "Designed" => DomainType::Designed,
-                    _ => DomainType::Unknown(domain_type_str.to_string()),
-                };
+                let domain_type = parse_domain_type(domain_type_str);
                 problem.domains.push(Domain {
                     name,
                     domain_type,
@@ -103,13 +97,8 @@ pub fn parse(input: &str) -> Result<Problem> {
                             span: pair_to_span(&to_pair),
                         };
 
-                        let p_type = match type_str {
-                            "event" => PhenomenonType::Event,
-                            "command" => PhenomenonType::Command,
-                            "state" => PhenomenonType::State,
-                            "value" => PhenomenonType::Value,
-                            _ => PhenomenonType::Event, // default or error
-                        };
+                        let p_type =
+                            parse_phenomenon_type(type_str).unwrap_or(PhenomenonType::Event);
 
                         phenomena.push(Phenomenon {
                             name: p_name,
@@ -151,14 +140,7 @@ pub fn parse(input: &str) -> Result<Problem> {
                     match field.as_rule() {
                         Rule::frame_type => {
                             let type_str = field.into_inner().as_str();
-                            req.frame = match type_str {
-                                "RequiredBehavior" => FrameType::RequiredBehavior,
-                                "CommandedBehavior" => FrameType::CommandedBehavior,
-                                "InformationDisplay" => FrameType::InformationDisplay,
-                                "SimpleWorkpieces" => FrameType::SimpleWorkpieces,
-                                "Transformation" => FrameType::Transformation,
-                                _ => FrameType::Custom(type_str.to_string()),
-                            };
+                            req.frame = parse_frame_type(type_str);
                         }
                         Rule::constraint => {
                             let s = field.into_inner().as_str();

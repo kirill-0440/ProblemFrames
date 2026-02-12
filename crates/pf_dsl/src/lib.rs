@@ -1,6 +1,7 @@
 pub mod ast;
 pub mod codegen;
 pub mod dot_export;
+pub mod language;
 pub mod parser;
 mod parser_tests;
 pub mod report_gen;

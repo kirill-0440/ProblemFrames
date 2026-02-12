@@ -50,3 +50,9 @@ Install extension locally:
 - Keep PR scope focused.
 - Add or update tests for behavior changes.
 - Update docs when changing UX, commands, or workflows.
+
+## Language Token Source of Truth
+
+- Keep DSL token lists in `crates/pf_dsl/src/language.rs`.
+- `pf_lsp` completions and VS Code syntax must stay aligned with this file.
+- Sync is validated by `crates/pf_lsp/tests/language_sync.rs`.

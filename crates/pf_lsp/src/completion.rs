@@ -1,29 +1,36 @@
 use lsp_types::{CompletionItem, CompletionItemKind, CompletionList};
+use pf_dsl::language::{
+    DOMAIN_TYPES, FRAME_TYPES, PHENOMENON_TYPES, REQUIREMENT_FIELDS, STATEMENT_KEYWORDS,
+};
 
 pub fn get_completions() -> CompletionList {
-    let keywords = vec![
-        ("problem:", "Define a new problem"),
-        ("domain", "Define a problem domain"),
-        ("interface", "Define an interface between domains"),
-        ("requirement", "Define a requirement"),
-        ("Machine", "Domain type: Machine"),
-        ("Causal", "Domain type: Causal"),
-        ("Biddable", "Domain type: Biddable"),
-        ("Lexical", "Domain type: Lexical"),
-        ("Designed", "Domain type: Designed"),
-        ("event", "Phenomenon type: Event"),
-        ("command", "Phenomenon type: Command"),
-        ("state", "Phenomenon type: State"),
-        ("value", "Phenomenon type: Value"),
-        ("shared:", "Shared phenomena block"),
-    ];
+    let mut keywords: Vec<(&str, String)> = Vec::new();
+
+    for keyword in STATEMENT_KEYWORDS {
+        keywords.push((*keyword, statement_keyword_detail(keyword).to_string()));
+    }
+    for field in REQUIREMENT_FIELDS {
+        keywords.push((*field, requirement_field_detail(field).to_string()));
+    }
+    for domain in DOMAIN_TYPES {
+        keywords.push((*domain, format!("Domain type: {domain}")));
+    }
+    for phenomenon in PHENOMENON_TYPES {
+        keywords.push((
+            *phenomenon,
+            format!("Phenomenon type: {}", phenomenon_name(phenomenon)),
+        ));
+    }
+    for frame in FRAME_TYPES {
+        keywords.push((*frame, format!("Frame type: {frame}")));
+    }
 
     let items = keywords
         .into_iter()
         .map(|(label, detail)| CompletionItem {
             label: label.to_string(),
             kind: Some(CompletionItemKind::KEYWORD),
-            detail: Some(detail.to_string()),
+            detail: Some(detail),
             ..Default::default()
         })
         .collect();
@@ -31,5 +38,36 @@ pub fn get_completions() -> CompletionList {
     CompletionList {
         is_incomplete: false,
         items,
+    }
+}
+
+fn statement_keyword_detail(keyword: &str) -> &'static str {
+    match keyword {
+        "problem:" => "Define a new problem",
+        "domain" => "Define a problem domain",
+        "interface" => "Define an interface between domains",
+        "requirement" => "Define a requirement",
+        "shared:" => "Shared phenomena block",
+        _ => "DSL keyword",
+    }
+}
+
+fn requirement_field_detail(field: &str) -> &'static str {
+    match field {
+        "frame:" => "Requirement frame type",
+        "constraint:" => "Requirement textual constraint",
+        "constrains:" => "Domain constrained by requirement",
+        "reference:" => "Reference domain for frame",
+        _ => "Requirement field",
+    }
+}
+
+fn phenomenon_name(phenomenon: &str) -> &'static str {
+    match phenomenon {
+        "event" => "Event",
+        "command" => "Command",
+        "state" => "State",
+        "value" => "Value",
+        _ => "Phenomenon",
     }
 }
