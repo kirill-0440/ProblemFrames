@@ -67,8 +67,11 @@ bash ./scripts/generate_dogfooding_reports.sh
 - Push the tag; CI publishes release artifacts and creates a GitHub Release from `.github/workflows/release-artifacts.yml`.
 - VSIX artifact version is derived from the pushed tag during release workflow.
 - Release job also publishes `SHA256SUMS.txt` for integrity verification of attached files.
+- Release workflow smoke-checks supported artifacts (binary startup, VSIX contents, release bundle integrity).
 - Security audit workflow (`.github/workflows/security-audit.yml`) runs weekly and can be triggered manually.
 - CodeQL workflow (`.github/workflows/codeql.yml`) runs static analysis on pushes/PRs to `main`.
+- Supported platform matrix: `docs/support-matrix.md`.
+- Rollback procedure for broken releases: `docs/runbooks/release-rollback.md`.
 
 ## Dependabot Merge/Rebase Policy
 

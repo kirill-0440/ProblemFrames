@@ -69,11 +69,14 @@ See `crates/pf_dsl/sample.pf` for a complete example.
 ## Release Artifacts
 
 - CI on tag push (`v*`) or manual trigger publishes:
-  - `pf_lsp` binaries for Linux/macOS/Windows
-  - Platform-specific VSIX packages (`linux-x64`, `darwin-x64`, `win32-x64`)
+  - `pf_lsp` binaries for Linux/macOS
+  - Platform-specific VSIX packages (`linux-x64`, `darwin-x64`)
   - `SHA256SUMS.txt` with checksums for all release files
 - On tag push (`v*`), workflow also creates a GitHub Release and attaches all generated assets.
 - On tag builds, VSIX package version is automatically aligned with the git tag (e.g. `v0.1.0` -> `0.1.0`).
+- Release workflow includes smoke checks for `pf_lsp` startup, VSIX contents, and release bundle completeness.
+- Platform support policy is documented in `docs/support-matrix.md`.
+- Rollback procedure is documented in `docs/runbooks/release-rollback.md`.
 - See `.github/workflows/release-artifacts.yml`.
 
 ## Changelog
