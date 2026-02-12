@@ -18,6 +18,19 @@ cargo test --workspace
 npm run compile --prefix editors/code
 ```
 
+## Security Baseline
+
+- Dependabot tracks updates for Cargo, npm, and GitHub Actions via `.github/dependabot.yml`.
+- `.github/workflows/security-audit.yml` runs Rust and npm dependency audits on schedule and on demand.
+
+Run security checks locally:
+
+```bash
+cargo install cargo-audit --locked
+cargo audit --file Cargo.lock
+npm audit --prefix editors/code --audit-level=high
+```
+
 ## Getting Started
 
 ### Prerequisites

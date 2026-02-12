@@ -13,6 +13,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Automated GitHub Release publishing with attached artifacts on version tags (`v*`).
 - LSP integration tests for diagnostics and go-to-definition behavior.
 - Contribution guide and pull request checklist template.
+- Dependabot configuration for Cargo, npm, and GitHub Actions dependency updates.
+- Scheduled/manual security audit workflow for Rust and npm dependencies.
 
 ### Changed
 - LSP now uses in-memory document state for definition and diagnostics flow.

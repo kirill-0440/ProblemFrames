@@ -25,6 +25,14 @@ cargo test --workspace
 npm run compile --prefix editors/code
 ```
 
+Optional but recommended security checks:
+
+```bash
+cargo install cargo-audit --locked
+cargo audit --file Cargo.lock
+npm audit --prefix editors/code --audit-level=high
+```
+
 ## Building Artifacts
 
 Build VSIX package (includes Linux `pf_lsp` binary):
@@ -50,6 +58,7 @@ bash ./scripts/smoke_test_scripts.sh
 - Update `CHANGELOG.md` under `[Unreleased]`.
 - Create a version tag in the form `vX.Y.Z`.
 - Push the tag; CI publishes release artifacts and creates a GitHub Release from `.github/workflows/release-artifacts.yml`.
+- Security audit workflow (`.github/workflows/security-audit.yml`) runs weekly and can be triggered manually.
 
 ## Pull Requests
 
