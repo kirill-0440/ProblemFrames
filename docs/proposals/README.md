@@ -8,6 +8,7 @@ This directory contains product and engineering proposals for Problem Frames.
 - `002-formal-verification-track.md`: Parallel formal methods track (Lean first, K optional) without blocking the main Rust workflow.
 - `003-adoption-and-gtm.md`: ICP, adoption path, and proof-of-value plan for real teams.
 - `004-lean-integration-proposal.md`: Lean 4 integration details (semantics, transpilation, and phased rollout).
+- `005-v0.2.0-scope-and-exit-criteria.md`: scoped `v0.2.0` plan with product goals, formal spike, and concrete exit criteria.
 
 ## Proposal Status
 

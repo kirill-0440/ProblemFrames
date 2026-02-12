@@ -27,6 +27,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Script to generate Markdown reports from dogfooding PF models (`scripts/generate_dogfooding_reports.sh`).
 - Platform support matrix document (`docs/support-matrix.md`).
 - Release rollback runbook (`docs/runbooks/release-rollback.md`).
+- `v0.2.0` scope proposal with explicit exit criteria (`docs/proposals/005-v0.2.0-scope-and-exit-criteria.md`).
 - VS Code extension packaging ignore rules (`editors/code/.vscodeignore`) and local extension license file (`editors/code/LICENSE`).
 
 ### Changed
