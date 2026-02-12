@@ -1,29 +1,23 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Build the LSP
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+EXT_DIR="${HOME}/.vscode/extensions/pf-dsl.problem-frames"
+
 echo "Building LSP..."
-cd ../crates/pf_lsp
-cargo build --release
-cp target/release/pf_lsp ../../editors/code/pf_lsp
+cargo build --manifest-path "${REPO_ROOT}/crates/pf_lsp/Cargo.toml" --release
+cp "${REPO_ROOT}/target/release/pf_lsp" "${REPO_ROOT}/editors/code/pf_lsp"
 
-# Build the Extension
-echo "Building Extension..."
-cd ../../editors/code
-npm install
+echo "Building extension..."
+pushd "${REPO_ROOT}/editors/code" >/dev/null
+npm ci
 npm run compile
+popd >/dev/null
 
-# Package (optional, but good practice)
-# vsce package
+echo "Installing extension files to ${EXT_DIR}..."
+rm -rf "${EXT_DIR}"
+mkdir -p "${EXT_DIR}"
+cp -R "${REPO_ROOT}/editors/code/." "${EXT_DIR}"
 
-echo "To install the extension:"
-echo "1. Open VS Code"
-echo "2. Go to Extensions -> ... -> Install from VSIX (if packaged)"
-echo "OR for development:"
-echo "1. Open 'editors/code' in VS Code"
-echo "2. Press F5 to launch Validation/Debug"
-
-echo "Since we didn't package it, you can simplify by symlinking or copying to ~/.vscode/extensions"
-mkdir -p ~/.vscode/extensions/pf-dsl
-cp -r ./* ~/.vscode/extensions/pf-dsl/
-echo "installed to ~/.vscode/extensions/pf-dsl"
+echo "Installed. Restart VS Code or run: Developer: Reload Window"

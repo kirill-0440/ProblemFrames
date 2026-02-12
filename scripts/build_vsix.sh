@@ -1,18 +1,18 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# npx will handle vsce execution
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 echo "Building LSP binary..."
-cd crates/pf_lsp
-cargo build --release
-# Copy binary to extension folder
-cp target/release/pf_lsp ../../editors/code/pf_lsp
+cargo build --manifest-path "${REPO_ROOT}/crates/pf_lsp/Cargo.toml" --release
+cp "${REPO_ROOT}/target/release/pf_lsp" "${REPO_ROOT}/editors/code/pf_lsp"
 
 echo "Packaging VSIX..."
-cd ../../editors/code
-npm install
+pushd "${REPO_ROOT}/editors/code" >/dev/null
+npm ci
 npm run compile
 npx -y @vscode/vsce package
+popd >/dev/null
 
-echo "VSIX created at editors/code/problem-frames-0.0.1.vsix"
+echo "VSIX created at ${REPO_ROOT}/editors/code/problem-frames-0.0.1.vsix"

@@ -9,4 +9,5 @@
 node_modules/
 out/
 *.vsix
+editors/code/pf_lsp
 .DS_Store

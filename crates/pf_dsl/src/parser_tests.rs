@@ -37,8 +37,8 @@ mod tests {
         let p = &iface.shared_phenomena[0];
         assert_eq!(p.name, "e");
         assert!(matches!(p.type_, PhenomenonType::Event));
-        assert_eq!(p.from, "A");
-        assert_eq!(p.to, "B");
+        assert_eq!(p.from.name, "A");
+        assert_eq!(p.to.name, "B");
     }
 
     #[test]

@@ -1,63 +1,63 @@
 {
-    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-    "name": "Problem Frames",
-    "patterns": [
-        {
-            "include": "#comments"
-        },
-        {
-            "include": "#keywords"
-        },
-        {
-            "include": "#strings"
-        },
-        {
-            "include": "#constants"
-        },
-        {
-            "include": "#types"
-        }
-    ],
-    "repository": {
-        "comments": {
-            "patterns": [
-                {
-                    "name": "comment.line.double-slash.pf",
-                    "match": "//.*$"
-                }
-            ]
-        },
-        "keywords": {
-            "patterns": [
-                {
-                    "name": "keyword.control.pf",
-                    "match": "\\b(problem|domain|interface|requirement|shared)\\b"
-                }
-            ]
-        },
-        "strings": {
-            "name": "string.quoted.double.pf",
-            "begin": "\"",
-            "end": "\"",
-            "patterns": [
-                {
-                    "name": "constant.character.escape.pf",
-                    "match": "\\\\."
-                }
-            ]
-        },
-        "types": {
-            "patterns": [
-                {
-                    "name": "storage.type.pf",
-                    "match": "\\b(Machine|Causal|Biddable|Lexical)\\b"
-                },
-                {
-                    "name": "support.class.pf",
-                    "match": "\\b(RequiredBehavior|CommandedBehavior|InformationDisplay|SimpleWorkpieces|Transformation|event|state|value)\\b"
-                }
-            ]
-        }
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Problem Frames",
+  "patterns": [
+    {
+      "include": "#comments"
     },
-    "scopeName": "source.pf"
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#constants"
+    },
+    {
+      "include": "#types"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.pf",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.pf",
+          "match": "\\b(problem|domain|interface|requirement|shared)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.pf",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.pf",
+          "match": "\\\\."
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.pf",
+          "match": "\\b(Machine|Causal|Biddable|Lexical|Designed)\\b"
+        },
+        {
+          "name": "support.class.pf",
+          "match": "\\b(RequiredBehavior|CommandedBehavior|InformationDisplay|SimpleWorkpieces|Transformation|event|command|state|value)\\b"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.pf"
 }

@@ -68,6 +68,7 @@ pub fn parse(input: &str) -> Result<Problem> {
                     name,
                     domain_type,
                     span,
+                    source_path: None,
                 });
             }
             Rule::interface_decl => {
@@ -85,10 +86,22 @@ pub fn parse(input: &str) -> Result<Problem> {
                         let p_span = pair_to_span(&phen_pair);
                         // inner: type ~ name ~ "[" ~ from ~ "->" ~ to ~ "]"
                         let mut p_inner = phen_pair.into_inner();
-                        let type_str = p_inner.next().unwrap().as_str();
-                        let p_name = p_inner.next().unwrap().as_str().to_string();
-                        let from = p_inner.next().unwrap().as_str().to_string();
-                        let to = p_inner.next().unwrap().as_str().to_string();
+                        let type_pair = p_inner.next().unwrap();
+                        let name_pair = p_inner.next().unwrap();
+                        let from_pair = p_inner.next().unwrap();
+                        let to_pair = p_inner.next().unwrap();
+
+                        let type_str = type_pair.as_str();
+                        let p_name = name_pair.as_str().to_string();
+
+                        let from_ref = Reference {
+                            name: from_pair.as_str().to_string(),
+                            span: pair_to_span(&from_pair),
+                        };
+                        let to_ref = Reference {
+                            name: to_pair.as_str().to_string(),
+                            span: pair_to_span(&to_pair),
+                        };
 
                         let p_type = match type_str {
                             "event" => PhenomenonType::Event,
@@ -101,8 +114,8 @@ pub fn parse(input: &str) -> Result<Problem> {
                         phenomena.push(Phenomenon {
                             name: p_name,
                             type_: p_type,
-                            from,
-                            to,
+                            from: from_ref,
+                            to: to_ref,
                             span: p_span,
                         });
                     }
@@ -112,6 +125,7 @@ pub fn parse(input: &str) -> Result<Problem> {
                     name,
                     shared_phenomena: phenomena,
                     span,
+                    source_path: None,
                 });
             }
             Rule::requirement_decl => {
@@ -127,9 +141,10 @@ pub fn parse(input: &str) -> Result<Problem> {
                     frame: FrameType::Custom("".to_string()), // Default
                     phenomena: vec![],
                     constraint: "".to_string(),
-                    constrains: "".to_string(),
-                    reference: "".to_string(),
+                    constrains: None,
+                    reference: None,
                     span,
+                    source_path: None,
                 };
 
                 for field in req_body_pair.into_inner() {
@@ -150,10 +165,18 @@ pub fn parse(input: &str) -> Result<Problem> {
                             req.constraint = s.trim_matches('"').to_string();
                         }
                         Rule::constrains => {
-                            req.constrains = field.into_inner().as_str().to_string();
+                            let ident_pair = field.into_inner().next().unwrap();
+                            req.constrains = Some(Reference {
+                                name: ident_pair.as_str().to_string(),
+                                span: pair_to_span(&ident_pair),
+                            });
                         }
                         Rule::reference => {
-                            req.reference = field.into_inner().as_str().to_string();
+                            let ident_pair = field.into_inner().next().unwrap();
+                            req.reference = Some(Reference {
+                                name: ident_pair.as_str().to_string(),
+                                span: pair_to_span(&ident_pair),
+                            });
                         }
                         _ => {}
                     }

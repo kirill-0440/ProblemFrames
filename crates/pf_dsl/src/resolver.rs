@@ -75,6 +75,17 @@ fn resolve_recursive(
         resolve_recursive(&mut imported_problem, &import_source_path, loaded)?;
 
         // MERGE LOGIC:
+        // Set source_path for all imported elements
+        for domain in &mut imported_problem.domains {
+            domain.source_path = Some(import_source_path.clone());
+        }
+        for interface in &mut imported_problem.interfaces {
+            interface.source_path = Some(import_source_path.clone());
+        }
+        for requirement in &mut imported_problem.requirements {
+            requirement.source_path = Some(import_source_path.clone());
+        }
+
         // Append domains, interfaces, requirements to the main problem
         // Note: This is a simple merge. Name collisions are not checked here (Validator handles that).
         problem.domains.extend(imported_problem.domains);
@@ -85,4 +96,136 @@ fn resolve_recursive(
     }
 
     Ok(())
+}
+
+pub fn find_definition(problem: &Problem, offset: usize) -> Option<(Option<PathBuf>, Span)> {
+    // Helper to find domain definition
+    let find_domain = |name: &str| -> Option<(Option<PathBuf>, Span)> {
+        problem
+            .domains
+            .iter()
+            .find(|d| d.name == name)
+            .map(|d| (d.source_path.clone(), d.span))
+    };
+
+    // 1. Check Interfaces (Phenomena)
+    for interface in &problem.interfaces {
+        for phen in &interface.shared_phenomena {
+            if offset >= phen.from.span.start && offset < phen.from.span.end {
+                return find_domain(&phen.from.name);
+            }
+            if offset >= phen.to.span.start && offset < phen.to.span.end {
+                return find_domain(&phen.to.name);
+            }
+        }
+    }
+
+    // 2. Check Requirements
+    for req in &problem.requirements {
+        if let Some(ref c) = req.constrains {
+            if offset >= c.span.start && offset < c.span.end {
+                return find_domain(&c.name);
+            }
+        }
+        if let Some(ref r) = req.reference {
+            if offset >= r.span.start && offset < r.span.end {
+                return find_domain(&r.name);
+            }
+        }
+    }
+
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mock_span(start: usize, end: usize) -> Span {
+        Span { start, end }
+    }
+
+    fn mock_ref(name: &str, start: usize, end: usize) -> Reference {
+        Reference {
+            name: name.to_string(),
+            span: mock_span(start, end),
+        }
+    }
+
+    #[test]
+    fn test_find_definition_phenomenon() {
+        // Domain D defined at 10..20
+        // Phenomenon E from D (referenced at 50..55)
+        let problem = Problem {
+            name: "Test".to_string(),
+            span: mock_span(0, 100),
+            imports: vec![],
+            domains: vec![Domain {
+                name: "D".to_string(),
+                domain_type: DomainType::Machine,
+                span: mock_span(10, 20),
+                source_path: None,
+            }],
+            interfaces: vec![Interface {
+                name: "I".to_string(),
+                shared_phenomena: vec![Phenomenon {
+                    name: "E".to_string(),
+                    type_: PhenomenonType::Event,
+                    from: mock_ref("D", 50, 55),
+                    to: mock_ref("X", 60, 65), // X not defined
+                    span: mock_span(40, 70),
+                }],
+                span: mock_span(30, 80),
+                source_path: None,
+            }],
+            requirements: vec![],
+        };
+
+        // Click on "D" in "from D" (offset 52)
+        let result = find_definition(&problem, 52);
+        assert!(result.is_some());
+        let (_, span) = result.unwrap();
+        assert_eq!(span.start, 10);
+        assert_eq!(span.end, 20);
+
+        // Click on "X" (offset 62) -> should be None as X is not in domains
+        let result = find_definition(&problem, 62);
+        assert!(result.is_none());
+
+        // Click nowhere (offset 0)
+        let result = find_definition(&problem, 0);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_find_definition_requirement() {
+        let problem = Problem {
+            name: "Test".to_string(),
+            span: mock_span(0, 100),
+            imports: vec![],
+            domains: vec![Domain {
+                name: "C".to_string(),
+                domain_type: DomainType::Causal,
+                span: mock_span(10, 20),
+                source_path: None,
+            }],
+            interfaces: vec![],
+            requirements: vec![Requirement {
+                name: "R".to_string(),
+                frame: FrameType::RequiredBehavior,
+                phenomena: vec![],
+                constraint: "".to_string(),
+                constrains: Some(mock_ref("C", 80, 85)),
+                reference: None,
+                span: mock_span(70, 90),
+                source_path: None,
+            }],
+        };
+
+        // Click on "C" in "constrains: C" (offset 82)
+        let result = find_definition(&problem, 82);
+        assert!(result.is_some());
+        let (_, span) = result.unwrap();
+        assert_eq!(span.start, 10);
+    }
 }

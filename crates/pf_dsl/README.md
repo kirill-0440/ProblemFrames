@@ -4,10 +4,10 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
 
 ## Usage
 
-1.  **Define your problem** in a `.pf` file (e.g., `sample.pf`).
+1.  **Define your problem** in a `.pf` file (e.g., `crates/pf_dsl/sample.pf`).
 2.  **Run the tool** to generate a DOT file:
     ```bash
-    cargo run -- release -- sample.pf > output.dot
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > output.dot
     ```
 3.  **Generate an image** (requires Graphviz):
     ```bash

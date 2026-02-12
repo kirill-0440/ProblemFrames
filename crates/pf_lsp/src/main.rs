@@ -7,9 +7,33 @@ use lsp_types::{
 use pf_dsl::resolver::resolve;
 use pf_dsl::validator::validate;
 use serde_json::Value;
+use std::borrow::Cow;
+use std::collections::HashMap;
 
 mod completion;
 use completion::get_completions;
+
+const JSONRPC_METHOD_NOT_FOUND: i32 = -32601;
+const JSONRPC_INVALID_PARAMS: i32 = -32602;
+
+#[derive(Default)]
+struct ServerState {
+    documents: HashMap<Url, String>,
+}
+
+impl ServerState {
+    fn upsert_document(&mut self, uri: Url, text: String) {
+        self.documents.insert(uri, text);
+    }
+
+    fn remove_document(&mut self, uri: &Url) {
+        self.documents.remove(uri);
+    }
+
+    fn document_text(&self, uri: &Url) -> Option<&str> {
+        self.documents.get(uri).map(String::as_str)
+    }
+}
 
 fn main() -> Result<()> {
     eprintln!("Starting PF LSP Server...");
@@ -27,6 +51,7 @@ fn main() -> Result<()> {
             all_commit_characters: None,
             completion_item: None,
         }),
+        definition_provider: Some(lsp_types::OneOf::Left(true)),
         ..Default::default()
     })?;
 
@@ -41,6 +66,7 @@ fn main() -> Result<()> {
 fn main_loop(connection: Connection, params: Value) -> Result<()> {
     let _params: InitializeParams = serde_json::from_value(params)?;
     eprintln!("Initialized.");
+    let mut state = ServerState::default();
 
     for msg in &connection.receiver {
         match msg {
@@ -51,12 +77,53 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                 match req.method.as_str() {
                     "textDocument/completion" => {
                         let _params: lsp_types::CompletionParams =
-                            serde_json::from_value(req.params)?;
+                            match serde_json::from_value(req.params) {
+                                Ok(params) => params,
+                                Err(err) => {
+                                    send_response_error(
+                                        &connection,
+                                        req.id,
+                                        JSONRPC_INVALID_PARAMS,
+                                        format!("Invalid completion params: {err}"),
+                                    )?;
+                                    continue;
+                                }
+                            };
                         let completion_list = get_completions();
                         let resp = lsp_server::Response::new_ok(req.id, completion_list);
                         connection.sender.send(Message::Response(resp))?;
                     }
-                    _ => {}
+                    "textDocument/definition" => {
+                        let params: lsp_types::GotoDefinitionParams =
+                            match serde_json::from_value(req.params) {
+                                Ok(params) => params,
+                                Err(err) => {
+                                    send_response_error(
+                                        &connection,
+                                        req.id,
+                                        JSONRPC_INVALID_PARAMS,
+                                        format!("Invalid definition params: {err}"),
+                                    )?;
+                                    continue;
+                                }
+                            };
+
+                        let response_payload = match resolve_definition(&state, params) {
+                            Some(location) => serde_json::to_value(location)?,
+                            None => Value::Null,
+                        };
+
+                        let resp = lsp_server::Response::new_ok(req.id, response_payload);
+                        connection.sender.send(Message::Response(resp))?;
+                    }
+                    _ => {
+                        send_response_error(
+                            &connection,
+                            req.id,
+                            JSONRPC_METHOD_NOT_FOUND,
+                            format!("Unsupported request method: {}", req.method),
+                        )?;
+                    }
                 }
             }
             Message::Response(_resp) => {
@@ -67,19 +134,63 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                 match not.method.as_str() {
                     "textDocument/didOpen" => {
                         let params: lsp_types::DidOpenTextDocumentParams =
-                            serde_json::from_value(not.params)?;
-                        validate_document(
+                            match serde_json::from_value(not.params) {
+                                Ok(params) => params,
+                                Err(err) => {
+                                    eprintln!("Invalid didOpen params: {err}");
+                                    continue;
+                                }
+                            };
+                        state.upsert_document(
+                            params.text_document.uri.clone(),
+                            params.text_document.text.clone(),
+                        );
+                        if let Err(err) = validate_document(
                             &connection,
                             params.text_document.uri,
                             &params.text_document.text,
-                        )?;
+                        ) {
+                            eprintln!("Failed to validate opened document: {err}");
+                        }
                     }
                     "textDocument/didChange" => {
                         let params: lsp_types::DidChangeTextDocumentParams =
-                            serde_json::from_value(not.params)?;
+                            match serde_json::from_value(not.params) {
+                                Ok(params) => params,
+                                Err(err) => {
+                                    eprintln!("Invalid didChange params: {err}");
+                                    continue;
+                                }
+                            };
                         // FULL sync, so content_changes[0].text is the whole file
                         if let Some(change) = params.content_changes.first() {
-                            validate_document(&connection, params.text_document.uri, &change.text)?;
+                            state.upsert_document(
+                                params.text_document.uri.clone(),
+                                change.text.clone(),
+                            );
+                            if let Err(err) = validate_document(
+                                &connection,
+                                params.text_document.uri,
+                                &change.text,
+                            ) {
+                                eprintln!("Failed to validate changed document: {err}");
+                            }
+                        }
+                    }
+                    "textDocument/didClose" => {
+                        let params: lsp_types::DidCloseTextDocumentParams =
+                            match serde_json::from_value(not.params) {
+                                Ok(params) => params,
+                                Err(err) => {
+                                    eprintln!("Invalid didClose params: {err}");
+                                    continue;
+                                }
+                            };
+                        state.remove_document(&params.text_document.uri);
+                        if let Err(err) =
+                            publish_diagnostics(&connection, params.text_document.uri, Vec::new())
+                        {
+                            eprintln!("Failed to clear diagnostics on close: {err}");
                         }
                     }
                     _ => {}
@@ -87,6 +198,55 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
             }
         }
     }
+    Ok(())
+}
+
+fn resolve_definition(
+    state: &ServerState,
+    params: lsp_types::GotoDefinitionParams,
+) -> Option<lsp_types::Location> {
+    let uri = params.text_document_position_params.text_document.uri;
+    let position = params.text_document_position_params.position;
+
+    let path = uri.to_file_path().ok()?;
+    let text = if let Some(buffer_text) = state.document_text(&uri) {
+        Cow::Borrowed(buffer_text)
+    } else {
+        Cow::Owned(std::fs::read_to_string(&path).ok()?)
+    };
+
+    let offset = offset_at_position(text.as_ref(), position);
+    let problem = resolve(&path, Some(text.as_ref())).ok()?;
+    let (source_path_opt, span) = pf_dsl::resolver::find_definition(&problem, offset)?;
+
+    let target_path = source_path_opt.unwrap_or_else(|| path.clone());
+    let target_uri = Url::from_file_path(&target_path)
+        .ok()
+        .unwrap_or_else(|| uri.clone());
+    let target_text = if target_path == path {
+        Cow::Borrowed(text.as_ref())
+    } else if let Some(buffer_text) = state.document_text(&target_uri) {
+        Cow::Borrowed(buffer_text)
+    } else {
+        Cow::Owned(std::fs::read_to_string(&target_path).ok()?)
+    };
+
+    let range = span_to_range(target_text.as_ref(), span);
+
+    Some(lsp_types::Location {
+        uri: target_uri,
+        range,
+    })
+}
+
+fn send_response_error(
+    connection: &Connection,
+    id: lsp_server::RequestId,
+    code: i32,
+    message: String,
+) -> Result<()> {
+    let response = lsp_server::Response::new_err(id, code, message);
+    connection.sender.send(Message::Response(response))?;
     Ok(())
 }
 
@@ -106,9 +266,8 @@ fn span_to_range(text: &str, span: pf_dsl::ast::Span) -> Range {
 }
 
 fn position_at_byte(text: &str, offset: usize) -> Position {
-    let mut line = 0;
-    let mut character = 0;
-    let mut current_byte = 0;
+    let mut line = 0_u32;
+    let mut character = 0_u32;
 
     for (i, c) in text.char_indices() {
         if i >= offset {
@@ -118,19 +277,41 @@ fn position_at_byte(text: &str, offset: usize) -> Position {
             line += 1;
             character = 0;
         } else {
-            character += 1; // logical character count (LSP uses utf-16 usually, but let's assume simple for now)
+            // LSP character offsets are UTF-16 code units.
+            character += c.len_utf16() as u32;
         }
-        current_byte = i + c.len_utf8();
-    }
-
-    // If offset is passed the last char
-    if offset > current_byte && offset <= text.len() {
-        // This logic is a bit linear and slow for large files but fine for now.
-        // We might be slightly off if we broke early.
-        // A better approach is `line_index` crate.
     }
 
     Position { line, character }
+}
+
+fn offset_at_position(text: &str, position: Position) -> usize {
+    let mut line = 0_u32;
+    let mut character = 0_u32;
+    for (i, c) in text.char_indices() {
+        if line == position.line && character == position.character {
+            return i;
+        }
+
+        if c == '\n' {
+            line += 1;
+            character = 0;
+        } else {
+            let next_character = character + c.len_utf16() as u32;
+            if line == position.line && next_character > position.character {
+                // Clamp to the start of a code point when client points into a surrogate pair.
+                return i;
+            }
+            character = next_character;
+        }
+    }
+
+    // Fallback if at end of file
+    if line == position.line && character == position.character {
+        return text.len();
+    }
+
+    text.len() // Invalid position fallback
 }
 
 fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()> {
@@ -170,6 +351,8 @@ fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()
                             pf_dsl::validator::ValidationError::InvalidCausality(_, _, _, _, s) => {
                                 *s
                             }
+                            pf_dsl::validator::ValidationError::MissingRequiredField(_, _, s) => *s,
+                            pf_dsl::validator::ValidationError::UnsupportedFrame(_, _, s) => *s,
                         };
 
                         let diagnostic = Diagnostic {
@@ -218,14 +401,91 @@ fn validate_document(connection: &Connection, uri: Url, text: &str) -> Result<()
         }
     }
 
+    publish_diagnostics(connection, uri, diagnostics)?;
+
+    Ok(())
+}
+
+fn publish_diagnostics(
+    connection: &Connection,
+    uri: Url,
+    diagnostics: Vec<Diagnostic>,
+) -> Result<()> {
     let params = PublishDiagnosticsParams {
         uri,
         diagnostics,
         version: None,
     };
-
     let not = Notification::new("textDocument/publishDiagnostics".to_string(), params);
     connection.sender.send(Message::Notification(not))?;
-
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{offset_at_position, position_at_byte};
+    use lsp_types::Position;
+
+    #[test]
+    fn utf16_offset_mapping_handles_surrogate_pairs() {
+        let text = "a\n😀b\n";
+
+        assert_eq!(
+            offset_at_position(
+                text,
+                Position {
+                    line: 1,
+                    character: 0
+                }
+            ),
+            2
+        );
+        assert_eq!(
+            offset_at_position(
+                text,
+                Position {
+                    line: 1,
+                    character: 2
+                }
+            ),
+            6
+        );
+        assert_eq!(
+            offset_at_position(
+                text,
+                Position {
+                    line: 1,
+                    character: 3
+                }
+            ),
+            7
+        );
+    }
+
+    #[test]
+    fn byte_to_position_uses_utf16_columns() {
+        let text = "a\n😀b\n";
+
+        assert_eq!(
+            position_at_byte(text, 2),
+            Position {
+                line: 1,
+                character: 0
+            }
+        );
+        assert_eq!(
+            position_at_byte(text, 6),
+            Position {
+                line: 1,
+                character: 2
+            }
+        );
+        assert_eq!(
+            position_at_byte(text, 7),
+            Position {
+                line: 1,
+                character: 3
+            }
+        );
+    }
 }

@@ -43,8 +43,8 @@
       "properties": {
         "problemFrames.serverPath": {
           "type": "string",
-          "default": "pf_lsp",
-          "description": "Path to the pf_lsp executable"
+          "default": "",
+          "description": "Path to the pf_lsp executable. If empty, the extension uses bundled binary or PATH."
         }
       }
     }

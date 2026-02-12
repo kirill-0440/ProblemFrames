@@ -1,4 +1,5 @@
 use crate::ast::*;
+use std::collections::BTreeMap;
 use std::fmt::Write;
 
 pub fn to_dot(problem: &Problem) -> String {
@@ -53,66 +54,126 @@ pub fn to_dot(problem: &Problem) -> String {
         .unwrap();
 
         // Connect Requirement to Constrained/Referenced domains
-        if !req.constrains.is_empty() {
+        if let Some(ref c) = req.constrains {
             writeln!(
                 &mut dot,
-                "    \"{}\" -> \"{}\" [style=dashed, arrowheaders=none, label=\"constrains\"];",
-                req.name, req.constrains
+                "    \"{}\" -> \"{}\" [style=dashed, arrowhead=none, label=\"constrains\"];",
+                req.name, c.name
             )
             .unwrap();
         }
-        if !req.reference.is_empty() {
+        if let Some(ref r) = req.reference {
             writeln!(
                 &mut dot,
-                "    \"{}\" -> \"{}\" [style=dashed, arrowheaders=none, label=\"references\"];",
-                req.name, req.reference
+                "    \"{}\" -> \"{}\" [style=dashed, arrowhead=none, label=\"references\"];",
+                req.name, r.name
             )
             .unwrap();
         }
     }
 
     // 3. Edges (Interfaces)
-    // We need to aggregate phenomena between pairs of domains to draw single edges with multiple labels
-    // For now, simpler approach: draw edges for each interface
-    // Ideally, we group by (A, B) pair.
-
-    // Simplification: Iterate interfaces, determine connected domains from phenomena.
-    // If an interface explicitly named "A-B", we might guess, but better to look at phenomena.
-
+    // Aggregate all phenomena by unordered domain pair so we do not lose connections
+    // when one interface contains multiple pairs.
+    let mut edges: BTreeMap<(String, String), Vec<String>> = BTreeMap::new();
     for interface in &problem.interfaces {
-        // Find all unique (from, to) pairs in this interface
-        // And construct a label list
-        let mut connections: Vec<(String, String)> = vec![];
-        let mut labels: Vec<String> = vec![];
-
         for phen in &interface.shared_phenomena {
-            let pair = (phen.from.clone(), phen.to.clone());
-            if !connections.contains(&pair)
-                && !connections.contains(&(pair.1.clone(), pair.0.clone()))
-            {
-                connections.push(pair);
-            }
+            let pair = (phen.from.name.clone(), phen.to.name.clone());
+            let key = if pair.0 <= pair.1 {
+                pair
+            } else {
+                (pair.1, pair.0)
+            };
             let symbol = match phen.type_ {
                 PhenomenonType::Event => "E",
                 PhenomenonType::Command => "C",
                 PhenomenonType::State => "S",
                 PhenomenonType::Value => "V",
             };
-            labels.push(format!("{} [{}]", phen.name, symbol));
+            edges.entry(key).or_default().push(format!(
+                "{} -> {}: {} [{}]",
+                phen.from.name, phen.to.name, phen.name, symbol
+            ));
         }
+    }
 
-        // Draw edge between the first identified pair (heuristic)
-        if let Some((src, dst)) = connections.first() {
-            let label_str = labels.join("\\n");
-            writeln!(
-                &mut dot,
-                "    \"{}\" -> \"{}\" [dir=both, label=\"{}\"];",
-                src, dst, label_str
-            )
-            .unwrap();
-        }
+    for ((src, dst), labels) in edges {
+        let label_str = labels.join("\\n");
+        writeln!(
+            &mut dot,
+            "    \"{}\" -> \"{}\" [dir=both, label=\"{}\"];",
+            src, dst, label_str
+        )
+        .unwrap();
     }
 
     writeln!(&mut dot, "}}").unwrap();
     dot
+}
+
+#[cfg(test)]
+mod tests {
+    use super::to_dot;
+    use crate::ast::*;
+
+    fn span() -> Span {
+        Span { start: 0, end: 0 }
+    }
+
+    fn domain(name: &str, domain_type: DomainType) -> Domain {
+        Domain {
+            name: name.to_string(),
+            domain_type,
+            span: span(),
+            source_path: None,
+        }
+    }
+
+    fn reference(name: &str) -> Reference {
+        Reference {
+            name: name.to_string(),
+            span: span(),
+        }
+    }
+
+    #[test]
+    fn keeps_all_pairs_from_interface_phenomena() {
+        let problem = Problem {
+            name: "P".to_string(),
+            span: span(),
+            imports: vec![],
+            domains: vec![
+                domain("A", DomainType::Machine),
+                domain("B", DomainType::Causal),
+                domain("C", DomainType::Causal),
+                domain("D", DomainType::Causal),
+            ],
+            interfaces: vec![Interface {
+                name: "mixed".to_string(),
+                shared_phenomena: vec![
+                    Phenomenon {
+                        name: "e1".to_string(),
+                        type_: PhenomenonType::Event,
+                        from: reference("A"),
+                        to: reference("B"),
+                        span: span(),
+                    },
+                    Phenomenon {
+                        name: "e2".to_string(),
+                        type_: PhenomenonType::Event,
+                        from: reference("C"),
+                        to: reference("D"),
+                        span: span(),
+                    },
+                ],
+                span: span(),
+                source_path: None,
+            }],
+            requirements: vec![],
+        };
+
+        let dot = to_dot(&problem);
+        assert!(dot.contains("\"A\" -> \"B\""));
+        assert!(dot.contains("\"C\" -> \"D\""));
+    }
 }

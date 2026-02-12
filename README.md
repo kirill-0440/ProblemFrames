@@ -28,13 +28,13 @@ A comprehensive toolchain for Jackson's Problem Frames methodology, built in Rus
 ### CLI
 Generate a diagram:
 ```bash
-cargo run -p pf_dsl -- sample.pf --dot > output.dot
+cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > output.dot
 ```
 Generate Rust code:
 ```bash
-cargo run -p pf_dsl -- sample.pf --gen-rust > output.rs
+cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --gen-rust > output.rs
 ```
 
 ## Problem Frames DSL
 The DSL allows you to define Domains, Interfaces, and Requirements.
-See `examples/` for more.
+See `crates/pf_dsl/sample.pf` for a complete example.
