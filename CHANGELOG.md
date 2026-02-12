@@ -30,6 +30,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - VS Code extension packaging ignore rules (`editors/code/.vscodeignore`) and local extension license file (`editors/code/LICENSE`).
 
 ### Changed
+- VS Code extension now bundles runtime into a single `out/extension.js` via `esbuild`, and VSIX packaging excludes `node_modules`.
 - Critical GitHub Actions workflows now pin action refs to immutable commit SHAs.
 - CI now installs `cargo-llvm-cov` via `cargo install --locked` instead of a floating action ref.
 - LSP now uses in-memory document state for definition and diagnostics flow.
