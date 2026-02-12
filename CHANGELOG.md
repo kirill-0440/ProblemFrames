@@ -25,6 +25,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - CI and release workflows now use Rust dependency caching and stricter default `contents: read` permissions.
 - VSIX release packaging now derives extension version from the git release tag.
 - CodeQL workflow uses `github/codeql-action@v4` to stay ahead of v3 deprecation.
+- GitHub Release now includes `SHA256SUMS.txt` with checksums for all published assets.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.

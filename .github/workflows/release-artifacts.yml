@@ -140,6 +140,13 @@ jobs:
           find release-assets -type f -exec cp {} release-bundle/ \;
           ls -la release-bundle
 
+      - name: Generate release checksums
+        shell: bash
+        run: |
+          cd release-bundle
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
