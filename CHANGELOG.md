@@ -8,6 +8,9 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 ## [Unreleased]
 
 ### Added
+- Engineering metrics report generator script (`scripts/generate_engineering_metrics_report.sh`) with weekly baseline snapshot (lead time, change failure proxy, MTTR proxy, flaky-rate proxy).
+- Weekly engineering triage workflow (`.github/workflows/weekly-engineering-triage.yml`) to publish metrics artifacts and open scheduled triage issues.
+- Weekly engineering triage runbook (`docs/runbooks/weekly-triage.md`).
 - Dependency review workflow for pull requests (`.github/workflows/dependency-review.yml`) with high-severity gate.
 - Release pipeline now generates SBOM (`SBOM.spdx.json`) and provenance bundles (`sha256-*.jsonl`, `trusted_root.jsonl`).
 - Supply-chain verification runbook (`docs/runbooks/supply-chain-verification.md`) for checksum + provenance validation.

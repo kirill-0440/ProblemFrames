@@ -1,0 +1,107 @@
+name: Weekly Engineering Triage
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 1"
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: weekly-engineering-triage-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  metrics-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Generate engineering metrics report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          METRICS_WINDOW_DAYS: "7"
+        run: bash ./scripts/generate_engineering_metrics_report.sh .ci-artifacts/metrics
+
+      - name: Upload metrics report artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: engineering-metrics
+          path: .ci-artifacts/metrics
+          if-no-files-found: error
+
+  triage-issue:
+    if: github.event_name == 'schedule'
+    needs: [metrics-report]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Download metrics report artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: engineering-metrics
+          path: metrics-report
+
+      - name: Create weekly triage issue
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const fs = require("fs");
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const now = new Date();
+            const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            const day = monday.getUTCDay();
+            const offset = (day + 6) % 7;
+            monday.setUTCDate(monday.getUTCDate() - offset);
+            const weekStart = monday.toISOString().slice(0, 10);
+            const title = `Weekly engineering triage ${weekStart}`;
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              per_page: 100
+            });
+            const exists = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+            if (exists) {
+              core.info(`Issue already exists: #${exists.number}`);
+              return;
+            }
+
+            let metrics = "_Metrics report artifact is missing._";
+            const reportPath = "metrics-report/engineering-metrics.md";
+            if (fs.existsSync(reportPath)) {
+              metrics = fs.readFileSync(reportPath, "utf8");
+            }
+
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const body = [
+              `Weekly triage for engineering health baseline (${weekStart}).`,
+              "",
+              "## Checklist",
+              "- [ ] Review dependency backlog (Dependabot PRs + blocked updates).",
+              "- [ ] Review CI regressions and flaky-test candidates.",
+              "- [ ] Review security signals (CodeQL, dependency review, audits).",
+              "- [ ] Confirm recovery actions for incidents and failed changes.",
+              "- [ ] Assign owners and due dates for follow-up actions.",
+              "",
+              `Workflow run: ${runUrl}`,
+              "",
+              "## Metrics Snapshot",
+              metrics
+            ].join("\n");
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body
+            });

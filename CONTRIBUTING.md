@@ -34,6 +34,12 @@ cargo audit --file Cargo.lock
 npm audit --prefix editors/code --audit-level=high
 ```
 
+Optional engineering metrics snapshot:
+
+```bash
+GH_TOKEN=$(gh auth token) bash ./scripts/generate_engineering_metrics_report.sh
+```
+
 ## Building Artifacts
 
 Build VSIX package (includes Linux `pf_lsp` binary):
@@ -71,9 +77,11 @@ bash ./scripts/generate_dogfooding_reports.sh
 - Security audit workflow (`.github/workflows/security-audit.yml`) runs weekly and can be triggered manually.
 - CodeQL workflow (`.github/workflows/codeql.yml`) runs static analysis on pushes/PRs to `main`.
 - Dependency review workflow (`.github/workflows/dependency-review.yml`) runs on PRs and fails on high-severity dependency issues.
+- Weekly engineering triage workflow (`.github/workflows/weekly-engineering-triage.yml`) publishes metrics artifacts and creates a scheduled triage issue.
 - Supported platform matrix: `docs/support-matrix.md`.
 - Rollback procedure for broken releases: `docs/runbooks/release-rollback.md`.
 - Supply-chain verification runbook: `docs/runbooks/supply-chain-verification.md`.
+- Weekly triage runbook: `docs/runbooks/weekly-triage.md`.
 
 ## Dependabot Merge/Rebase Policy
 
