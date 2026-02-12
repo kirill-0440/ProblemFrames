@@ -24,6 +24,8 @@ jobs:
 
   rust:
     runs-on: ubuntu-latest
+    env:
+      RUST_COVERAGE_MIN: "70"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -42,8 +44,15 @@ jobs:
       - name: Lint
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-      - name: Test
-        run: cargo test --workspace
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Coverage gate
+        run: |
+          cargo llvm-cov \
+            --workspace \
+            --all-features \
+            --fail-under-lines "${RUST_COVERAGE_MIN}"
 
   vscode-extension:
     runs-on: ubuntu-latest

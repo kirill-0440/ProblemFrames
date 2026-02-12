@@ -21,7 +21,8 @@ Run all checks before opening a PR:
 ```bash
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo test --workspace
+cargo install cargo-llvm-cov --locked
+cargo llvm-cov --workspace --all-features --fail-under-lines 70
 npm run compile --prefix editors/code
 ```
 
@@ -67,6 +68,7 @@ bash ./scripts/smoke_test_scripts.sh
 
 - Preferred merge method for Dependabot PRs: `squash`.
 - Rebase policy: keep Dependabot branches rebased on latest `main` (`rebase-strategy: auto` in `.github/dependabot.yml`).
+- CI policy check (`Dependabot Policy`) enforces expected Dependabot PR metadata (target branch, branch naming, labels).
 - Batch handling:
   - Merge PRs with green CI/CodeQL and no behavioral regressions.
   - For API-breaking dependency updates, push compatibility fixes to the Dependabot branch, then merge.

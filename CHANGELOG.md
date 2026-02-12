@@ -16,6 +16,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Dependabot configuration for Cargo, npm, and GitHub Actions dependency updates.
 - Scheduled/manual security audit workflow for Rust and npm dependencies.
 - CodeQL static analysis workflow for Rust and TypeScript code.
+- Dependabot policy workflow to enforce expected metadata on Dependabot PRs.
 
 ### Changed
 - LSP now uses in-memory document state for definition and diagnostics flow.
@@ -32,6 +33,8 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Release workflow now uses `actions/upload-artifact@v6` and `actions/download-artifact@v7`.
 - Dependabot now uses explicit auto-rebase policy and grouped editor dependency updates.
 - CodeQL now runs language-specific jobs only when matching source areas changed on push/PR.
+- CI now enforces a Rust line-coverage gate via `cargo llvm-cov` (`--fail-under-lines 70`).
+- CodeQL now uses workflow-level concurrency cancellation for stale branch runs.
 
 ### Fixed
 - VS Code extension now resolves bundled `pf_lsp` binary more robustly across platforms.
