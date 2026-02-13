@@ -1,7 +1,8 @@
 #[cfg(test)]
 mod tests {
     use crate::ast::*;
-    use crate::validator::{validate, ValidationError};
+    use crate::validator::{validate, validate_with_sources, ValidationError};
+    use std::path::PathBuf;
 
     fn mock_span() -> Span {
         Span { start: 0, end: 0 }
@@ -11,6 +12,13 @@ mod tests {
         Reference {
             name: name.to_string(),
             span: mock_span(),
+        }
+    }
+
+    fn mock_ref_with_span(name: &str, start: usize, end: usize) -> Reference {
+        Reference {
+            name: name.to_string(),
+            span: Span { start, end },
         }
     }
 
@@ -74,7 +82,474 @@ mod tests {
         let errors = result.unwrap_err();
         assert!(errors
             .iter()
-            .any(|e| matches!(e, ValidationError::DuplicateDomain(n, _) if n == "D1")));
+            .any(|e| matches!(e, ValidationError::DuplicateDomain(n, _, _) if n == "D1")));
+    }
+
+    #[test]
+    fn test_duplicate_domain_uses_duplicate_source_path() {
+        let problem = Problem {
+            name: "DuplicateDomainSources".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                Domain {
+                    name: "D1".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Given,
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Domain {
+                    name: "D1".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Given,
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let duplicate = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::DuplicateDomain(ref name, _, _) if name == "D1"
+            )
+        });
+        assert!(duplicate.is_some());
+        assert_eq!(
+            duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_duplicate_interface_uses_duplicate_source_path() {
+        let problem = Problem {
+            name: "DuplicateInterfaceSources".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("C")],
+                    shared_phenomena: vec![phenomenon("P1", PhenomenonType::Event, "C", "M", "C")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("C")],
+                    shared_phenomena: vec![phenomenon("P2", PhenomenonType::Event, "C", "M", "C")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let duplicate = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::DuplicateInterface(ref name, _, _) if name == "I1"
+            )
+        });
+        assert!(duplicate.is_some());
+        assert_eq!(
+            duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_undefined_domain_in_interface_uses_matching_source_path() {
+        let problem = Problem {
+            name: "InterfaceUndefinedDomainSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("A")],
+                    shared_phenomena: vec![phenomenon("P1", PhenomenonType::Event, "A", "M", "A")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![
+                        mock_ref_with_span("M", 10, 11),
+                        mock_ref_with_span("Missing", 20, 27),
+                    ],
+                    shared_phenomena: vec![Phenomenon {
+                        name: "P2".to_string(),
+                        type_: PhenomenonType::Event,
+                        from: mock_ref_with_span("Missing", 30, 37),
+                        to: mock_ref_with_span("M", 38, 39),
+                        controlled_by: mock_ref_with_span("Missing", 40, 47),
+                        span: Span { start: 30, end: 47 },
+                    }],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let undefined = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::UndefinedDomainInInterface(ref domain, _, _, _) if domain == "Missing"
+            )
+        });
+        assert!(undefined.is_some());
+        assert_eq!(
+            undefined.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_interface_controller_mismatch_uses_matching_source_path() {
+        let problem = Problem {
+            name: "InterfaceControllerMismatchSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("A")],
+                    shared_phenomena: vec![phenomenon("P1", PhenomenonType::Event, "A", "M", "A")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("A")],
+                    shared_phenomena: vec![phenomenon(
+                        "P_bad",
+                        PhenomenonType::Event,
+                        "A",
+                        "M",
+                        "M",
+                    )],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let mismatch = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InterfaceControllerMismatch(ref phenomenon, _, _, _, _)
+                    if phenomenon == "P_bad"
+            )
+        });
+        assert!(mismatch.is_some());
+        assert_eq!(
+            mismatch.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_invalid_causality_uses_matching_source_path() {
+        let problem = Problem {
+            name: "InterfaceCausalitySource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("L", DomainKind::Lexical, DomainRole::Given),
+            ],
+            interfaces: vec![
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("L")],
+                    shared_phenomena: vec![phenomenon("E", PhenomenonType::Event, "M", "L", "M")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("L")],
+                    shared_phenomena: vec![phenomenon("E", PhenomenonType::Event, "L", "M", "L")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let invalid = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InvalidCausality(ref phenomenon, _, ref domain, _, _, _)
+                    if phenomenon == "E" && domain == "L"
+            )
+        });
+        assert!(invalid.is_some());
+        assert_eq!(
+            invalid.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_duplicate_requirement_detection() {
+        let problem = Problem {
+            name: "DuplicateRequirement".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-C",
+                &["M", "C"],
+                vec![phenomenon("Observe", PhenomenonType::Event, "C", "M", "C")],
+            )],
+            requirements: vec![
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(
+            |e| matches!(e, ValidationError::DuplicateRequirement(name, _, _) if name == "R1")
+        ));
+    }
+
+    #[test]
+    fn test_duplicate_assertion_set_detection() {
+        let problem = Problem {
+            name: "DuplicateAssertionSet".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world fact 1".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world fact 2".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(
+            |e| matches!(e, ValidationError::DuplicateAssertionSet(name, _, _) if name == "W")
+        ));
+    }
+
+    #[test]
+    fn test_duplicate_requirement_uses_duplicate_source_path() {
+        let problem = Problem {
+            name: "DuplicateRequirementSources".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-C",
+                &["M", "C"],
+                vec![phenomenon("Observe", PhenomenonType::Event, "C", "M", "C")],
+            )],
+            requirements: vec![
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let duplicate = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::DuplicateRequirement(ref name, _, _) if name == "R1"
+            )
+        });
+        assert!(duplicate.is_some());
+        assert_eq!(
+            duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_missing_required_field_uses_matching_requirement_source_path() {
+        let problem = Problem {
+            name: "RequirementSourceMapping".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-C",
+                &["M", "C"],
+                vec![phenomenon("Observe", PhenomenonType::Event, "C", "M", "C")],
+            )],
+            requirements: vec![
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: Span { start: 1, end: 2 },
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::CommandedBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: Span { start: 10, end: 11 },
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let missing_reference = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::MissingRequiredField(ref name, ref field, _)
+                    if name == "R1" && field == "reference"
+            )
+        });
+        assert!(missing_reference.is_some());
+        assert_eq!(
+            missing_reference.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
     }
 
     #[test]
@@ -107,9 +582,9 @@ mod tests {
         let result = validate(&problem);
         assert!(result.is_err());
         let errors = result.unwrap_err();
-        assert!(errors
-            .iter()
-            .any(|e| matches!(e, ValidationError::MissingConnection(d1, _, _, _) if d1 == "Op")));
+        assert!(errors.iter().any(
+            |e| matches!(e, ValidationError::MissingConnection(d1, _, _, _, _) if d1 == "Op")
+        ));
     }
 
     #[test]
@@ -143,7 +618,72 @@ mod tests {
         let errors = result.unwrap_err();
         assert!(errors
             .iter()
-            .any(|e| matches!(e, ValidationError::MissingConnection(d1, _, _, _) if d1 == "C")));
+            .any(|e| matches!(e, ValidationError::MissingConnection(d1, _, _, _, _) if d1 == "C")));
+    }
+
+    #[test]
+    fn test_missing_connection_uses_requirement_index_for_source_path() {
+        let problem = Problem {
+            name: "MissingConnectionSourceMapping".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("Connected", DomainKind::Causal, DomainRole::Given),
+                domain("Disconnected", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-Connected",
+                &["M", "Connected"],
+                vec![phenomenon(
+                    "ObserveConnected",
+                    PhenomenonType::Event,
+                    "Connected",
+                    "M",
+                    "Connected",
+                )],
+            )],
+            requirements: vec![
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("Connected")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Requirement {
+                    name: "R2".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("Disconnected")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let missing_connection = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::MissingConnection(ref domain, _, _, _, _) if domain == "Disconnected"
+            )
+        });
+        assert!(missing_connection.is_some());
+        assert_eq!(
+            missing_connection.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
     }
 
     #[test]
@@ -171,7 +711,7 @@ mod tests {
         assert!(result.is_err());
         let errors = result.unwrap_err();
         assert!(errors.iter().any(
-            |e| matches!(e, ValidationError::InvalidCausality(p, _, d, _, _) if p == "E1" && d == "L")
+            |e| matches!(e, ValidationError::InvalidCausality(p, _, d, _, _, _) if p == "E1" && d == "L")
         ));
     }
 
@@ -202,7 +742,7 @@ mod tests {
         assert!(errors.iter().any(|e| {
             matches!(
                 e,
-                ValidationError::InvalidCausality(p, t, d, _, _)
+                ValidationError::InvalidCausality(p, t, d, _, _, _)
                     if p == "Cmd1" && matches!(t, PhenomenonType::Command) && d == "M"
             )
         }));
@@ -504,7 +1044,7 @@ mod tests {
         assert!(errors.iter().any(|e| {
             matches!(
                 e,
-                ValidationError::MissingConnection(domain, _, frame, _)
+                ValidationError::MissingConnection(domain, _, frame, _, _)
                     if domain == "Out" && frame == "Transformation"
             )
         }));
@@ -755,6 +1295,181 @@ mod tests {
     }
 
     #[test]
+    fn test_duplicate_correctness_argument_uses_duplicate_source_path() {
+        let problem = Problem {
+            name: "DuplicateCorrectnessArgs".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "spec".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "req".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![
+                CorrectnessArgument {
+                    name: "A1".to_string(),
+                    specification_set: "S".to_string(),
+                    world_set: "W".to_string(),
+                    requirement_set: "R".to_string(),
+                    specification_ref: mock_ref("S"),
+                    world_ref: mock_ref("W"),
+                    requirement_ref: mock_ref("R"),
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                CorrectnessArgument {
+                    name: "A1".to_string(),
+                    specification_set: "S".to_string(),
+                    world_set: "W".to_string(),
+                    requirement_set: "R".to_string(),
+                    specification_ref: mock_ref("S"),
+                    world_ref: mock_ref("W"),
+                    requirement_ref: mock_ref("R"),
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let duplicate = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::DuplicateCorrectnessArgument(ref name, _, _) if name == "A1"
+            )
+        });
+        assert!(duplicate.is_some());
+        assert_eq!(
+            duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_invalid_correctness_argument_uses_matching_source_path() {
+        let problem = Problem {
+            name: "CorrectnessSourceMapping".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "spec".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "req".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![
+                CorrectnessArgument {
+                    name: "A1".to_string(),
+                    specification_set: "S".to_string(),
+                    world_set: "W".to_string(),
+                    requirement_set: "R".to_string(),
+                    specification_ref: mock_ref("S"),
+                    world_ref: mock_ref("W"),
+                    requirement_ref: mock_ref("R"),
+                    span: Span { start: 1, end: 2 },
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                CorrectnessArgument {
+                    name: "A1".to_string(),
+                    specification_set: "S".to_string(),
+                    world_set: "W_missing".to_string(),
+                    requirement_set: "R".to_string(),
+                    specification_ref: mock_ref("S"),
+                    world_ref: mock_ref("W_missing"),
+                    requirement_ref: mock_ref("R"),
+                    span: Span { start: 10, end: 11 },
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let invalid = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InvalidCorrectnessArgument(ref name, ref message, _)
+                    if name == "A1" && message.contains("W_missing")
+            )
+        });
+        assert!(invalid.is_some());
+        assert_eq!(
+            invalid.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
     fn test_subproblem_missing_machine_is_invalid() {
         let problem = Problem {
             name: "SubproblemMissingMachine".to_string(),
@@ -785,6 +1500,133 @@ mod tests {
                     if name == "Core" && field == "machine"
             )
         }));
+    }
+
+    #[test]
+    fn test_duplicate_subproblem_uses_duplicate_source_path() {
+        let problem = Problem {
+            name: "DuplicateSubproblems".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-A",
+                &["M", "A"],
+                vec![phenomenon("Control", PhenomenonType::Event, "M", "A", "M")],
+            )],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("A")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            subproblems: vec![
+                Subproblem {
+                    name: "Core".to_string(),
+                    machine: Some(mock_ref("M")),
+                    participants: vec![mock_ref("M"), mock_ref("A")],
+                    requirements: vec![mock_ref("R1")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Subproblem {
+                    name: "Core".to_string(),
+                    machine: Some(mock_ref("M")),
+                    participants: vec![mock_ref("M"), mock_ref("A")],
+                    requirements: vec![mock_ref("R1")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let duplicate = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::DuplicateSubproblem(ref name, _, _) if name == "Core"
+            )
+        });
+        assert!(duplicate.is_some());
+        assert_eq!(
+            duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_missing_subproblem_field_uses_matching_source_path() {
+        let problem = Problem {
+            name: "SubproblemSourceMapping".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-A",
+                &["M", "A"],
+                vec![phenomenon("Control", PhenomenonType::Event, "M", "A", "M")],
+            )],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("A")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            subproblems: vec![
+                Subproblem {
+                    name: "Core".to_string(),
+                    machine: Some(mock_ref("M")),
+                    participants: vec![mock_ref("M"), mock_ref("A")],
+                    requirements: vec![mock_ref("R1")],
+                    span: Span { start: 1, end: 2 },
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Subproblem {
+                    name: "Core".to_string(),
+                    machine: None,
+                    participants: vec![mock_ref("M"), mock_ref("A")],
+                    requirements: vec![mock_ref("R1")],
+                    span: Span { start: 10, end: 11 },
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let missing_machine = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::MissingSubproblemField(ref name, ref field, _)
+                    if name == "Core" && field == "machine"
+            )
+        });
+        assert!(missing_machine.is_some());
+        assert_eq!(
+            missing_machine.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
     }
 
     #[test]

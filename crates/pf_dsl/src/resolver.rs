@@ -15,6 +15,8 @@ pub fn resolve(entry_file: &Path, content_override: Option<&str>) -> Result<Prob
     let mut problem =
         parse(&content).with_context(|| format!("Failed to parse file: {:?}", entry_file))?;
 
+    set_problem_source_path(&mut problem, entry_file);
+
     // Track loaded files to avoid cycles (simple check)
     let mut loaded = HashSet::new();
     if let Ok(canon) = fs::canonicalize(entry_file) {
@@ -30,6 +32,44 @@ pub fn resolve(entry_file: &Path, content_override: Option<&str>) -> Result<Prob
     Ok(problem)
 }
 
+fn set_problem_source_path(problem: &mut Problem, source_path: &Path) {
+    for domain in &mut problem.domains {
+        domain.source_path = Some(source_path.to_path_buf());
+    }
+    for interface in &mut problem.interfaces {
+        interface.source_path = Some(source_path.to_path_buf());
+    }
+    for requirement in &mut problem.requirements {
+        requirement.source_path = Some(source_path.to_path_buf());
+    }
+    for subproblem in &mut problem.subproblems {
+        subproblem.source_path = Some(source_path.to_path_buf());
+    }
+    for assertion_set in &mut problem.assertion_sets {
+        assertion_set.source_path = Some(source_path.to_path_buf());
+    }
+    for correctness_argument in &mut problem.correctness_arguments {
+        correctness_argument.source_path = Some(source_path.to_path_buf());
+    }
+}
+
+fn load_standard_import(import_path_str: &str) -> Option<(&'static str, PathBuf)> {
+    let content = match import_path_str {
+        "std/RequiredBehavior.pf" => include_str!("std/RequiredBehavior.pf"),
+        "std/CommandedBehavior.pf" => include_str!("std/CommandedBehavior.pf"),
+        "std/InformationDisplay.pf" => include_str!("std/InformationDisplay.pf"),
+        "std/SimpleWorkpieces.pf" => include_str!("std/SimpleWorkpieces.pf"),
+        "std/Transformation.pf" => include_str!("std/Transformation.pf"),
+        _ => return None,
+    };
+
+    let source_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join(import_path_str);
+
+    Some((content, source_path))
+}
+
 fn resolve_recursive(
     problem: &mut Problem,
     current_file: &Path,
@@ -41,21 +81,15 @@ fn resolve_recursive(
     let imports = problem.imports.clone();
 
     for import_path_str in imports {
-        let (content, import_source_path) = if import_path_str.starts_with("std/") {
-            // Handle Standard Library
-            let content = match import_path_str.as_str() {
-                "std/RequiredBehavior.pf" => include_str!("std/RequiredBehavior.pf").to_string(),
-                "std/CommandedBehavior.pf" => include_str!("std/CommandedBehavior.pf").to_string(),
-                "std/InformationDisplay.pf" => {
-                    include_str!("std/InformationDisplay.pf").to_string()
-                }
-                "std/SimpleWorkpieces.pf" => include_str!("std/SimpleWorkpieces.pf").to_string(),
-                "std/Transformation.pf" => include_str!("std/Transformation.pf").to_string(),
-                _ => anyhow::bail!("Standard library file not found: {}", import_path_str),
-            };
-            // For std imports, we use the import string itself as a unique identifier
-            // and a dummy path for recursion context.
-            (content, PathBuf::from(import_path_str.clone()))
+        let (content, import_source_path) = if let Some((content, import_path)) =
+            load_standard_import(import_path_str.as_str())
+        {
+            if loaded.contains(&import_path) {
+                // Cycle detected or already loaded.
+                continue;
+            }
+            loaded.insert(import_path.clone());
+            (content.to_string(), import_path)
         } else {
             let import_path = base_dir.join(&import_path_str);
 
@@ -119,146 +153,185 @@ fn resolve_recursive(
     Ok(())
 }
 
-fn path_eq(left: &Path, right: &Path) -> bool {
-    if left == right {
-        return true;
-    }
-    match (fs::canonicalize(left), fs::canonicalize(right)) {
-        (Ok(a), Ok(b)) => a == b,
-        _ => false,
-    }
-}
-
 pub fn find_definition(
     problem: &Problem,
     source_file: &Path,
     offset: usize,
 ) -> Option<(Option<PathBuf>, Span)> {
+    let source_matches = |entity_source: Option<&PathBuf>| -> bool {
+        entity_source
+            .map(|path| path.as_path() == source_file)
+            .unwrap_or(true)
+    };
+
     // Helper to find domain definition
-    let find_domain = |name: &str| -> Option<(Option<PathBuf>, Span)> {
-        problem
-            .domains
-            .iter()
-            .find(|d| d.name == name)
-            .map(|d| (d.source_path.clone(), d.span))
-    };
+    let find_domain =
+        |name: &str, preferred_source: Option<&PathBuf>| -> Option<(Option<PathBuf>, Span)> {
+            let mut fallback: Option<(Option<PathBuf>, Span)> = None;
+            for domain in &problem.domains {
+                if domain.name != name {
+                    continue;
+                }
 
-    // Helper to find requirement definition
-    let find_requirement = |name: &str| -> Option<(Option<PathBuf>, Span)> {
-        problem
-            .requirements
-            .iter()
-            .find(|r| r.name == name)
-            .map(|r| (r.source_path.clone(), r.span))
-    };
+                if preferred_source
+                    .map(|source| domain.source_path.as_ref() == Some(source))
+                    .unwrap_or(false)
+                {
+                    return Some((domain.source_path.clone(), domain.span));
+                }
 
-    // Helper to find assertion set definition by name and expected scope
-    let find_assertion_set =
-        |name: &str, scope: AssertionScope| -> Option<(Option<PathBuf>, Span)> {
-            problem
-                .assertion_sets
-                .iter()
-                .find(|set| set.name == name && set.scope == scope)
-                .map(|set| (set.source_path.clone(), set.span))
+                if fallback.is_none() {
+                    fallback = Some((domain.source_path.clone(), domain.span));
+                }
+            }
+            fallback
         };
+
+    let find_requirement =
+        |name: &str, preferred_source: Option<&PathBuf>| -> Option<(Option<PathBuf>, Span)> {
+            let mut fallback: Option<(Option<PathBuf>, Span)> = None;
+            for requirement in &problem.requirements {
+                if requirement.name != name {
+                    continue;
+                }
+
+                if preferred_source
+                    .map(|source| requirement.source_path.as_ref() == Some(source))
+                    .unwrap_or(false)
+                {
+                    return Some((requirement.source_path.clone(), requirement.span));
+                }
+
+                if fallback.is_none() {
+                    fallback = Some((requirement.source_path.clone(), requirement.span));
+                }
+            }
+            fallback
+        };
+
+    let find_assertion_set = |name: &str,
+                              scope: AssertionScope,
+                              preferred_source: Option<&PathBuf>|
+     -> Option<(Option<PathBuf>, Span)> {
+        let mut fallback: Option<(Option<PathBuf>, Span)> = None;
+        for assertion_set in &problem.assertion_sets {
+            if assertion_set.name != name || assertion_set.scope != scope {
+                continue;
+            }
+
+            if preferred_source
+                .map(|source| assertion_set.source_path.as_ref() == Some(source))
+                .unwrap_or(false)
+            {
+                return Some((assertion_set.source_path.clone(), assertion_set.span));
+            }
+
+            if fallback.is_none() {
+                fallback = Some((assertion_set.source_path.clone(), assertion_set.span));
+            }
+        }
+        fallback
+    };
 
     let is_offset_in_ref =
         |reference: &Reference| offset >= reference.span.start && offset < reference.span.end;
 
     // 1. Check Interfaces (Phenomena)
-    for interface in &problem.interfaces {
-        if let Some(source_path) = interface.source_path.as_deref() {
-            if !path_eq(source_path, source_file) {
-                continue;
-            }
-        }
-
+    for interface in problem
+        .interfaces
+        .iter()
+        .filter(|interface| source_matches(interface.source_path.as_ref()))
+    {
+        let interface_source = interface.source_path.as_ref();
         for domain_ref in &interface.connects {
             if offset >= domain_ref.span.start && offset < domain_ref.span.end {
-                return find_domain(&domain_ref.name);
+                return find_domain(&domain_ref.name, interface_source);
             }
         }
         for phen in &interface.shared_phenomena {
             if offset >= phen.from.span.start && offset < phen.from.span.end {
-                return find_domain(&phen.from.name);
+                return find_domain(&phen.from.name, interface_source);
             }
             if offset >= phen.to.span.start && offset < phen.to.span.end {
-                return find_domain(&phen.to.name);
+                return find_domain(&phen.to.name, interface_source);
             }
             if offset >= phen.controlled_by.span.start && offset < phen.controlled_by.span.end {
-                return find_domain(&phen.controlled_by.name);
+                return find_domain(&phen.controlled_by.name, interface_source);
             }
         }
     }
 
     // 2. Check Requirements
-    for req in &problem.requirements {
-        if let Some(source_path) = req.source_path.as_deref() {
-            if !path_eq(source_path, source_file) {
-                continue;
-            }
-        }
-
+    for req in problem
+        .requirements
+        .iter()
+        .filter(|req| source_matches(req.source_path.as_ref()))
+    {
+        let req_source = req.source_path.as_ref();
         if let Some(ref c) = req.constrains {
             if offset >= c.span.start && offset < c.span.end {
-                return find_domain(&c.name);
+                return find_domain(&c.name, req_source);
             }
         }
         if let Some(ref r) = req.reference {
             if offset >= r.span.start && offset < r.span.end {
-                return find_domain(&r.name);
+                return find_domain(&r.name, req_source);
             }
         }
     }
 
     // 3. Check Subproblems
-    for subproblem in &problem.subproblems {
-        if let Some(source_path) = subproblem.source_path.as_deref() {
-            if !path_eq(source_path, source_file) {
-                continue;
-            }
-        }
-
+    for subproblem in problem
+        .subproblems
+        .iter()
+        .filter(|subproblem| source_matches(subproblem.source_path.as_ref()))
+    {
+        let subproblem_source = subproblem.source_path.as_ref();
         if let Some(machine_ref) = &subproblem.machine {
             if is_offset_in_ref(machine_ref) {
-                return find_domain(&machine_ref.name);
+                return find_domain(&machine_ref.name, subproblem_source);
             }
         }
 
         for participant_ref in &subproblem.participants {
             if is_offset_in_ref(participant_ref) {
-                return find_domain(&participant_ref.name);
+                return find_domain(&participant_ref.name, subproblem_source);
             }
         }
 
         for requirement_ref in &subproblem.requirements {
             if is_offset_in_ref(requirement_ref) {
-                return find_requirement(&requirement_ref.name);
+                return find_requirement(&requirement_ref.name, subproblem_source);
             }
         }
     }
 
     // 4. Check Correctness Arguments
-    for argument in &problem.correctness_arguments {
-        if let Some(source_path) = argument.source_path.as_deref() {
-            if !path_eq(source_path, source_file) {
-                continue;
-            }
-        }
-
+    for argument in problem
+        .correctness_arguments
+        .iter()
+        .filter(|argument| source_matches(argument.source_path.as_ref()))
+    {
+        let argument_source = argument.source_path.as_ref();
         if is_offset_in_ref(&argument.specification_ref) {
             return find_assertion_set(
                 &argument.specification_ref.name,
                 AssertionScope::Specification,
+                argument_source,
             );
         }
         if is_offset_in_ref(&argument.world_ref) {
-            return find_assertion_set(&argument.world_ref.name, AssertionScope::WorldProperties);
+            return find_assertion_set(
+                &argument.world_ref.name,
+                AssertionScope::WorldProperties,
+                argument_source,
+            );
         }
         if is_offset_in_ref(&argument.requirement_ref) {
             return find_assertion_set(
                 &argument.requirement_ref.name,
                 AssertionScope::RequirementAssertions,
+                argument_source,
             );
         }
     }
@@ -388,7 +461,8 @@ mod tests {
     }
 
     #[test]
-    fn test_find_definition_ignores_other_source_files() {
+    fn test_find_definition_from_imported_source_file() {
+        let imported_path = PathBuf::from("/tmp/imported.pf");
         let problem = Problem {
             name: "Test".to_string(),
             span: mock_span(0, 200),
@@ -399,14 +473,14 @@ mod tests {
                     kind: DomainKind::Causal,
                     role: DomainRole::Machine,
                     span: mock_span(10, 20),
-                    source_path: None,
+                    source_path: Some(imported_path.clone()),
                 },
                 Domain {
                     name: "B".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
                     span: mock_span(21, 30),
-                    source_path: None,
+                    source_path: Some(imported_path.clone()),
                 },
             ],
             interfaces: vec![Interface {
@@ -421,7 +495,7 @@ mod tests {
                     span: mock_span(44, 70),
                 }],
                 span: mock_span(30, 80),
-                source_path: Some(PathBuf::from("/tmp/imported.pf")),
+                source_path: Some(imported_path.clone()),
             }],
             requirements: vec![],
             subproblems: vec![],
@@ -429,8 +503,17 @@ mod tests {
             correctness_arguments: vec![],
         };
 
-        let result = find_definition(&problem, Path::new("/tmp/root.pf"), 52);
-        assert!(result.is_none());
+        let root_result = find_definition(&problem, Path::new("/tmp/root.pf"), 52);
+        assert!(
+            root_result.is_none(),
+            "references from imported files must not match offsets in a different source file"
+        );
+
+        let result = find_definition(&problem, Path::new("/tmp/imported.pf"), 52)
+            .expect("definition should be resolved in imported file context");
+        let (source_path, span) = result;
+        assert_eq!(source_path.as_deref(), Some(Path::new("/tmp/imported.pf")));
+        assert_eq!(span, mock_span(10, 20));
     }
 
     #[test]
@@ -530,5 +613,62 @@ mod tests {
 
         let req_def = find_definition(&problem, Path::new("root.pf"), 130).unwrap();
         assert_eq!(req_def.1, mock_span(52, 62));
+    }
+
+    #[test]
+    fn test_find_definition_prefers_same_source_on_name_collision() {
+        let root_path = PathBuf::from("/tmp/root.pf");
+        let imported_path = PathBuf::from("/tmp/imported.pf");
+        let problem = Problem {
+            name: "Test".to_string(),
+            span: mock_span(0, 240),
+            imports: vec![],
+            domains: vec![
+                Domain {
+                    name: "A".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Machine,
+                    span: mock_span(10, 20),
+                    source_path: Some(root_path.clone()),
+                },
+                Domain {
+                    name: "A".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Given,
+                    span: mock_span(40, 50),
+                    source_path: Some(imported_path.clone()),
+                },
+                Domain {
+                    name: "B".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Given,
+                    span: mock_span(51, 60),
+                    source_path: Some(imported_path.clone()),
+                },
+            ],
+            interfaces: vec![Interface {
+                name: "Imported".to_string(),
+                connects: vec![mock_ref("A", 80, 81), mock_ref("B", 82, 83)],
+                shared_phenomena: vec![Phenomenon {
+                    name: "ev".to_string(),
+                    type_: PhenomenonType::Event,
+                    from: mock_ref("A", 90, 91),
+                    to: mock_ref("B", 92, 93),
+                    controlled_by: mock_ref("A", 94, 95),
+                    span: mock_span(84, 100),
+                }],
+                span: mock_span(70, 110),
+                source_path: Some(imported_path.clone()),
+            }],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let imported_result =
+            find_definition(&problem, imported_path.as_path(), 90).expect("definition expected");
+        assert_eq!(imported_result.0.as_deref(), Some(imported_path.as_path()));
+        assert_eq!(imported_result.1, mock_span(40, 50));
     }
 }

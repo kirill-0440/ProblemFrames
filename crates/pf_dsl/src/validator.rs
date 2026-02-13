@@ -6,19 +6,21 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ValidationError {
     #[error("Domain '{0}' referenced in interface '{1}' but not defined.")]
-    UndefinedDomainInInterface(String, String, Span),
+    UndefinedDomainInInterface(String, String, Span, usize),
     #[error("Domain '{0}' referenced in requirement '{1}' but not defined.")]
     UndefinedDomainInRequirement(String, String, Span),
     #[error("Requirement '{0}' with frame '{1}': {2}")]
     InvalidFrameDomain(String, String, String, Span),
     #[error("Duplicate domain definition: '{0}'")]
-    DuplicateDomain(String, Span),
+    DuplicateDomain(String, Span, usize),
     #[error("Duplicate interface definition: '{0}'")]
-    DuplicateInterface(String, Span),
+    DuplicateInterface(String, Span, usize),
+    #[error("Duplicate requirement definition: '{0}'")]
+    DuplicateRequirement(String, Span, usize),
     #[error("Missing connection between '{0}' and '{1}' required by frame '{2}'")]
-    MissingConnection(String, String, String, Span),
+    MissingConnection(String, String, String, Span, usize),
     #[error("Invalid causality: Phenomenon '{0}' ({1:?}) cannot originate from '{2}' ({3}).")]
-    InvalidCausality(String, PhenomenonType, String, String, Span),
+    InvalidCausality(String, PhenomenonType, String, String, Span, usize),
     #[error("Requirement '{0}' is missing required field '{1}'.")]
     MissingRequiredField(String, String, Span),
     #[error("Requirement '{0}' uses unsupported frame '{1}'.")]
@@ -26,11 +28,11 @@ pub enum ValidationError {
     #[error("Domain '{0}' has invalid role/kind combination: {1}")]
     InvalidDomainRole(String, String, Span),
     #[error("Interface '{0}' must connect at least two domains.")]
-    InterfaceInsufficientConnections(String, Span),
+    InterfaceInsufficientConnections(String, Span, usize),
     #[error("Interface '{0}' must declare at least one phenomenon.")]
-    InterfaceWithoutPhenomena(String, Span),
+    InterfaceWithoutPhenomena(String, Span, usize),
     #[error("Phenomenon '{0}' in interface '{1}' uses controller '{2}' that is not in interface connects list.")]
-    InterfaceControllerMismatch(String, String, String, Span),
+    InterfaceControllerMismatch(String, String, String, Span, usize),
     #[error("Requirement '{0}' cannot reference machine domain '{1}' in strict PF mode.")]
     RequirementReferencesMachine(String, String, Span),
     #[error("Subproblem '{0}' is missing required field '{1}'.")]
@@ -39,14 +41,18 @@ pub enum ValidationError {
     UndefinedDomainInSubproblem(String, String, Span),
     #[error("Requirement '{0}' referenced in subproblem '{1}' but not defined.")]
     UndefinedRequirementInSubproblem(String, String, Span),
+    #[error("Duplicate subproblem definition: '{0}'")]
+    DuplicateSubproblem(String, Span, usize),
     #[error("Subproblem '{0}' is invalid: {1}")]
     InvalidSubproblem(String, String, Span),
     #[error("Duplicate assertion set definition: '{0}'")]
-    DuplicateAssertionSet(String, Span),
+    DuplicateAssertionSet(String, Span, usize),
     #[error("Assertion set '{0}' must contain at least one assertion.")]
     EmptyAssertionSet(String, Span),
     #[error("Correctness argument '{0}' is invalid: {1}")]
     InvalidCorrectnessArgument(String, String, Span),
+    #[error("Duplicate correctness argument definition: '{0}'")]
+    DuplicateCorrectnessArgument(String, Span, usize),
 }
 
 #[derive(Debug)]
@@ -83,11 +89,12 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     let mut defined_domains = HashSet::new();
     let mut machine_count = 0_usize;
 
-    for domain in &problem.domains {
+    for (index, domain) in problem.domains.iter().enumerate() {
         if defined_domains.contains(&domain.name) {
             errors.push(ValidationError::DuplicateDomain(
                 domain.name.clone(),
                 domain.span,
+                index,
             ));
         } else {
             defined_domains.insert(domain.name.clone());
@@ -120,28 +127,31 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     }
 
     let mut defined_interfaces = HashSet::new();
-    for interface in &problem.interfaces {
+    for (index, interface) in problem.interfaces.iter().enumerate() {
         if defined_interfaces.contains(&interface.name) {
             errors.push(ValidationError::DuplicateInterface(
                 interface.name.clone(),
                 interface.span,
+                index,
             ));
         } else {
             defined_interfaces.insert(interface.name.clone());
         }
     }
 
-    for interface in &problem.interfaces {
+    for (interface_index, interface) in problem.interfaces.iter().enumerate() {
         if interface.connects.len() < 2 {
             errors.push(ValidationError::InterfaceInsufficientConnections(
                 interface.name.clone(),
                 interface.span,
+                interface_index,
             ));
         }
         if interface.shared_phenomena.is_empty() {
             errors.push(ValidationError::InterfaceWithoutPhenomena(
                 interface.name.clone(),
                 interface.span,
+                interface_index,
             ));
         }
 
@@ -151,6 +161,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     connected.name.clone(),
                     interface.name.clone(),
                     connected.span,
+                    interface_index,
                 ));
             }
         }
@@ -161,6 +172,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     phenomenon.from.name.clone(),
                     interface.name.clone(),
                     phenomenon.from.span,
+                    interface_index,
                 ));
             }
             if !defined_domains.contains(&phenomenon.to.name) {
@@ -168,6 +180,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     phenomenon.to.name.clone(),
                     interface.name.clone(),
                     phenomenon.to.span,
+                    interface_index,
                 ));
             }
             if !defined_domains.contains(&phenomenon.controlled_by.name) {
@@ -175,6 +188,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     phenomenon.controlled_by.name.clone(),
                     interface.name.clone(),
                     phenomenon.controlled_by.span,
+                    interface_index,
                 ));
             }
 
@@ -189,6 +203,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     interface.name.clone(),
                     phenomenon.controlled_by.name.clone(),
                     phenomenon.controlled_by.span,
+                    interface_index,
                 ));
             }
             if phenomenon.controlled_by.name != phenomenon.from.name {
@@ -197,6 +212,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     interface.name.clone(),
                     phenomenon.controlled_by.name.clone(),
                     phenomenon.controlled_by.span,
+                    interface_index,
                 ));
             }
 
@@ -216,6 +232,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 from_domain.name.clone(),
                                 format!("{:?}/{:?}", from_domain.kind, from_domain.role),
                                 phenomenon.span,
+                                interface_index,
                             ));
                         }
                         if phenomenon.type_ == PhenomenonType::Command
@@ -227,12 +244,24 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 from_domain.name.clone(),
                                 format!("{:?}/{:?}", from_domain.kind, from_domain.role),
                                 phenomenon.span,
+                                interface_index,
                             ));
                         }
                     }
                     _ => {}
                 }
             }
+        }
+    }
+
+    let mut requirement_names = HashSet::new();
+    for (index, req) in problem.requirements.iter().enumerate() {
+        if !requirement_names.insert(req.name.clone()) {
+            errors.push(ValidationError::DuplicateRequirement(
+                req.name.clone(),
+                req.span,
+                index,
+            ));
         }
     }
 
@@ -255,6 +284,17 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     r.span,
                 ));
             }
+        }
+    }
+
+    let mut subproblem_names = HashSet::new();
+    for (index, subproblem) in problem.subproblems.iter().enumerate() {
+        if !subproblem_names.insert(subproblem.name.clone()) {
+            errors.push(ValidationError::DuplicateSubproblem(
+                subproblem.name.clone(),
+                subproblem.span,
+                index,
+            ));
         }
     }
 
@@ -371,17 +411,29 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     }
 
     let mut assertion_set_names = HashSet::new();
-    for assertion_set in &problem.assertion_sets {
+    for (index, assertion_set) in problem.assertion_sets.iter().enumerate() {
         if !assertion_set_names.insert(assertion_set.name.clone()) {
             errors.push(ValidationError::DuplicateAssertionSet(
                 assertion_set.name.clone(),
                 assertion_set.span,
+                index,
             ));
         }
         if assertion_set.assertions.is_empty() {
             errors.push(ValidationError::EmptyAssertionSet(
                 assertion_set.name.clone(),
                 assertion_set.span,
+            ));
+        }
+    }
+
+    let mut correctness_argument_names = HashSet::new();
+    for (index, argument) in problem.correctness_arguments.iter().enumerate() {
+        if !correctness_argument_names.insert(argument.name.clone()) {
+            errors.push(ValidationError::DuplicateCorrectnessArgument(
+                argument.name.clone(),
+                argument.span,
+                index,
             ));
         }
     }
@@ -492,7 +544,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
         }
     }
 
-    for req in &problem.requirements {
+    for (req_index, req) in problem.requirements.iter().enumerate() {
         match &req.frame {
             FrameType::Custom(frame_name) if frame_name.is_empty() => {
                 errors.push(ValidationError::MissingRequiredField(
@@ -550,6 +602,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "CommandedBehavior".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -584,6 +637,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "RequiredBehavior".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -624,6 +678,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "InformationDisplay".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -645,6 +700,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "InformationDisplay".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -685,6 +741,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "SimpleWorkpieces".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -709,6 +766,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "SimpleWorkpieces".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -742,6 +800,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "Transformation".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -760,81 +819,176 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
 
 pub fn validation_error_span(error: &ValidationError) -> Span {
     match error {
-        ValidationError::UndefinedDomainInInterface(_, _, span)
+        ValidationError::UndefinedDomainInInterface(_, _, span, _)
         | ValidationError::UndefinedDomainInRequirement(_, _, span)
         | ValidationError::InvalidFrameDomain(_, _, _, span)
-        | ValidationError::DuplicateDomain(_, span)
-        | ValidationError::DuplicateInterface(_, span)
-        | ValidationError::MissingConnection(_, _, _, span)
-        | ValidationError::InvalidCausality(_, _, _, _, span)
+        | ValidationError::DuplicateDomain(_, span, _)
+        | ValidationError::DuplicateInterface(_, span, _)
+        | ValidationError::DuplicateRequirement(_, span, _)
+        | ValidationError::MissingConnection(_, _, _, span, _)
+        | ValidationError::InvalidCausality(_, _, _, _, span, _)
         | ValidationError::MissingRequiredField(_, _, span)
         | ValidationError::UnsupportedFrame(_, _, span)
         | ValidationError::InvalidDomainRole(_, _, span)
-        | ValidationError::InterfaceInsufficientConnections(_, span)
-        | ValidationError::InterfaceWithoutPhenomena(_, span)
-        | ValidationError::InterfaceControllerMismatch(_, _, _, span)
+        | ValidationError::InterfaceInsufficientConnections(_, span, _)
+        | ValidationError::InterfaceWithoutPhenomena(_, span, _)
+        | ValidationError::InterfaceControllerMismatch(_, _, _, span, _)
         | ValidationError::RequirementReferencesMachine(_, _, span)
         | ValidationError::MissingSubproblemField(_, _, span)
         | ValidationError::UndefinedDomainInSubproblem(_, _, span)
         | ValidationError::UndefinedRequirementInSubproblem(_, _, span)
+        | ValidationError::DuplicateSubproblem(_, span, _)
         | ValidationError::InvalidSubproblem(_, _, span)
-        | ValidationError::DuplicateAssertionSet(_, span)
+        | ValidationError::DuplicateAssertionSet(_, span, _)
         | ValidationError::EmptyAssertionSet(_, span)
         | ValidationError::InvalidCorrectnessArgument(_, _, span) => *span,
+        ValidationError::DuplicateCorrectnessArgument(_, span, _) => *span,
     }
 }
 
 fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<PathBuf> {
+    let requirement_matches_span = |requirement: &Requirement, span: Span| {
+        requirement.span == span
+            || requirement
+                .constrains
+                .as_ref()
+                .map(|reference| reference.span == span)
+                .unwrap_or(false)
+            || requirement
+                .reference
+                .as_ref()
+                .map(|reference| reference.span == span)
+                .unwrap_or(false)
+    };
+
+    let subproblem_matches_span = |subproblem: &Subproblem, span: Span| {
+        subproblem.span == span
+            || subproblem
+                .machine
+                .as_ref()
+                .map(|reference| reference.span == span)
+                .unwrap_or(false)
+            || subproblem
+                .participants
+                .iter()
+                .any(|reference| reference.span == span)
+            || subproblem
+                .requirements
+                .iter()
+                .any(|reference| reference.span == span)
+    };
+
     match error {
-        ValidationError::UndefinedDomainInInterface(_, interface_name, _)
-        | ValidationError::InterfaceInsufficientConnections(interface_name, _)
-        | ValidationError::InterfaceWithoutPhenomena(interface_name, _) => problem
+        ValidationError::UndefinedDomainInInterface(_, _, _, index)
+        | ValidationError::InterfaceInsufficientConnections(_, _, index)
+        | ValidationError::InterfaceWithoutPhenomena(_, _, index)
+        | ValidationError::InterfaceControllerMismatch(_, _, _, _, index)
+        | ValidationError::InvalidCausality(_, _, _, _, _, index) => problem
             .interfaces
-            .iter()
-            .find(|interface| interface.name == *interface_name)
+            .get(*index)
             .and_then(|interface| interface.source_path.clone()),
-        ValidationError::InterfaceControllerMismatch(_, interface_name, _, _) => problem
-            .interfaces
-            .iter()
-            .find(|interface| interface.name == *interface_name)
-            .and_then(|interface| interface.source_path.clone()),
-        ValidationError::InvalidCausality(phenomenon_name, _, _, _, span) => problem
-            .interfaces
-            .iter()
-            .find(|interface| {
-                interface.shared_phenomena.iter().any(|phenomenon| {
-                    phenomenon.name == *phenomenon_name && phenomenon.span == *span
+        ValidationError::UndefinedDomainInRequirement(domain_name, requirement_name, span) => {
+            problem
+                .requirements
+                .iter()
+                .find(|requirement| {
+                    requirement.name == *requirement_name
+                        && ((requirement
+                            .constrains
+                            .as_ref()
+                            .map(|reference| {
+                                reference.name == *domain_name && reference.span == *span
+                            })
+                            .unwrap_or(false))
+                            || (requirement
+                                .reference
+                                .as_ref()
+                                .map(|reference| {
+                                    reference.name == *domain_name && reference.span == *span
+                                })
+                                .unwrap_or(false))
+                            || requirement.span == *span)
                 })
+                .or_else(|| {
+                    problem
+                        .requirements
+                        .iter()
+                        .find(|requirement| requirement.name == *requirement_name)
+                })
+                .and_then(|requirement| requirement.source_path.clone())
+        }
+        ValidationError::MissingRequiredField(requirement_name, _, span)
+        | ValidationError::UnsupportedFrame(requirement_name, _, span) => problem
+            .requirements
+            .iter()
+            .find(|requirement| requirement.name == *requirement_name && requirement.span == *span)
+            .or_else(|| {
+                problem
+                    .requirements
+                    .iter()
+                    .find(|requirement| requirement.name == *requirement_name)
             })
-            .and_then(|interface| interface.source_path.clone()),
-        ValidationError::UndefinedDomainInRequirement(_, requirement_name, _)
-        | ValidationError::MissingRequiredField(requirement_name, _, _)
-        | ValidationError::UnsupportedFrame(requirement_name, _, _)
-        | ValidationError::RequirementReferencesMachine(requirement_name, _, _) => problem
+            .and_then(|requirement| requirement.source_path.clone()),
+        ValidationError::RequirementReferencesMachine(requirement_name, domain_name, span) => {
+            problem
+                .requirements
+                .iter()
+                .find(|requirement| {
+                    requirement.name == *requirement_name
+                        && ((requirement
+                            .constrains
+                            .as_ref()
+                            .map(|reference| {
+                                reference.name == *domain_name && reference.span == *span
+                            })
+                            .unwrap_or(false))
+                            || (requirement
+                                .reference
+                                .as_ref()
+                                .map(|reference| {
+                                    reference.name == *domain_name && reference.span == *span
+                                })
+                                .unwrap_or(false))
+                            || requirement_matches_span(requirement, *span))
+                })
+                .or_else(|| {
+                    problem
+                        .requirements
+                        .iter()
+                        .find(|requirement| requirement.name == *requirement_name)
+                })
+                .and_then(|requirement| requirement.source_path.clone())
+        }
+        ValidationError::InvalidFrameDomain(requirement_name, _, _, span) => problem
             .requirements
             .iter()
-            .find(|requirement| requirement.name == *requirement_name)
+            .find(|requirement| {
+                requirement.name == *requirement_name
+                    && requirement_matches_span(requirement, *span)
+            })
+            .or_else(|| {
+                problem
+                    .requirements
+                    .iter()
+                    .find(|requirement| requirement.name == *requirement_name)
+            })
             .and_then(|requirement| requirement.source_path.clone()),
-        ValidationError::InvalidFrameDomain(requirement_name, _, _, _) => problem
+        ValidationError::MissingConnection(_, _, _, _, index) => problem
             .requirements
-            .iter()
-            .find(|requirement| requirement.name == *requirement_name)
+            .get(*index)
             .and_then(|requirement| requirement.source_path.clone()),
-        ValidationError::MissingConnection(_, _, _, span) => problem
-            .requirements
-            .iter()
-            .find(|requirement| requirement.span == *span)
-            .and_then(|requirement| requirement.source_path.clone()),
-        ValidationError::DuplicateDomain(domain_name, span) => problem
+        ValidationError::DuplicateDomain(_, _, index) => problem
             .domains
-            .iter()
-            .find(|domain| domain.name == *domain_name && domain.span == *span)
+            .get(*index)
             .and_then(|domain| domain.source_path.clone()),
-        ValidationError::DuplicateInterface(interface_name, span) => problem
+        ValidationError::DuplicateInterface(_, _, index) => problem
             .interfaces
-            .iter()
-            .find(|interface| interface.name == *interface_name && interface.span == *span)
+            .get(*index)
             .and_then(|interface| interface.source_path.clone()),
+        ValidationError::DuplicateRequirement(_, _, index) => problem
+            .requirements
+            .get(*index)
+            .and_then(|requirement| requirement.source_path.clone()),
         ValidationError::InvalidDomainRole(domain_name, _, span) => {
             if domain_name == "<problem>" {
                 return None;
@@ -845,25 +999,86 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
                 .find(|domain| domain.name == *domain_name && domain.span == *span)
                 .and_then(|domain| domain.source_path.clone())
         }
-        ValidationError::DuplicateAssertionSet(name, span)
-        | ValidationError::EmptyAssertionSet(name, span) => problem
+        ValidationError::DuplicateAssertionSet(_, _, index) => problem
+            .assertion_sets
+            .get(*index)
+            .and_then(|set| set.source_path.clone()),
+        ValidationError::EmptyAssertionSet(name, span) => problem
             .assertion_sets
             .iter()
             .find(|set| set.name == *name && set.span == *span)
             .and_then(|set| set.source_path.clone()),
-        ValidationError::InvalidCorrectnessArgument(name, _, _) => problem
+        ValidationError::InvalidCorrectnessArgument(name, _, span) => problem
             .correctness_arguments
             .iter()
-            .find(|argument| argument.name == *name)
+            .find(|argument| argument.name == *name && argument.span == *span)
+            .or_else(|| {
+                problem
+                    .correctness_arguments
+                    .iter()
+                    .find(|argument| argument.name == *name)
+            })
             .and_then(|argument| argument.source_path.clone()),
-        ValidationError::MissingSubproblemField(name, _, _)
-        | ValidationError::InvalidSubproblem(name, _, _)
-        | ValidationError::UndefinedDomainInSubproblem(_, name, _)
-        | ValidationError::UndefinedRequirementInSubproblem(_, name, _) => problem
+        ValidationError::MissingSubproblemField(name, _, span)
+        | ValidationError::InvalidSubproblem(name, _, span) => problem
             .subproblems
             .iter()
-            .find(|subproblem| subproblem.name == *name)
+            .find(|subproblem| {
+                subproblem.name == *name && subproblem_matches_span(subproblem, *span)
+            })
+            .or_else(|| {
+                problem
+                    .subproblems
+                    .iter()
+                    .find(|subproblem| subproblem.name == *name)
+            })
             .and_then(|subproblem| subproblem.source_path.clone()),
+        ValidationError::UndefinedDomainInSubproblem(domain_name, name, span) => problem
+            .subproblems
+            .iter()
+            .find(|subproblem| {
+                subproblem.name == *name
+                    && ((subproblem
+                        .machine
+                        .as_ref()
+                        .map(|reference| reference.name == *domain_name && reference.span == *span)
+                        .unwrap_or(false))
+                        || subproblem.participants.iter().any(|reference| {
+                            reference.name == *domain_name && reference.span == *span
+                        })
+                        || subproblem_matches_span(subproblem, *span))
+            })
+            .or_else(|| {
+                problem
+                    .subproblems
+                    .iter()
+                    .find(|subproblem| subproblem.name == *name)
+            })
+            .and_then(|subproblem| subproblem.source_path.clone()),
+        ValidationError::UndefinedRequirementInSubproblem(requirement_name, name, span) => problem
+            .subproblems
+            .iter()
+            .find(|subproblem| {
+                subproblem.name == *name
+                    && (subproblem.requirements.iter().any(|reference| {
+                        reference.name == *requirement_name && reference.span == *span
+                    }) || subproblem_matches_span(subproblem, *span))
+            })
+            .or_else(|| {
+                problem
+                    .subproblems
+                    .iter()
+                    .find(|subproblem| subproblem.name == *name)
+            })
+            .and_then(|subproblem| subproblem.source_path.clone()),
+        ValidationError::DuplicateSubproblem(_, _, index) => problem
+            .subproblems
+            .get(*index)
+            .and_then(|subproblem| subproblem.source_path.clone()),
+        ValidationError::DuplicateCorrectnessArgument(_, _, index) => problem
+            .correctness_arguments
+            .get(*index)
+            .and_then(|argument| argument.source_path.clone()),
     }
 }
 

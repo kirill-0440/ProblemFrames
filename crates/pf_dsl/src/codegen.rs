@@ -71,14 +71,127 @@ pub fn generate_rust(problem: &Problem) -> Result<String> {
 }
 
 fn sanitize_name(name: &str) -> String {
-    // Replace non-alphanumeric with nothing or _, ensure starts with Capital
-    // Simple version:
-    let mut s = name.replace(|c: char| !c.is_alphanumeric(), "");
-    // Ensure first char is uppercase
-    if let Some(c) = s.chars().next() {
-        if c.is_lowercase() {
-            s.replace_range(0..1, &c.to_uppercase().to_string());
+    let mut s = String::with_capacity(name.len());
+
+    for ch in name.chars() {
+        if ch.is_ascii_alphanumeric() || ch == '_' {
+            s.push(ch);
+        } else {
+            s.push('_');
         }
     }
+
+    let mut s = if s.is_empty() {
+        "Generated".to_string()
+    } else {
+        // Collapse repeated underscores to keep output readable and stable.
+        let mut collapsed = String::new();
+        let mut prev_underscore = false;
+        for ch in s.chars() {
+            if ch == '_' {
+                if prev_underscore {
+                    continue;
+                }
+                prev_underscore = true;
+            } else {
+                prev_underscore = false;
+            }
+            collapsed.push(ch);
+        }
+        collapsed.trim_matches('_').to_string()
+    };
+
+    if let Some(first) = s.chars().next() {
+        if first.is_ascii_digit() {
+            s.insert(0, 'R');
+        } else if first.is_ascii_lowercase() {
+            if let Some(upper) = first.to_uppercase().next() {
+                s.replace_range(0..first.len_utf8(), &upper.to_string());
+            }
+        }
+    } else {
+        s = "Generated".to_string();
+    }
+
+    if is_rust_keyword(&s) || is_rust_keyword(&s.to_ascii_lowercase()) {
+        s.push('_');
+    }
+
     s
+}
+
+fn is_rust_keyword(name: &str) -> bool {
+    matches!(
+        name,
+        "as" | "break"
+            | "const"
+            | "continue"
+            | "crate"
+            | "else"
+            | "enum"
+            | "extern"
+            | "false"
+            | "fn"
+            | "for"
+            | "if"
+            | "impl"
+            | "in"
+            | "let"
+            | "loop"
+            | "match"
+            | "mod"
+            | "move"
+            | "mut"
+            | "pub"
+            | "ref"
+            | "return"
+            | "self"
+            | "Self"
+            | "static"
+            | "struct"
+            | "super"
+            | "trait"
+            | "true"
+            | "type"
+            | "unsafe"
+            | "use"
+            | "where"
+            | "while"
+            | "async"
+            | "await"
+            | "dyn"
+            | "union"
+            | "abstract"
+            | "become"
+            | "box"
+            | "do"
+            | "final"
+            | "macro"
+            | "override"
+            | "priv"
+            | "typeof"
+            | "unsized"
+            | "yield"
+            | "try"
+            | "macro_rules"
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sanitize_name;
+
+    #[test]
+    fn sanitize_name_removes_invalid_chars_and_prefers_valid_start() {
+        assert_eq!(sanitize_name("a-b"), "A_b");
+        assert_eq!(sanitize_name("1value"), "R1value");
+        assert_eq!(sanitize_name("type"), "Type_");
+    }
+
+    #[test]
+    fn sanitize_name_handles_unicode_and_empty_input() {
+        assert_eq!(sanitize_name(""), "Generated");
+        assert_eq!(sanitize_name("hello world"), "Hello_world");
+        assert_eq!(sanitize_name("привет"), "Generated");
+    }
 }

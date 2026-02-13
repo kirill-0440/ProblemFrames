@@ -35,7 +35,7 @@ phenomenon = { "phenomenon" ~ identifier ~ ":" ~ phenomenon_type ~ "[" ~ identif
 
 requirement_decl = { "requirement" ~ string_literal ~ "{" ~ req_body ~ "}" }
 req_body = { (frame_type | constraint | constrains | reference)* }
-frame_type = { "frame:" ~ identifier }
+frame_type = { "frame:" ~ (identifier | string_literal) }
 constraint = { "constraint:" ~ string_literal }
 constrains = { "constrains:" ~ identifier }
 reference = { "reference:" ~ identifier }

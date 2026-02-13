@@ -4,7 +4,12 @@ use std::fmt::Write;
 
 pub fn to_dot(problem: &Problem) -> String {
     let mut dot = String::new();
-    writeln!(&mut dot, "digraph \"{}\" {{", problem.name).unwrap();
+    writeln!(
+        &mut dot,
+        "digraph \"{}\" {{",
+        escape_dot_string(&problem.name)
+    )
+    .unwrap();
     writeln!(&mut dot, "    rankdir=LR;").unwrap();
     writeln!(
         &mut dot,
@@ -29,7 +34,10 @@ pub fn to_dot(problem: &Problem) -> String {
         writeln!(
             &mut dot,
             "    \"{}\" [label=\"{}\", shape={}, fillcolor={}];",
-            domain.name, label, shape, color
+            escape_dot_string(&domain.name),
+            escape_dot_string(&label),
+            shape,
+            color
         )
         .unwrap();
     }
@@ -46,8 +54,9 @@ pub fn to_dot(problem: &Problem) -> String {
         };
         writeln!(
             &mut dot,
-            "    \"{}\" [shape=note, style=dashed, label=\"{}\\n[{}]\"];",
-            req.name, req.name, frame_label
+            "    \"{}\" [shape=note, style=dashed, label=\"{}\"];",
+            escape_dot_string(&req.name),
+            escape_dot_string(&format!("{}\\n[{}]", req.name, frame_label)),
         )
         .unwrap();
 
@@ -56,7 +65,8 @@ pub fn to_dot(problem: &Problem) -> String {
             writeln!(
                 &mut dot,
                 "    \"{}\" -> \"{}\" [style=dashed, arrowhead=none, label=\"constrains\"];",
-                req.name, c.name
+                escape_dot_string(&req.name),
+                escape_dot_string(&c.name)
             )
             .unwrap();
         }
@@ -64,7 +74,8 @@ pub fn to_dot(problem: &Problem) -> String {
             writeln!(
                 &mut dot,
                 "    \"{}\" -> \"{}\" [style=dashed, arrowhead=none, label=\"references\"];",
-                req.name, r.name
+                escape_dot_string(&req.name),
+                escape_dot_string(&r.name)
             )
             .unwrap();
         }
@@ -100,13 +111,30 @@ pub fn to_dot(problem: &Problem) -> String {
         writeln!(
             &mut dot,
             "    \"{}\" -> \"{}\" [dir=both, label=\"{}\"];",
-            src, dst, label_str
+            escape_dot_string(&src),
+            escape_dot_string(&dst),
+            escape_dot_string(&label_str)
         )
         .unwrap();
     }
 
     writeln!(&mut dot, "}}").unwrap();
     dot
+}
+
+fn escape_dot_string(input: &str) -> String {
+    let mut escaped = String::with_capacity(input.len() + 4);
+    for ch in input.chars() {
+        match ch {
+            '\\' => escaped.push_str("\\\\"),
+            '"' => escaped.push_str("\\\""),
+            '\n' => escaped.push_str("\\n"),
+            '\r' => escaped.push_str("\\r"),
+            '\t' => escaped.push_str("\\t"),
+            _ => escaped.push(ch),
+        }
+    }
+    escaped
 }
 
 #[cfg(test)]
@@ -185,5 +213,48 @@ mod tests {
         let dot = to_dot(&problem);
         assert!(dot.contains("\"A\" -> \"B\""));
         assert!(dot.contains("\"C\" -> \"D\""));
+    }
+
+    #[test]
+    fn escapes_dot_string_special_characters() {
+        assert_eq!(
+            super::escape_dot_string("a\"b\\c\nd\te\rf"),
+            r#"a\"b\\c\nd\te\rf"#
+        );
+    }
+
+    #[test]
+    fn to_dot_escapes_domain_ids_and_labels() {
+        let problem = Problem {
+            name: "P".to_string(),
+            span: span(),
+            imports: vec![],
+            domains: vec![domain(r#"D"1"#, DomainKind::Causal, DomainRole::Given)],
+            interfaces: vec![],
+            requirements: vec![Requirement {
+                name: "Req\n1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: None,
+                reference: None,
+                phenomena: vec![],
+                constraint: String::new(),
+                span: span(),
+                source_path: None,
+            }],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let dot = to_dot(&problem);
+        let escaped_domain_id = super::escape_dot_string("D\"1");
+        let escaped_domain_label = super::escape_dot_string("D\"1 <<Causal/Given>>");
+        let escaped_req_label =
+            super::escape_dot_string(&format!("{}\\n[{}]", "Req\n1", "RequiredBehavior"));
+
+        assert!(dot.contains(&format!("\"{}\"", escaped_domain_id)));
+        assert!(dot.contains(&format!(r#"label="{}","#, escaped_domain_label)));
+        assert!(dot.contains(&format!(r#"label="{}""#, escaped_req_label)));
+        assert!(dot.contains(r#"digraph "P" {"#));
     }
 }
