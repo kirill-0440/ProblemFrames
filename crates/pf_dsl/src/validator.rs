@@ -18,7 +18,7 @@ pub enum ValidationError {
     #[error("Duplicate requirement definition: '{0}'")]
     DuplicateRequirement(String, Span, usize),
     #[error("Missing connection between '{0}' and '{1}' required by frame '{2}'")]
-    MissingConnection(String, String, String, Span),
+    MissingConnection(String, String, String, Span, usize),
     #[error("Invalid causality: Phenomenon '{0}' ({1:?}) cannot originate from '{2}' ({3}).")]
     InvalidCausality(String, PhenomenonType, String, String, Span),
     #[error("Requirement '{0}' is missing required field '{1}'.")]
@@ -534,7 +534,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
         }
     }
 
-    for req in &problem.requirements {
+    for (req_index, req) in problem.requirements.iter().enumerate() {
         match &req.frame {
             FrameType::Custom(frame_name) if frame_name.is_empty() => {
                 errors.push(ValidationError::MissingRequiredField(
@@ -592,6 +592,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "CommandedBehavior".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -626,6 +627,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "RequiredBehavior".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -666,6 +668,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "InformationDisplay".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -687,6 +690,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "InformationDisplay".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -727,6 +731,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "SimpleWorkpieces".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -751,6 +756,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "SimpleWorkpieces".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -784,6 +790,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 "machine".to_string(),
                                 "Transformation".to_string(),
                                 req.span,
+                                req_index,
                             ));
                         }
                     }
@@ -808,7 +815,7 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         | ValidationError::DuplicateDomain(_, span, _)
         | ValidationError::DuplicateInterface(_, span, _)
         | ValidationError::DuplicateRequirement(_, span, _)
-        | ValidationError::MissingConnection(_, _, _, span)
+        | ValidationError::MissingConnection(_, _, _, span, _)
         | ValidationError::InvalidCausality(_, _, _, _, span)
         | ValidationError::MissingRequiredField(_, _, span)
         | ValidationError::UnsupportedFrame(_, _, span)
@@ -1012,10 +1019,9 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
                     .find(|requirement| requirement.name == *requirement_name)
             })
             .and_then(|requirement| requirement.source_path.clone()),
-        ValidationError::MissingConnection(_, _, _, span) => problem
+        ValidationError::MissingConnection(_, _, _, _, index) => problem
             .requirements
-            .iter()
-            .find(|requirement| requirement.span == *span)
+            .get(*index)
             .and_then(|requirement| requirement.source_path.clone()),
         ValidationError::DuplicateDomain(_, _, index) => problem
             .domains

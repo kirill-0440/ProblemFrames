@@ -413,9 +413,9 @@ mod tests {
         let result = validate(&problem);
         assert!(result.is_err());
         let errors = result.unwrap_err();
-        assert!(errors
-            .iter()
-            .any(|e| matches!(e, ValidationError::MissingConnection(d1, _, _, _) if d1 == "Op")));
+        assert!(errors.iter().any(
+            |e| matches!(e, ValidationError::MissingConnection(d1, _, _, _, _) if d1 == "Op")
+        ));
     }
 
     #[test]
@@ -449,7 +449,72 @@ mod tests {
         let errors = result.unwrap_err();
         assert!(errors
             .iter()
-            .any(|e| matches!(e, ValidationError::MissingConnection(d1, _, _, _) if d1 == "C")));
+            .any(|e| matches!(e, ValidationError::MissingConnection(d1, _, _, _, _) if d1 == "C")));
+    }
+
+    #[test]
+    fn test_missing_connection_uses_requirement_index_for_source_path() {
+        let problem = Problem {
+            name: "MissingConnectionSourceMapping".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("Connected", DomainKind::Causal, DomainRole::Given),
+                domain("Disconnected", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-Connected",
+                &["M", "Connected"],
+                vec![phenomenon(
+                    "ObserveConnected",
+                    PhenomenonType::Event,
+                    "Connected",
+                    "M",
+                    "Connected",
+                )],
+            )],
+            requirements: vec![
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("Connected")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Requirement {
+                    name: "R2".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("Disconnected")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let missing_connection = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::MissingConnection(ref domain, _, _, _, _) if domain == "Disconnected"
+            )
+        });
+        assert!(missing_connection.is_some());
+        assert_eq!(
+            missing_connection.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
     }
 
     #[test]
@@ -810,7 +875,7 @@ mod tests {
         assert!(errors.iter().any(|e| {
             matches!(
                 e,
-                ValidationError::MissingConnection(domain, _, frame, _)
+                ValidationError::MissingConnection(domain, _, frame, _, _)
                     if domain == "Out" && frame == "Transformation"
             )
         }));
