@@ -34,6 +34,17 @@ bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
   --output-dir "${tmp_dir}/lean-differential"
 bash "${REPO_ROOT}/scripts/run_sysml_api_smoke.sh" "${tmp_dir}/sysml-api"
 bash "${REPO_ROOT}/scripts/check_system_model.sh" "${tmp_dir}/system-model"
+bash "${REPO_ROOT}/scripts/generate_model_progress_report.sh" \
+  --model "${REPO_ROOT}/models/system/tool_spec.pf" \
+  --output "${tmp_dir}/system-model/tool_spec.progress.smoke.md" \
+  --json "${tmp_dir}/system-model/tool_spec.progress.smoke.json" \
+  --status-file "${tmp_dir}/system-model/tool_spec.progress.smoke.status" \
+  --implementation-trace-md "${tmp_dir}/system-model/tool_spec.implementation-trace.md" \
+  --implementation-trace-status "${tmp_dir}/system-model/tool_spec.implementation-trace.status" \
+  --adequacy-closure-tsv "${tmp_dir}/system-model/tool_spec.adequacy-closure.tsv" \
+  --adequacy-status "${tmp_dir}/system-model/tool_spec.adequacy.status" \
+  --skip-generate-inputs \
+  --enforce-pass
 bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
 bash "${REPO_ROOT}/scripts/run_formal_backend_check.sh" "${tmp_dir}/formal-backend"
 

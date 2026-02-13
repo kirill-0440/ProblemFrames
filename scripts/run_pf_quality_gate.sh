@@ -179,6 +179,9 @@ for model in "${models[@]}"; do
   adequacy_expectations_file="${model_output_dir}/adequacy_expectations.generated.tsv"
   adequacy_closure_matrix_tsv_file="${model_output_dir}/adequacy-closure.tsv"
   adequacy_closure_matrix_md_file="${model_output_dir}/adequacy-closure.md"
+  progress_report_file="${model_output_dir}/progress.md"
+  progress_json_file="${model_output_dir}/progress.json"
+  progress_status_file="${model_output_dir}/progress.status"
   implementation_trace_file="${model_output_dir}/implementation-trace.md"
   implementation_trace_status_file="${model_output_dir}/implementation-trace.status"
   implementation_trace_policy_status_file="${model_output_dir}/implementation-trace.policy.status"
@@ -285,6 +288,19 @@ for model in "${models[@]}"; do
   fi
   trace_check_args+=("${model}")
   bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" "${trace_check_args[@]}"
+  bash "${REPO_ROOT}/scripts/generate_model_progress_report.sh" \
+    --model "${model}" \
+    --output-dir "${model_output_dir}" \
+    --output "${progress_report_file}" \
+    --json "${progress_json_file}" \
+    --status-file "${progress_status_file}" \
+    --implementation-trace-md "${implementation_trace_file}" \
+    --implementation-trace-status "${implementation_trace_status_file}" \
+    --adequacy-closure-tsv "${adequacy_closure_matrix_tsv_file}" \
+    --adequacy-status "${adequacy_status_file}" \
+    --policy "${implementation_policy_path:-${REPO_ROOT}/models/system/implementation_trace_policy.env}" \
+    --selection "${REPO_ROOT}/models/system/adequacy_selection.env" \
+    --skip-generate-inputs
   cargo run -p pf_dsl -- "${model}" --wrspm-report > "${wrspm_file}"
   cargo run -p pf_dsl -- "${model}" --wrspm-json > "${wrspm_json_file}"
 
@@ -313,6 +329,8 @@ for model in "${models[@]}"; do
     implementation_trace_policy_status="$(cat "${implementation_trace_policy_status_file}" 2>/dev/null || true)"
     implementation_trace_policy_status="${implementation_trace_policy_status:-UNKNOWN}"
   fi
+  progress_status="$(cat "${progress_status_file}" 2>/dev/null || true)"
+  progress_status="${progress_status:-UNKNOWN}"
   lean_check_status="$(cat "${lean_check_status_file}" 2>/dev/null || true)"
   lean_check_status="${lean_check_status:-UNKNOWN}"
   lean_coverage_status="$(
@@ -357,6 +375,7 @@ for model in "${models[@]}"; do
     echo "- Adequacy evidence status: \`${adequacy_status}\`"
     echo "- Implementation trace status: \`${implementation_trace_status}\`"
     echo "- Implementation trace policy status: \`${implementation_trace_policy_status}\`"
+    echo "- Unified progress status: \`${progress_status}\`"
     echo "- Lean formal check status: \`${lean_check_status}\`"
     echo "- Lean formal coverage status: \`${lean_coverage_status}\` (${lean_formalized_count}/${lean_total_arguments} formalized)"
     echo "- Lean differential status: \`${lean_differential_status}\`"
@@ -383,6 +402,9 @@ for model in "${models[@]}"; do
     echo "- \`adequacy_expectations.generated.tsv\`"
     echo "- \`adequacy-closure.tsv\`"
     echo "- \`adequacy-closure.md\`"
+    echo "- \`progress.md\`"
+    echo "- \`progress.json\`"
+    echo "- \`progress.status\`"
     echo "- \`implementation-trace.md\`"
     echo "- \`implementation-trace.policy.status\`"
     echo "- \`lean-model.lean\`"

@@ -34,7 +34,7 @@ This map links canonical system-model requirements to roadmap/proposal items in
 | `R009-A2-DecompositionClosureArtifact` | `007-execution-backlog-m1-m3.md`, `009-pf-canonical-retro-addendum.md` | M2 decomposition closure reporting (`R007-M2-05`) |
 | `R007-M3-ExecutableObligationCheck` | `007-execution-backlog-m1-m3.md` | M3 (`R007-M3-01`, `R007-M3-03`) |
 | `R009-A3-FrameConcernCoverageGate` | `007-execution-backlog-m1-m3.md`, `009-pf-canonical-retro-addendum.md` | M3 frame concern coverage gate (`R007-M3-04`) |
-| `R009-A4-OneCommandPFQualityGate` | `009-pf-canonical-retro-addendum.md`, `010-execution-backlog-m6-m7.md` | one-command PF quality gate operationalization (`scripts/run_pf_quality_gate.sh`) |
+| `R009-A4-OneCommandPFQualityGate` | `009-pf-canonical-retro-addendum.md`, `010-execution-backlog-m6-m7.md` | one-command PF quality gate operationalization (`scripts/run_pf_quality_gate.sh`) plus unified progress artifact (`progress.md/json/status`) |
 | `R009-A5-AgentAssistedModelExecution` | `009-pf-canonical-retro-addendum.md` | agent-assisted execution under the same PF quality gate contract |
 | `R009-A6-ModelFirstChangeControl` | `009-pf-canonical-retro-addendum.md` | model-first change governance: canonical self-model update precedes implementation updates |
 | `R009-A7-ModelDirectoryPFContainment` | `009-pf-canonical-retro-addendum.md` | repository model governance: all `.pf` files are stored under `models/` and enforced by codex self-model contract |
@@ -67,4 +67,5 @@ When implementing a roadmap task:
 3. Run `bash ./scripts/generate_adequacy_expectations.sh --selection models/system/adequacy_selection.env --output models/system/adequacy_expectations.tsv --check` to verify fixture-driven adequacy expectations are synchronized.
 4. Run `bash ./scripts/run_adequacy_evidence.sh` to capture differential adequacy evidence for the selected obligation class.
 5. Run `bash ./scripts/check_model_implementation_trace.sh --policy models/system/implementation_trace_policy.env --enforce-policy models/system/tool_spec.pf` to capture implementation status and staged policy compliance.
-6. Include generated system-model artifacts in PR review.
+6. Run `bash ./scripts/generate_model_progress_report.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/model-progress --enforce-pass` to get a single requirement + obligation closure status.
+7. Include generated system-model artifacts in PR review.

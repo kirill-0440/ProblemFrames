@@ -61,6 +61,7 @@ bash ./scripts/generate_formal_gap_report.sh --model models/system/tool_spec.pf 
 bash ./scripts/run_sysml_api_smoke.sh
 bash ./scripts/check_model_implementation_trace.sh models/system/tool_spec.pf
 bash ./scripts/check_model_implementation_trace.sh --policy models/system/implementation_trace_policy.env --enforce-policy models/system/tool_spec.pf
+bash ./scripts/generate_model_progress_report.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/model-progress --enforce-pass
 bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh
 bash ./scripts/check_codex_self_model_contract.sh

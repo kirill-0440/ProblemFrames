@@ -42,6 +42,9 @@ ADEQUACY_STATUS_FILE="${OUTPUT_DIR}/tool_spec.adequacy.status"
 ADEQUACY_EXPECTATIONS_FILE="${OUTPUT_DIR}/tool_spec.adequacy_expectations.generated.tsv"
 ADEQUACY_CLOSURE_MATRIX_TSV_FILE="${OUTPUT_DIR}/tool_spec.adequacy-closure.tsv"
 ADEQUACY_CLOSURE_MATRIX_MD_FILE="${OUTPUT_DIR}/tool_spec.adequacy-closure.md"
+PROGRESS_REPORT_FILE="${OUTPUT_DIR}/tool_spec.progress.md"
+PROGRESS_JSON_FILE="${OUTPUT_DIR}/tool_spec.progress.json"
+PROGRESS_STATUS_FILE="${OUTPUT_DIR}/tool_spec.progress.status"
 IMPLEMENTATION_TRACE_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.md"
 IMPLEMENTATION_TRACE_STATUS_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.status"
 IMPLEMENTATION_TRACE_POLICY_STATUS_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.policy.status"
@@ -131,6 +134,19 @@ bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
   --policy-status-file "${IMPLEMENTATION_TRACE_POLICY_STATUS_FILE}" \
   --enforce-policy \
   "${MODEL_FILE}"
+bash "${REPO_ROOT}/scripts/generate_model_progress_report.sh" \
+  --model "${MODEL_FILE}" \
+  --output-dir "${OUTPUT_DIR}" \
+  --output "${PROGRESS_REPORT_FILE}" \
+  --json "${PROGRESS_JSON_FILE}" \
+  --status-file "${PROGRESS_STATUS_FILE}" \
+  --implementation-trace-md "${IMPLEMENTATION_TRACE_FILE}" \
+  --implementation-trace-status "${IMPLEMENTATION_TRACE_STATUS_FILE}" \
+  --adequacy-closure-tsv "${ADEQUACY_CLOSURE_MATRIX_TSV_FILE}" \
+  --adequacy-status "${ADEQUACY_STATUS_FILE}" \
+  --policy "${IMPLEMENTATION_POLICY_FILE}" \
+  --selection "${REPO_ROOT}/models/system/adequacy_selection.env" \
+  --skip-generate-inputs
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-report > "${WRSPM_REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-json > "${WRSPM_JSON_FILE}"
 bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
@@ -157,6 +173,8 @@ implementation_trace_status="$(cat "${IMPLEMENTATION_TRACE_STATUS_FILE}" 2>/dev/
 implementation_trace_status="${implementation_trace_status:-UNKNOWN}"
 implementation_trace_policy_status="$(cat "${IMPLEMENTATION_TRACE_POLICY_STATUS_FILE}" 2>/dev/null || true)"
 implementation_trace_policy_status="${implementation_trace_policy_status:-UNKNOWN}"
+progress_status="$(cat "${PROGRESS_STATUS_FILE}" 2>/dev/null || true)"
+progress_status="${progress_status:-UNKNOWN}"
 lean_check_status="$(cat "${LEAN_CHECK_STATUS_FILE}" 2>/dev/null || true)"
 lean_check_status="${lean_check_status:-UNKNOWN}"
 lean_coverage_status="$(
@@ -197,6 +215,7 @@ alloy_solver_status="${alloy_solver_status:-UNKNOWN}"
   echo "- Adequacy evidence status: \`${adequacy_status}\`"
   echo "- Implementation trace status: \`${implementation_trace_status}\`"
   echo "- Implementation trace policy status: \`${implementation_trace_policy_status}\`"
+  echo "- Unified progress status: \`${progress_status}\`"
   echo "- Lean formal check status: \`${lean_check_status}\`"
   echo "- Lean formal coverage status: \`${lean_coverage_status}\` (${lean_formalized_count}/${lean_total_correctness_arguments} formalized)"
   echo "- Lean differential status: \`${lean_differential_status}\`"
@@ -223,6 +242,9 @@ alloy_solver_status="${alloy_solver_status:-UNKNOWN}"
   echo "- \`tool_spec.adequacy_expectations.generated.tsv\`"
   echo "- \`tool_spec.adequacy-closure.tsv\`"
   echo "- \`tool_spec.adequacy-closure.md\`"
+  echo "- \`tool_spec.progress.md\`"
+  echo "- \`tool_spec.progress.json\`"
+  echo "- \`tool_spec.progress.status\`"
   echo "- \`tool_spec.implementation-trace.md\`"
   echo "- \`tool_spec.implementation-trace.policy.status\`"
   echo "- \`tool_spec.lean\`"
@@ -261,6 +283,11 @@ fi
 
 if [[ "${adequacy_status}" != "PASS" ]]; then
   echo "System model adequacy evidence failed (${adequacy_status})" >&2
+  exit 1
+fi
+
+if [[ "${progress_status}" != "PASS" ]]; then
+  echo "System model progress status failed (${progress_status})" >&2
   exit 1
 fi
 
