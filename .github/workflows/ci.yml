@@ -22,6 +22,35 @@ jobs:
       - name: Smoke test scripts
         run: bash ./scripts/smoke_test_scripts.sh
 
+  sysml-api-smoke:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      PF_SYSML_API_SMOKE_ENABLED: ${{ vars.PF_SYSML_API_SMOKE_ENABLED }}
+      PF_SYSML_API_ENDPOINT: ${{ secrets.PF_SYSML_API_ENDPOINT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+
+      - name: Run SysML API smoke (gated)
+        run: bash ./scripts/run_sysml_api_smoke.sh .ci-artifacts/sysml-api --gated
+
+      - name: Upload SysML API smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: sysml-api-smoke
+          path: .ci-artifacts/sysml-api
+          if-no-files-found: error
+
   rust:
     runs-on: ubuntu-latest
     env:

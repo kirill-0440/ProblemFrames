@@ -28,9 +28,9 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - Owner: `DSL Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add deterministic WRSPM projection structures (`W/R/S/P/M`) derived from validated AST.
-- [ ] Add projection tests for at least one multi-subproblem model.
-- [ ] Ensure unresolved `eh/sh` and detailed `P/M` sections are explicitly represented.
+- [x] Add deterministic WRSPM projection structures (`W/R/S/P/M`) derived from validated AST.
+- [x] Add projection tests for at least one multi-subproblem model.
+- [x] Ensure unresolved `eh/sh` and detailed `P/M` sections are explicitly represented.
 
 #### R010-M6-02 - Add WRSPM CLI Reports
 
@@ -38,9 +38,9 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - Owner: `Tooling Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add CLI mode `--wrspm-report` with deterministic Markdown output.
-- [ ] Add optional machine-readable `--wrspm-json` output for CI consumption.
-- [ ] Document command usage in `README.md` and `crates/pf_dsl/README.md`.
+- [x] Add CLI mode `--wrspm-report` with deterministic Markdown output.
+- [x] Add optional machine-readable `--wrspm-json` output for CI consumption.
+- [x] Document command usage in `README.md` and `crates/pf_dsl/README.md`.
 
 #### R010-M6-03 - Enforce WRSPM Vocabulary Discipline for Specification
 
@@ -102,7 +102,7 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - Definition of Done:
 - [x] Upload WRSPM and adequacy artifacts with stable naming in CI.
 - [x] Add runbook update describing rerun and triage procedure.
-- [ ] Record go/no-go checkpoint criteria for future blocking gate decision.
+- [x] Record go/no-go checkpoint criteria for future blocking gate decision.
 
 ## Sequencing and Dependencies
 

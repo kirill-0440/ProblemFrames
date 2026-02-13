@@ -103,8 +103,8 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `Traceability Maintainer`
 - Priority: `P2`
 - Definition of Done:
-- [ ] Extend impact report to include generated DDD/SysML targets.
-- [ ] Add one cross-model fixture demonstrating change propagation.
+- [x] Extend impact report to include generated DDD/SysML targets.
+- [x] Add one cross-model fixture demonstrating change propagation.
 
 #### R008-M4C-03 - CI Artifact Publication
 
@@ -132,8 +132,8 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `Platform Maintainer`
 - Priority: `P2`
 - Definition of Done:
-- [ ] Add non-blocking workflow job with explicit env gating.
-- [ ] Publish smoke logs as CI artifacts.
+- [x] Add non-blocking workflow job with explicit env gating.
+- [x] Publish smoke logs as CI artifacts.
 
 #### R008-M5A-03 - Decision Memo After Spike
 
@@ -141,8 +141,8 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `Platform Maintainer`
 - Priority: `P3`
 - Definition of Done:
-- [ ] Document runtime, reliability, and maintenance observations.
-- [ ] Recommend continue/pause/expand decision for next planning cycle.
+- [x] Document runtime, reliability, and maintenance observations.
+- [x] Recommend continue/pause/expand decision for next planning cycle.
 
 ## Sequencing and Dependencies
 

@@ -1,0 +1,20 @@
+problem: DomainCatalog
+
+domain Machine kind causal role machine
+domain Operator kind biddable role given
+domain Sensor kind causal role given marks: {
+  @ddd.bounded_context("Telemetry")
+  @ddd.aggregate_root
+}
+
+interface "Operator-Machine" connects Operator, Machine {
+  shared: {
+    phenomenon Command : command [Operator -> Machine] controlledBy Operator
+  }
+}
+
+interface "Sensor-Machine" connects Sensor, Machine {
+  shared: {
+    phenomenon Reading : value [Sensor -> Machine] controlledBy Sensor
+  }
+}

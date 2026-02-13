@@ -34,11 +34,18 @@ R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/pim.rs|generate_
 R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/main.rs|--trace-map-json|source-to-target trace-map mode is exposed in CLI
 R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/trace_map.rs|TraceMapCoverage|trace-map coverage model is implemented
 R008-M4C-TraceCoverageContract|file_contains|scripts/run_pf_quality_gate.sh|Trace-map coverage status|quality gate evaluates trace-map coverage status
+R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/traceability.rs|generated targets|impact report includes generated DDD/SysML targets
+R008-M4C-TraceCoverageContract|file_exists|crates/pf_dsl/dogfooding/traceability_cross_model/main.pf||cross-model impact fixture exists
 R008-M4C-TraceCoverageContract|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --trace-map-json||trace-map generation command executes successfully
 
 R008-M5A-ControlledAPIBridgeSpike|file_exists|crates/pf_sysml_api/Cargo.toml||pf_sysml_api crate scaffold exists
 R008-M5A-ControlledAPIBridgeSpike|file_contains|crates/pf_sysml_api/src/main.rs|Usage: pf_sysml_api smoke|controlled API smoke entrypoint exists
 R008-M5A-ControlledAPIBridgeSpike|file_exists|scripts/run_sysml_api_smoke.sh||non-blocking smoke script exists
+R008-M5A-ControlledAPIBridgeSpike|file_contains|scripts/run_sysml_api_smoke.sh|PF_SYSML_API_SMOKE_ENABLED|smoke script supports explicit env gating
+R008-M5A-ControlledAPIBridgeSpike|file_contains|.github/workflows/ci.yml|sysml-api-smoke|non-blocking CI smoke job is declared
+R008-M5A-ControlledAPIBridgeSpike|file_contains|.github/workflows/ci.yml|PF_SYSML_API_SMOKE_ENABLED|CI smoke job is explicitly env-gated
+R008-M5A-ControlledAPIBridgeSpike|file_contains|scripts/run_sysml_api_smoke.sh|smoke.log|smoke script emits deterministic logs for artifacts
+R008-M5A-ControlledAPIBridgeSpike|file_exists|docs/formal-backend/sysml-api-spike-go-no-go.md||go/no-go memo for API bridge is documented
 R008-M5A-ControlledAPIBridgeSpike|command_passes|bash ./scripts/run_sysml_api_smoke.sh||controlled API smoke script executes safely
 
 R009-A1-ExplicitPFViews|file_contains|crates/pf_dsl/src/main.rs|--dot-context|context view export mode exists
@@ -76,3 +83,4 @@ R010-M7-ExecutableAdequacyEvidence|command_passes|bash ./scripts/run_adequacy_ev
 R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/run_adequacy_evidence.sh|adequacy-differential.md|differential verdict artifact generation is implemented
 R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/run_pf_quality_gate.sh|adequacy-differential.md|quality gate publishes adequacy differential artifacts
 R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/check_system_model.sh|tool_spec.adequacy-differential.md|system-model gate publishes adequacy differential artifacts
+R010-M7-DifferentialVerdictArtifacts|file_exists|docs/formal-backend/adequacy-go-no-go-criteria.md||go/no-go checkpoint criteria are documented

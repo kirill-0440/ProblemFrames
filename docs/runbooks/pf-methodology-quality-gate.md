@@ -15,7 +15,7 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 5. Generate correctness evidence (`obligations`, `alloy`) from the validated model.
 6. Generate PIM artifacts (`ddd-pim`, `sysml2-text`, `sysml2-json`) from the same validated source model.
 7. Generate source-to-target trace map and enforce coverage (`trace-map.json` status must be `PASS`).
-8. Generate traceability artifacts (relationship matrix + optional impact analysis).
+8. Generate traceability artifacts (relationship matrix + impact analysis with generated DDD/SysML targets).
 9. Generate adequacy differential evidence (`rust_verdict` vs `formal_verdict` proxy) for selected obligation class.
 10. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
 11. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
@@ -93,6 +93,9 @@ CI publishes equivalent evidence through dogfooding artifacts:
 - `dogfooding-obligations`
 - `system-model` (includes decomposition closure, concern coverage, PIM artifacts, trace-map coverage, adequacy evidence, implementation trace, and WRSPM outputs)
 - `formal-backend`
+- `sysml-api-smoke` (non-blocking, env-gated smoke JSON/log bundle)
+
+SysML API smoke is gated via `PF_SYSML_API_SMOKE_ENABLED=1` in CI environment.
 
 For agent-assisted model execution, run:
 

@@ -1,4 +1,5 @@
 use crate::ast::*;
+use crate::trace_map::build_trace_map;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt;
 
@@ -116,6 +117,20 @@ impl TraceabilityGraph {
         seed: &TraceEntity,
         max_hops: usize,
     ) -> BTreeSet<String> {
+        self.reachable_within_hops(seed, max_hops)
+            .into_iter()
+            .filter_map(|entity| match entity {
+                TraceEntity::Requirement(name) => Some(name),
+                _ => None,
+            })
+            .collect()
+    }
+
+    pub fn reachable_within_hops(
+        &self,
+        seed: &TraceEntity,
+        max_hops: usize,
+    ) -> BTreeSet<TraceEntity> {
         if !self.nodes.contains(seed) {
             return BTreeSet::new();
         }
@@ -138,12 +153,6 @@ impl TraceabilityGraph {
         }
 
         visited
-            .into_iter()
-            .filter_map(|entity| match entity {
-                TraceEntity::Requirement(name) => Some(name),
-                _ => None,
-            })
-            .collect()
     }
 
     fn insert_node(&mut self, node: TraceEntity) {
@@ -378,12 +387,52 @@ fn sorted_join(values: BTreeSet<String>) -> String {
     }
 }
 
+fn trace_source_key(entity: &TraceEntity) -> Option<(String, String)> {
+    match entity {
+        TraceEntity::Requirement(name) => Some(("requirement".to_string(), name.clone())),
+        TraceEntity::Domain(name) => Some(("domain".to_string(), name.clone())),
+        TraceEntity::Interface(name) => Some(("interface".to_string(), name.clone())),
+        TraceEntity::Phenomenon { interface, name } => {
+            Some(("phenomenon".to_string(), format!("{interface}.{name}")))
+        }
+        TraceEntity::Subproblem(_) => None,
+    }
+}
+
+fn build_trace_target_index(problem: &Problem) -> BTreeMap<(String, String), BTreeSet<String>> {
+    let trace_map = build_trace_map(problem);
+    let mut index: BTreeMap<(String, String), BTreeSet<String>> = BTreeMap::new();
+    for link in trace_map.links {
+        index
+            .entry((link.source_kind, link.source_id))
+            .or_default()
+            .insert(format!("{}:{}", link.target_kind, link.target_id));
+    }
+    index
+}
+
+fn collect_generated_targets_for_reachable(
+    reachable: &BTreeSet<TraceEntity>,
+    trace_target_index: &BTreeMap<(String, String), BTreeSet<String>>,
+) -> BTreeSet<String> {
+    let mut targets = BTreeSet::new();
+    for entity in reachable {
+        if let Some(source_key) = trace_source_key(entity) {
+            if let Some(mapped_targets) = trace_target_index.get(&source_key) {
+                targets.extend(mapped_targets.iter().cloned());
+            }
+        }
+    }
+    targets
+}
+
 pub fn generate_traceability_markdown(
     problem: &Problem,
     impact_seeds: &[TraceEntity],
     max_hops: usize,
 ) -> String {
     let graph = build_traceability_graph(problem);
+    let trace_target_index = build_trace_target_index(problem);
     let mut output = String::new();
 
     output.push_str(&format!("# Traceability Report: {}\n\n", problem.name));
@@ -451,13 +500,25 @@ pub fn generate_traceability_markdown(
     } else {
         for seed in impact_seeds {
             let impacted = graph.impacted_requirements_within_hops(seed, max_hops);
+            let reachable = graph.reachable_within_hops(seed, max_hops);
+            let generated_targets =
+                collect_generated_targets_for_reachable(&reachable, &trace_target_index);
             if impacted.is_empty() {
-                output.push_str(&format!("- `{}` -> (no impacted requirements)\n", seed));
+                output.push_str(&format!("- `{}` -> requirements: (none)\n", seed));
             } else {
                 output.push_str(&format!(
-                    "- `{}` -> {}\n",
+                    "- `{}` -> requirements: {}\n",
                     seed,
                     impacted.into_iter().collect::<Vec<_>>().join(", ")
+                ));
+            }
+            if generated_targets.is_empty() {
+                output.push_str(&format!("- `{}` -> generated targets: (none)\n", seed));
+            } else {
+                output.push_str(&format!(
+                    "- `{}` -> generated targets: {}\n",
+                    seed,
+                    generated_targets.into_iter().collect::<Vec<_>>().join(", ")
                 ));
             }
         }
@@ -472,12 +533,13 @@ pub fn generate_traceability_csv(
     max_hops: usize,
 ) -> String {
     let graph = build_traceability_graph(problem);
+    let trace_target_index = build_trace_target_index(problem);
     let mut output = String::new();
 
-    output.push_str("record_type,from_kind,from_id,relation,to_kind,to_id,seed_kind,seed_id,impacted_requirement,max_hops\n");
+    output.push_str("record_type,from_kind,from_id,relation,to_kind,to_id,seed_kind,seed_id,impacted_requirement,impacted_target,max_hops\n");
     for edge in graph.edges() {
         output.push_str(&format!(
-            "edge,{},{},{},{},{},,,,\n",
+            "edge,{},{},{},{},{},,,,,\n",
             csv_escape(edge.from.kind()),
             csv_escape(&edge.from.id()),
             csv_escape(edge.relation.as_str()),
@@ -488,22 +550,34 @@ pub fn generate_traceability_csv(
 
     for seed in impact_seeds {
         let impacted = graph.impacted_requirements_within_hops(seed, max_hops);
+        let reachable = graph.reachable_within_hops(seed, max_hops);
+        let generated_targets =
+            collect_generated_targets_for_reachable(&reachable, &trace_target_index);
         if impacted.is_empty() {
             output.push_str(&format!(
-                "impact,,,,,,{},{},,{}\n",
+                "impact,,,,,,{},{},,,{}\n",
                 csv_escape(seed.kind()),
                 csv_escape(&seed.id()),
                 max_hops
             ));
-            continue;
+        } else {
+            for requirement_name in impacted {
+                output.push_str(&format!(
+                    "impact,,,,,,{},{},{},,{}\n",
+                    csv_escape(seed.kind()),
+                    csv_escape(&seed.id()),
+                    csv_escape(&requirement_name),
+                    max_hops
+                ));
+            }
         }
 
-        for requirement_name in impacted {
+        for target in generated_targets {
             output.push_str(&format!(
-                "impact,,,,,,{},{},{},{}\n",
+                "impact_target,,,,,,{},{},,{},{}\n",
                 csv_escape(seed.kind()),
                 csv_escape(&seed.id()),
-                csv_escape(&requirement_name),
+                csv_escape(&target),
                 max_hops
             ));
         }
@@ -725,7 +799,9 @@ mod tests {
         assert!(markdown.contains("## Requirement Relationship Matrix"));
         assert!(markdown.contains("| DisplayState | Sensor | Operator |"));
         assert!(markdown.contains("## Impact Analysis"));
-        assert!(markdown.contains("`domain:Sensor` -> DisplayState"));
+        assert!(markdown.contains("`domain:Sensor` -> requirements: DisplayState"));
+        assert!(markdown.contains("`domain:Sensor` -> generated targets:"));
+        assert!(markdown.contains("sysml.block:sysml.block.sensor"));
     }
 
     #[test]
@@ -738,11 +814,12 @@ mod tests {
         );
 
         assert!(csv.starts_with(
-            "record_type,from_kind,from_id,relation,to_kind,to_id,seed_kind,seed_id,impacted_requirement,max_hops"
+            "record_type,from_kind,from_id,relation,to_kind,to_id,seed_kind,seed_id,impacted_requirement,impacted_target,max_hops"
         ));
         assert!(csv.contains(
-            "edge,requirement,StoreRecord,requirement_constrains_domain,domain,Ledger,,,,"
+            "edge,requirement,StoreRecord,requirement_constrains_domain,domain,Ledger,,,,,"
         ));
-        assert!(csv.contains("impact,,,,,,requirement,StoreRecord,StoreRecord,2"));
+        assert!(csv.contains("impact,,,,,,requirement,StoreRecord,StoreRecord,,2"));
+        assert!(csv.contains("impact_target,,,,,,requirement,StoreRecord,,sysml.requirement:sysml.requirement.storerecord,2"));
     }
 }

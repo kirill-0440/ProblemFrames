@@ -222,7 +222,10 @@ fn dogfooding_cli_generates_traceability_exports_with_impact() {
 problem: Imported
 domain M kind causal role machine
 domain Operator kind biddable role given
-domain Sensor kind causal role given
+domain Sensor kind causal role given marks: {
+  @ddd.bounded_context("Telemetry")
+  @ddd.aggregate_root
+}
 interface "Operator-M" connects Operator, M {
   shared: {
     phenomenon Command : event [Operator -> M] controlledBy Operator
@@ -237,6 +240,10 @@ requirement "R_display" {
   frame: InformationDisplay
   constrains: Sensor
   reference: Operator
+  marks: {
+    @sysml.requirement
+    @ddd.application_service("DisplaySensor")
+  }
 }
 subproblem Display {
   machine: M
@@ -256,7 +263,11 @@ subproblem Display {
     );
     let markdown_stdout = String::from_utf8_lossy(&markdown.stdout);
     assert!(markdown_stdout.contains("# Traceability Report: Root"));
-    assert!(markdown_stdout.contains("`domain:Sensor` -> R_display"));
+    assert!(markdown_stdout.contains("`domain:Sensor` -> requirements: R_display"));
+    assert!(markdown_stdout.contains("`domain:Sensor` -> generated targets:"));
+    assert!(
+        markdown_stdout.contains("ddd.application_service:ddd.application_service.displaysensor")
+    );
 
     let csv = run_pf_dsl_with_args(
         &root_path,
@@ -270,9 +281,34 @@ subproblem Display {
     );
     let csv_stdout = String::from_utf8_lossy(&csv.stdout);
     assert!(csv_stdout.starts_with("record_type,from_kind,from_id,relation,to_kind,to_id"));
-    assert!(csv_stdout.contains("impact,,,,,,requirement,R_display,R_display,2"));
+    assert!(csv_stdout.contains("impact,,,,,,requirement,R_display,R_display,,2"));
+    assert!(csv_stdout.contains(
+        "impact_target,,,,,,requirement,R_display,,ddd.application_service:ddd.application_service.displaysensor,2"
+    ));
 
     let _ = fs::remove_dir_all(dir);
+}
+
+#[test]
+fn dogfooding_fixture_cross_model_traceability_includes_generated_targets() {
+    let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("dogfooding/traceability_cross_model/main.pf");
+
+    let markdown = run_pf_dsl_with_args(
+        &fixture,
+        "--traceability-md",
+        &["--impact=domain:Sensor", "--impact-hops=2"],
+    );
+    assert!(
+        markdown.status.success(),
+        "traceability markdown mode should succeed for cross-model fixture: {}",
+        String::from_utf8_lossy(&markdown.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&markdown.stdout);
+    assert!(stdout.contains("# Traceability Report: TraceabilityCrossModel"));
+    assert!(stdout.contains("`domain:Sensor` -> requirements: R_display_sensor"));
+    assert!(stdout.contains("ddd.application_service:ddd.application_service.displaysensor"));
 }
 
 #[test]
