@@ -90,12 +90,24 @@ fn resolve_recursive(
         for requirement in &mut imported_problem.requirements {
             requirement.source_path = Some(import_source_path.clone());
         }
+        for assertion_set in &mut imported_problem.assertion_sets {
+            assertion_set.source_path = Some(import_source_path.clone());
+        }
+        for correctness_argument in &mut imported_problem.correctness_arguments {
+            correctness_argument.source_path = Some(import_source_path.clone());
+        }
 
-        // Append domains, interfaces, requirements to the main problem
+        // Append domains, interfaces, requirements, assertions to the main problem
         // Note: This is a simple merge. Name collisions are not checked here (Validator handles that).
         problem.domains.extend(imported_problem.domains);
         problem.interfaces.extend(imported_problem.interfaces);
         problem.requirements.extend(imported_problem.requirements);
+        problem
+            .assertion_sets
+            .extend(imported_problem.assertion_sets);
+        problem
+            .correctness_arguments
+            .extend(imported_problem.correctness_arguments);
 
         // We effectively "flatten" the user's problem into one big struct.
     }
@@ -221,6 +233,8 @@ mod tests {
                 source_path: None,
             }],
             requirements: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         // Click on "D" in "from D" (offset 52)
@@ -263,6 +277,8 @@ mod tests {
                 span: mock_span(70, 90),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         // Click on "C" in "constrains: C" (offset 82)
@@ -309,6 +325,8 @@ mod tests {
                 source_path: Some(PathBuf::from("/tmp/imported.pf")),
             }],
             requirements: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = find_definition(&problem, Path::new("/tmp/root.pf"), 52);

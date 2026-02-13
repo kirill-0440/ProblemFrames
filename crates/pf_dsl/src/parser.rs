@@ -26,6 +26,45 @@ fn next_inner<'a>(pair: Pair<'a, Rule>, expected: &str) -> Result<Pair<'a, Rule>
         .ok_or_else(|| anyhow!("missing {expected}"))
 }
 
+fn parse_assertion_stmt(assertion_pair: Pair<'_, Rule>) -> Result<Assertion> {
+    let span = pair_to_span(&assertion_pair);
+    let mut inner = assertion_pair.into_inner();
+    let text_pair = inner
+        .next()
+        .ok_or_else(|| anyhow!("missing assertion text"))?;
+    let language = inner
+        .next()
+        .map(|pair| pair.as_str().trim_start_matches('@').to_string());
+
+    Ok(Assertion {
+        text: text_pair.as_str().trim_matches('"').to_string(),
+        language,
+        span,
+    })
+}
+
+fn parse_assertion_set(pair: Pair<'_, Rule>, scope: AssertionScope) -> Result<AssertionSet> {
+    let span = pair_to_span(&pair);
+    let mut inner = pair.into_inner();
+    let name_pair = inner
+        .next()
+        .ok_or_else(|| anyhow!("missing assertion set name"))?;
+    let mut assertions = Vec::new();
+    for assertion_pair in inner {
+        if assertion_pair.as_rule() == Rule::assertion_stmt {
+            assertions.push(parse_assertion_stmt(assertion_pair)?);
+        }
+    }
+
+    Ok(AssertionSet {
+        name: name_pair.as_str().to_string(),
+        scope,
+        assertions,
+        span,
+        source_path: None,
+    })
+}
+
 pub fn parse_error_diagnostic(input: &str) -> Option<(Span, String)> {
     match PFParser::parse(Rule::program, input) {
         Ok(_) => None,
@@ -59,6 +98,8 @@ pub fn parse(input: &str) -> Result<Problem> {
         domains: vec![],
         interfaces: vec![],
         requirements: vec![],
+        assertion_sets: vec![],
+        correctness_arguments: vec![],
     };
 
     for pair in program_pair.into_inner() {
@@ -221,6 +262,50 @@ pub fn parse(input: &str) -> Result<Problem> {
                 }
 
                 problem.requirements.push(req);
+            }
+            Rule::world_properties_decl => {
+                problem
+                    .assertion_sets
+                    .push(parse_assertion_set(pair, AssertionScope::WorldProperties)?);
+            }
+            Rule::specification_decl => {
+                problem
+                    .assertion_sets
+                    .push(parse_assertion_set(pair, AssertionScope::Specification)?);
+            }
+            Rule::requirement_assertions_decl => {
+                problem.assertion_sets.push(parse_assertion_set(
+                    pair,
+                    AssertionScope::RequirementAssertions,
+                )?);
+            }
+            Rule::correctness_argument_decl => {
+                let mut inner = pair.into_inner();
+                let name_pair = inner
+                    .next()
+                    .ok_or_else(|| anyhow!("missing correctness argument name"))?;
+                let prove_pair = inner
+                    .next()
+                    .ok_or_else(|| anyhow!("missing prove statement"))?;
+                let mut prove_inner = prove_pair.into_inner();
+                let specification_set = prove_inner
+                    .next()
+                    .ok_or_else(|| anyhow!("missing specification set reference"))?;
+                let world_set = prove_inner
+                    .next()
+                    .ok_or_else(|| anyhow!("missing world properties set reference"))?;
+                let requirement_set = prove_inner
+                    .next()
+                    .ok_or_else(|| anyhow!("missing requirement set reference"))?;
+
+                problem.correctness_arguments.push(CorrectnessArgument {
+                    name: name_pair.as_str().to_string(),
+                    specification_set: specification_set.as_str().to_string(),
+                    world_set: world_set.as_str().to_string(),
+                    requirement_set: requirement_set.as_str().to_string(),
+                    span,
+                    source_path: None,
+                });
             }
             _ => {}
         }

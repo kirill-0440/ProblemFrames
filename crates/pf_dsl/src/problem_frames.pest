@@ -3,7 +3,17 @@ NEWLINE = _{ "\n" | "\r\n" }
 COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* ~ (NEWLINE | EOI) }
 
 program = { SOI ~ declaration* ~ EOI }
-declaration = _{ import_decl | problem_decl | domain_decl | interface_decl | requirement_decl }
+declaration = _{
+    import_decl
+    | problem_decl
+    | domain_decl
+    | interface_decl
+    | requirement_decl
+    | world_properties_decl
+    | specification_decl
+    | requirement_assertions_decl
+    | correctness_argument_decl
+}
 
 import_decl = { "import" ~ string_literal }
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
@@ -28,3 +38,12 @@ frame_type = { "frame:" ~ identifier }
 constraint = { "constraint:" ~ string_literal }
 constrains = { "constrains:" ~ identifier }
 reference = { "reference:" ~ identifier }
+
+world_properties_decl = { "worldProperties" ~ identifier ~ "{" ~ assertion_stmt* ~ "}" }
+specification_decl = { "specification" ~ identifier ~ "{" ~ assertion_stmt* ~ "}" }
+requirement_assertions_decl = { "requirementAssertions" ~ identifier ~ "{" ~ assertion_stmt* ~ "}" }
+assertion_stmt = { "assert" ~ string_literal ~ assertion_lang? }
+assertion_lang = { "@" ~ identifier }
+
+correctness_argument_decl = { "correctnessArgument" ~ identifier ~ "{" ~ prove_stmt ~ "}" }
+prove_stmt = { "prove" ~ identifier ~ "and" ~ identifier ~ "entail" ~ identifier }

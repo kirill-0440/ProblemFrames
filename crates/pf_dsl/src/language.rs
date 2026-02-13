@@ -11,6 +11,14 @@ pub const STATEMENT_KEYWORDS: &[&str] = &[
     "controlledBy",
     "requirement",
     "shared:",
+    "worldProperties",
+    "specification",
+    "requirementAssertions",
+    "correctnessArgument",
+    "assert",
+    "prove",
+    "and",
+    "entail",
 ];
 
 pub const REQUIREMENT_FIELDS: &[&str] = &["frame:", "constraint:", "constrains:", "reference:"];

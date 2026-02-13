@@ -177,6 +177,8 @@ mod tests {
                 source_path: None,
             }],
             requirements: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let dot = to_dot(&problem);

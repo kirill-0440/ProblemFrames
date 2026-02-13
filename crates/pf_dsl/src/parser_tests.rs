@@ -67,4 +67,40 @@ mod tests {
         let result = parse(input);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_parse_assertion_sets_and_correctness_argument() {
+        let input = r#"
+            problem: Formalized
+            worldProperties W_base {
+                assert "physics is stable" @LTL
+            }
+            specification S_control {
+                assert "commands eventually applied" @LTL
+            }
+            requirementAssertions R_goal {
+                assert "target eventually met" @LTL
+            }
+            correctnessArgument A1 {
+                prove S_control and W_base entail R_goal
+            }
+        "#;
+
+        let problem = parse(input).expect("Failed to parse formal blocks");
+        assert_eq!(problem.assertion_sets.len(), 3);
+        assert_eq!(problem.correctness_arguments.len(), 1);
+
+        let worlds = problem
+            .assertion_sets
+            .iter()
+            .filter(|set| matches!(set.scope, AssertionScope::WorldProperties))
+            .count();
+        assert_eq!(worlds, 1);
+        assert_eq!(
+            problem.correctness_arguments[0].specification_set,
+            "S_control"
+        );
+        assert_eq!(problem.correctness_arguments[0].world_set, "W_base");
+        assert_eq!(problem.correctness_arguments[0].requirement_set, "R_goal");
+    }
 }

@@ -27,6 +27,8 @@ pub struct Problem {
     pub domains: Vec<Domain>,
     pub interfaces: Vec<Interface>,
     pub requirements: Vec<Requirement>,
+    pub assertion_sets: Vec<AssertionSet>,
+    pub correctness_arguments: Vec<CorrectnessArgument>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -101,6 +103,39 @@ pub struct Requirement {
     // these refer to domains
     pub constrains: Option<Reference>,
     pub reference: Option<Reference>,
+    pub span: Span,
+    pub source_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum AssertionScope {
+    WorldProperties,
+    Specification,
+    RequirementAssertions,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Assertion {
+    pub text: String,
+    pub language: Option<String>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct AssertionSet {
+    pub name: String,
+    pub scope: AssertionScope,
+    pub assertions: Vec<Assertion>,
+    pub span: Span,
+    pub source_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CorrectnessArgument {
+    pub name: String,
+    pub specification_set: String,
+    pub world_set: String,
+    pub requirement_set: String,
     pub span: Span,
     pub source_path: Option<PathBuf>,
 }

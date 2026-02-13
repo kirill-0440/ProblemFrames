@@ -64,6 +64,8 @@ mod tests {
             ],
             interfaces: vec![],
             requirements: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -96,6 +98,8 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -127,6 +131,8 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -153,6 +159,8 @@ mod tests {
                 vec![phenomenon("E1", PhenomenonType::Event, "L", "M", "L")],
             )],
             requirements: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -179,6 +187,8 @@ mod tests {
                 vec![phenomenon("Cmd1", PhenomenonType::Command, "M", "C", "M")],
             )],
             requirements: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -211,6 +221,8 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -243,6 +255,8 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -278,6 +292,8 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -313,6 +329,8 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -366,6 +384,8 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -425,6 +445,8 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -460,6 +482,8 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
@@ -565,9 +589,146 @@ mod tests {
                     source_path: None,
                 },
             ],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         let result = validate(&problem);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_empty_assertion_set_is_invalid() {
+        let problem = Problem {
+            name: "Assertions".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            assertion_sets: vec![AssertionSet {
+                name: "W".to_string(),
+                scope: AssertionScope::WorldProperties,
+                assertions: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::EmptyAssertionSet(name, _) if name == "W")));
+    }
+
+    #[test]
+    fn test_correctness_argument_references_must_exist() {
+        let problem = Problem {
+            name: "Correctness".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            assertion_sets: vec![AssertionSet {
+                name: "S_ok".to_string(),
+                scope: AssertionScope::Specification,
+                assertions: vec![Assertion {
+                    text: "machine controls output".to_string(),
+                    language: Some("LTL".to_string()),
+                    span: mock_span(),
+                }],
+                span: mock_span(),
+                source_path: None,
+            }],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A1".to_string(),
+                specification_set: "S_ok".to_string(),
+                world_set: "W_missing".to_string(),
+                requirement_set: "R_missing".to_string(),
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|e| {
+            matches!(
+                e,
+                ValidationError::InvalidCorrectnessArgument(name, message, _)
+                    if name == "A1" && message.contains("W_missing")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_correctness_argument_scope_mismatch_is_invalid() {
+        let problem = Problem {
+            name: "CorrectnessScope".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S_wrong".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world fact".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W_ok".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "stable world".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R_ok".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "goal holds".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A1".to_string(),
+                specification_set: "S_wrong".to_string(),
+                world_set: "W_ok".to_string(),
+                requirement_set: "R_ok".to_string(),
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|e| {
+            matches!(
+                e,
+                ValidationError::InvalidCorrectnessArgument(name, message, _)
+                    if name == "A1" && message.contains("wrong scope")
+            )
+        }));
     }
 }

@@ -33,6 +33,12 @@ pub enum ValidationError {
     InterfaceControllerMismatch(String, String, String, Span),
     #[error("Requirement '{0}' cannot reference machine domain '{1}' in strict PF mode.")]
     RequirementReferencesMachine(String, String, Span),
+    #[error("Duplicate assertion set definition: '{0}'")]
+    DuplicateAssertionSet(String, Span),
+    #[error("Assertion set '{0}' must contain at least one assertion.")]
+    EmptyAssertionSet(String, Span),
+    #[error("Correctness argument '{0}' is invalid: {1}")]
+    InvalidCorrectnessArgument(String, String, Span),
 }
 
 #[derive(Debug)]
@@ -241,6 +247,94 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     r.span,
                 ));
             }
+        }
+    }
+
+    let mut assertion_set_names = HashSet::new();
+    for assertion_set in &problem.assertion_sets {
+        if !assertion_set_names.insert(assertion_set.name.clone()) {
+            errors.push(ValidationError::DuplicateAssertionSet(
+                assertion_set.name.clone(),
+                assertion_set.span,
+            ));
+        }
+        if assertion_set.assertions.is_empty() {
+            errors.push(ValidationError::EmptyAssertionSet(
+                assertion_set.name.clone(),
+                assertion_set.span,
+            ));
+        }
+    }
+
+    for argument in &problem.correctness_arguments {
+        let specification_set = problem
+            .assertion_sets
+            .iter()
+            .find(|assertion_set| assertion_set.name == argument.specification_set);
+        let world_set = problem
+            .assertion_sets
+            .iter()
+            .find(|assertion_set| assertion_set.name == argument.world_set);
+        let requirement_set = problem
+            .assertion_sets
+            .iter()
+            .find(|assertion_set| assertion_set.name == argument.requirement_set);
+
+        match specification_set {
+            Some(set) if matches!(set.scope, AssertionScope::Specification) => {}
+            Some(set) => errors.push(ValidationError::InvalidCorrectnessArgument(
+                argument.name.clone(),
+                format!(
+                    "specification set '{}' has wrong scope {:?}",
+                    argument.specification_set, set.scope
+                ),
+                argument.span,
+            )),
+            None => errors.push(ValidationError::InvalidCorrectnessArgument(
+                argument.name.clone(),
+                format!(
+                    "specification set '{}' is not defined",
+                    argument.specification_set
+                ),
+                argument.span,
+            )),
+        }
+
+        match world_set {
+            Some(set) if matches!(set.scope, AssertionScope::WorldProperties) => {}
+            Some(set) => errors.push(ValidationError::InvalidCorrectnessArgument(
+                argument.name.clone(),
+                format!(
+                    "world set '{}' has wrong scope {:?}",
+                    argument.world_set, set.scope
+                ),
+                argument.span,
+            )),
+            None => errors.push(ValidationError::InvalidCorrectnessArgument(
+                argument.name.clone(),
+                format!("world set '{}' is not defined", argument.world_set),
+                argument.span,
+            )),
+        }
+
+        match requirement_set {
+            Some(set) if matches!(set.scope, AssertionScope::RequirementAssertions) => {}
+            Some(set) => errors.push(ValidationError::InvalidCorrectnessArgument(
+                argument.name.clone(),
+                format!(
+                    "requirement set '{}' has wrong scope {:?}",
+                    argument.requirement_set, set.scope
+                ),
+                argument.span,
+            )),
+            None => errors.push(ValidationError::InvalidCorrectnessArgument(
+                argument.name.clone(),
+                format!(
+                    "requirement set '{}' is not defined",
+                    argument.requirement_set
+                ),
+                argument.span,
+            )),
         }
     }
 
@@ -559,7 +653,10 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         | ValidationError::InterfaceInsufficientConnections(_, span)
         | ValidationError::InterfaceWithoutPhenomena(_, span)
         | ValidationError::InterfaceControllerMismatch(_, _, _, span)
-        | ValidationError::RequirementReferencesMachine(_, _, span) => *span,
+        | ValidationError::RequirementReferencesMachine(_, _, span)
+        | ValidationError::DuplicateAssertionSet(_, span)
+        | ValidationError::EmptyAssertionSet(_, span)
+        | ValidationError::InvalidCorrectnessArgument(_, _, span) => *span,
     }
 }
 
@@ -624,6 +721,17 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
                 .find(|domain| domain.name == *domain_name && domain.span == *span)
                 .and_then(|domain| domain.source_path.clone())
         }
+        ValidationError::DuplicateAssertionSet(name, span)
+        | ValidationError::EmptyAssertionSet(name, span) => problem
+            .assertion_sets
+            .iter()
+            .find(|set| set.name == *name && set.span == *span)
+            .and_then(|set| set.source_path.clone()),
+        ValidationError::InvalidCorrectnessArgument(name, _, _) => problem
+            .correctness_arguments
+            .iter()
+            .find(|argument| argument.name == *name)
+            .and_then(|argument| argument.source_path.clone()),
     }
 }
 
