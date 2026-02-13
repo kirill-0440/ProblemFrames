@@ -46,7 +46,7 @@ Guides:
 Available modes:
 
 ```bash
-pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv | --decomposition-closure | --wrspm-report | --wrspm-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]
+pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --lean-model | --traceability-md | --traceability-csv | --decomposition-closure | --concern-coverage | --wrspm-report | --wrspm-json | --ddd-pim | --sysml2-text | --sysml2-json | --trace-map-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]
 ```
 
 Artifact generation currently includes:
@@ -56,6 +56,7 @@ Artifact generation currently includes:
 - decomposition closure report (`--decomposition-closure`)
 - proof-obligation markdown (`--obligations`)
 - Alloy model export (`--alloy`)
+- Lean model export for research track (`--lean-model`)
 - traceability markdown/CSV exports (`--traceability-md`, `--traceability-csv`)
 - WRSPM bridge report (`--wrspm-report`)
 - WRSPM bridge JSON (`--wrspm-json`)
@@ -89,6 +90,7 @@ cargo build --release
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
+cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --lean-model > model.lean
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --decomposition-closure
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --wrspm-report
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --traceability-md --impact=domain:Controller --impact-hops=2
@@ -110,7 +112,9 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --obligations
 - `editors/code`: VS Code extension
 - `models`: repository-level PF models (including the canonical system model)
 - `docs/proposals`: product and engineering roadmap proposals
+- `docs/adoption`: onboarding, positioning, and pilot evidence assets
 - `metamodel`: machine-readable invariant catalog and rule-to-test contract
+- `theory`: Lean research-track project scaffold
 - `docs/runbooks`: operational playbooks (release rollback, supply chain, triage)
 - `scripts`: local automation for reports, obligations, metrics, and smoke checks
 
@@ -190,6 +194,8 @@ Generate internal artifacts from dogfooding PF models:
 bash ./scripts/generate_dogfooding_reports.sh
 bash ./scripts/generate_obligation_reports.sh
 DOGFOODING_TRIAGE_MODE=all ./scripts/generate_dogfooding_triage_report.sh
+bash ./scripts/run_adoption_demo.sh
+bash ./scripts/generate_pilot_evidence_report.sh
 ```
 
 Canonical model of this toolchain:
@@ -198,6 +204,8 @@ Canonical model of this toolchain:
 cargo run -p pf_dsl -- models/system/tool_spec.pf --report
 bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh
+bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf
+bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf
 ```
 
 Generate engineering metrics:

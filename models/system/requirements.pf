@@ -1,6 +1,102 @@
 // 3. Requirements
 // Requirement IDs align with roadmap/proposals in docs/proposals.
 
+// Proposal 001: product maturity roadmap.
+requirement "R001-A1-DeterministicMergeGateSet" {
+    frame: RequiredBehavior
+    constraint: "Mainline merges stay protected by deterministic CI, CodeQL, and dependency-review guardrails with stale-run cancellation"
+    constrains: CI
+}
+
+requirement "R001-A2-ReleaseSmokeRollbackReadiness" {
+    frame: CommandedBehavior
+    constraint: "Release smoke checks and rollback playbook support controlled recovery from broken tagged releases"
+    constrains: ReleaseWorkflow
+    reference: Developer
+}
+
+requirement "R001-A3-SupplyChainEvidenceBundle" {
+    frame: Transformation
+    constraint: "Release flow emits verifiable checksum, SBOM, and provenance evidence bundles"
+    constrains: SecurityEvidence
+}
+
+requirement "R001-A4-WeeklyOpsMetricsCadence" {
+    frame: SimpleWorkpieces
+    constraint: "Weekly engineering metrics and triage artifacts are generated and preserved for operational decisions"
+    constrains: OpsMetrics
+    reference: Developer
+}
+
+// Proposal 002: formal verification track.
+requirement "R002-F1-ProductionValidatorPrimaryPath" {
+    frame: RequiredBehavior
+    constraint: "Rust validator remains the production interactive path while formal checks execute in parallel non-blocking stages"
+    constrains: CI
+}
+
+requirement "R002-F2-AlloyFirstExecutableBaseline" {
+    frame: Transformation
+    constraint: "At least one executable formal check path remains Alloy-first with reproducible artifacts"
+    constrains: AdequacyEvidence
+}
+
+requirement "R002-F3-FormalDifferentialTriaging" {
+    frame: SimpleWorkpieces
+    constraint: "Differential mismatch reports between structural and formal verdicts remain explicit and triage-ready"
+    constrains: AdequacyEvidence
+    reference: Developer
+}
+
+// Proposal 003: adoption and GTM focus.
+requirement "R003-G1-ICPUseCasePackaging" {
+    frame: InformationDisplay
+    constraint: "Repository exposes a concrete ICP-facing workflow narrative and artifacts for first-team onboarding"
+    constrains: AdoptionAssets
+    reference: Developer
+}
+
+requirement "R003-G2-TimeToFirstValueWorkflow" {
+    frame: SimpleWorkpieces
+    constraint: "A narrow time-to-first-value path remains documented and scriptable for new teams"
+    constrains: AdoptionAssets
+    reference: Developer
+}
+
+requirement "R003-G3-PilotFeedbackOperationalLoop" {
+    frame: CommandedBehavior
+    constraint: "Pilot-team feedback is captured and linked to roadmap decisions and follow-up artifacts"
+    constrains: AdoptionAssets
+    reference: PilotTeam
+}
+
+// Proposal 004: Lean 4 integration (research track).
+requirement "R004-L1-LeanTrackSeparation" {
+    frame: RequiredBehavior
+    constraint: "Lean verification assets stay isolated from the interactive validator path and remain non-blocking"
+    constrains: CI
+}
+
+requirement "R004-L2-LeanEmitterDeterminism" {
+    frame: Transformation
+    constraint: "Lean model emission is deterministic with source-aware naming and mapping"
+    constrains: LeanTheory
+}
+
+requirement "R004-L3-LeanBuildFeedbackLoop" {
+    frame: CommandedBehavior
+    constraint: "Lean checks can be triggered and return deterministic pass/fail summaries"
+    constrains: LeanToolchain
+    reference: Developer
+}
+
+requirement "R004-L4-LeanDifferentialContract" {
+    frame: SimpleWorkpieces
+    constraint: "Lean-versus-Rust differential verification policy is documented before any blocking-gate promotion"
+    constrains: ProposalBacklog
+    reference: Developer
+}
+
 // Proposal 005: v0.2.0 scope and exit criteria.
 requirement "R005-G1-ReleaseReliabilityContract" {
     frame: RequiredBehavior
@@ -19,6 +115,46 @@ requirement "R005-G3-EditorFeedbackQuality" {
     frame: InformationDisplay
     constraint: "Developer receives source-aware diagnostics without leaving the editor loop"
     constrains: Editor
+    reference: Developer
+}
+
+// Proposal 006: machine-checkable semantics baseline.
+requirement "R006-S1-MetamodelV2AsContract" {
+    frame: SimpleWorkpieces
+    constraint: "PF metamodel entities and invariant catalog stay versioned as contract artifacts"
+    constrains: MetamodelContract
+    reference: Developer
+}
+
+requirement "R006-S2-StrictSemanticInvariantSet" {
+    frame: RequiredBehavior
+    constraint: "Strict semantic invariant checks stay deterministic and comprehensive in validator and CI flows"
+    constrains: CI
+}
+
+requirement "R006-S3-ImportAwareDiagnosticPrecision" {
+    frame: InformationDisplay
+    constraint: "Multi-file diagnostics and navigation preserve precise source-file ownership and ranges"
+    constrains: Editor
+    reference: Developer
+}
+
+requirement "R006-S4-FrameFitDecompositionDiscipline" {
+    frame: RequiredBehavior
+    constraint: "Frame-fit and decomposition constraints are enforced before PF quality claims"
+    constrains: CI
+}
+
+requirement "R006-S5-WSRObligationArtifactPipeline" {
+    frame: Transformation
+    constraint: "W, S, and R assertion sets generate machine-checkable obligation artifacts"
+    constrains: ObligationArtifacts
+}
+
+requirement "R006-S6-NonBlockingFormalBackendStage" {
+    frame: CommandedBehavior
+    constraint: "Formal backend checks run in a non-blocking stage until promotion thresholds are reached"
+    constrains: CI
     reference: Developer
 }
 

@@ -5,6 +5,7 @@ pub mod decomposition_closure;
 pub mod dot_export;
 pub mod formal_alloy;
 pub mod language;
+pub mod lean_export;
 mod metamodel_contract_tests;
 pub mod obligations;
 pub mod parser;

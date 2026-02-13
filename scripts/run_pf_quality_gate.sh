@@ -15,6 +15,10 @@ Options:
                               Do not fail if concern coverage status is FAIL.
   --enforce-implementation-trace
                               Fail if implementation trace status is not PASS.
+  --implementation-policy <path>
+                              Policy env file for staged implementation-trace enforcement.
+  --enforce-implementation-policy
+                              Fail if implementation-trace policy status is not PASS.
   --impact <selectors>        Impact seeds for traceability export (e.g. requirement:R1,domain:D1).
   --impact-hops <n>           Max hops for impact traversal in traceability export.
   -h, --help                  Show this help.
@@ -27,6 +31,8 @@ USAGE
 allow_open_closure=0
 allow_open_concern_coverage=0
 enforce_implementation_trace=0
+implementation_policy_path=""
+enforce_implementation_policy=0
 impact_selectors=""
 impact_hops=""
 models=()
@@ -43,6 +49,18 @@ while [[ $# -gt 0 ]]; do
       ;;
     --enforce-implementation-trace)
       enforce_implementation_trace=1
+      shift
+      ;;
+    --implementation-policy)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --implementation-policy" >&2
+        exit 1
+      fi
+      implementation_policy_path="$2"
+      shift 2
+      ;;
+    --enforce-implementation-policy)
+      enforce_implementation_policy=1
       shift
       ;;
     --impact)
@@ -78,6 +96,11 @@ done
 
 if [[ ${#models[@]} -eq 0 ]]; then
   usage
+  exit 1
+fi
+
+if [[ "${enforce_implementation_policy}" -eq 1 && -z "${implementation_policy_path}" ]]; then
+  echo "--enforce-implementation-policy requires --implementation-policy <path>" >&2
   exit 1
 fi
 
@@ -121,8 +144,15 @@ for model in "${models[@]}"; do
   adequacy_status_file="${model_output_dir}/adequacy.status"
   implementation_trace_file="${model_output_dir}/implementation-trace.md"
   implementation_trace_status_file="${model_output_dir}/implementation-trace.status"
+  implementation_trace_policy_status_file="${model_output_dir}/implementation-trace.policy.status"
   wrspm_file="${model_output_dir}/wrspm.md"
   wrspm_json_file="${model_output_dir}/wrspm.json"
+  lean_model_file="${model_output_dir}/lean-model.lean"
+  lean_check_json_file="${model_output_dir}/lean-check.json"
+  lean_check_status_file="${model_output_dir}/lean-check.status"
+  lean_differential_md_file="${model_output_dir}/lean-differential.md"
+  lean_differential_json_file="${model_output_dir}/lean-differential.json"
+  lean_differential_status_file="${model_output_dir}/lean-differential.status"
   summary_file="${model_output_dir}/summary.md"
 
   traceability_args=()
@@ -148,11 +178,31 @@ for model in "${models[@]}"; do
     --output "${adequacy_differential_file}" \
     --json "${adequacy_json_file}" \
     --status-file "${adequacy_status_file}"
-  bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
-    --traceability-csv "${traceability_csv_file}" \
-    --output "${implementation_trace_file}" \
-    --status-file "${implementation_trace_status_file}" \
-    "${model}"
+  trace_check_args=(
+    --traceability-csv "${traceability_csv_file}"
+    --output "${implementation_trace_file}"
+    --status-file "${implementation_trace_status_file}"
+    --policy-status-file "${implementation_trace_policy_status_file}"
+  )
+  if [[ -n "${implementation_policy_path}" ]]; then
+    trace_check_args+=(--policy "${implementation_policy_path}")
+  fi
+  if [[ "${enforce_implementation_policy}" -eq 1 ]]; then
+    trace_check_args+=(--enforce-policy)
+  fi
+  trace_check_args+=("${model}")
+  bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" "${trace_check_args[@]}"
+  cargo run -p pf_dsl -- "${model}" --lean-model > "${lean_model_file}"
+  bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
+    --model "${model}" \
+    --output-dir "${model_output_dir}"
+  bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
+    --model "${model}" \
+    --lean-status-json "${lean_check_json_file}" \
+    --output "${lean_differential_md_file}" \
+    --json "${lean_differential_json_file}" \
+    --status-file "${lean_differential_status_file}" \
+    --output-dir "${model_output_dir}"
   cargo run -p pf_dsl -- "${model}" --wrspm-report > "${wrspm_file}"
   cargo run -p pf_dsl -- "${model}" --wrspm-json > "${wrspm_json_file}"
 
@@ -176,6 +226,15 @@ for model in "${models[@]}"; do
   adequacy_status="${adequacy_status:-UNKNOWN}"
   implementation_trace_status="$(cat "${implementation_trace_status_file}" 2>/dev/null || true)"
   implementation_trace_status="${implementation_trace_status:-UNKNOWN}"
+  implementation_trace_policy_status="SKIPPED"
+  if [[ -f "${implementation_trace_policy_status_file}" ]]; then
+    implementation_trace_policy_status="$(cat "${implementation_trace_policy_status_file}" 2>/dev/null || true)"
+    implementation_trace_policy_status="${implementation_trace_policy_status:-UNKNOWN}"
+  fi
+  lean_check_status="$(cat "${lean_check_status_file}" 2>/dev/null || true)"
+  lean_check_status="${lean_check_status:-UNKNOWN}"
+  lean_differential_status="$(cat "${lean_differential_status_file}" 2>/dev/null || true)"
+  lean_differential_status="${lean_differential_status:-UNKNOWN}"
 
   {
     echo "# PF Quality Gate Summary"
@@ -187,6 +246,9 @@ for model in "${models[@]}"; do
     echo "- Trace-map coverage status: \`${trace_map_coverage_status}\`"
     echo "- Adequacy evidence status: \`${adequacy_status}\`"
     echo "- Implementation trace status: \`${implementation_trace_status}\`"
+    echo "- Implementation trace policy status: \`${implementation_trace_policy_status}\`"
+    echo "- Lean formal check status: \`${lean_check_status}\`"
+    echo "- Lean differential status: \`${lean_differential_status}\`"
     echo
     echo "## Artifacts"
     echo
@@ -204,6 +266,11 @@ for model in "${models[@]}"; do
     echo "- \`adequacy-differential.md\`"
     echo "- \`adequacy-evidence.json\`"
     echo "- \`implementation-trace.md\`"
+    echo "- \`implementation-trace.policy.status\`"
+    echo "- \`lean-model.lean\`"
+    echo "- \`lean-check.json\`"
+    echo "- \`lean-differential.md\`"
+    echo "- \`lean-differential.json\`"
     echo "- \`wrspm.md\`"
     echo "- \`wrspm.json\`"
   } > "${summary_file}"
@@ -224,6 +291,10 @@ for model in "${models[@]}"; do
   fi
   if [[ "${implementation_trace_status}" != "PASS" && "${enforce_implementation_trace}" -eq 1 ]]; then
     echo "Implementation trace is ${implementation_trace_status} for ${model}; re-run without --enforce-implementation-trace to treat as non-blocking." >&2
+    failure_count=$((failure_count + 1))
+  fi
+  if [[ "${implementation_trace_policy_status}" != "PASS" && "${enforce_implementation_policy}" -eq 1 ]]; then
+    echo "Implementation trace policy is ${implementation_trace_policy_status} for ${model}; fix policy violations or relax policy thresholds." >&2
     failure_count=$((failure_count + 1))
   fi
 done

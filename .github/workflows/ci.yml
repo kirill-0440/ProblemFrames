@@ -51,6 +51,37 @@ jobs:
           path: .ci-artifacts/sysml-api
           if-no-files-found: error
 
+  lean-formal-smoke:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      PF_LEAN_FORMAL_ENABLED: ${{ vars.PF_LEAN_FORMAL_ENABLED }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+
+      - name: Run Lean formal smoke (gated)
+        run: bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/lean-formal --gated
+
+      - name: Run Lean differential smoke
+        run: bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf --lean-status-json .ci-artifacts/lean-formal/lean-check.json --output-dir .ci-artifacts/lean-formal
+
+      - name: Upload Lean formal artifacts
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: lean-formal-smoke
+          path: .ci-artifacts/lean-formal
+          if-no-files-found: error
+
   rust:
     runs-on: ubuntu-latest
     env:

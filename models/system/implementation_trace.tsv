@@ -1,6 +1,59 @@
 # requirement_id|check_type|target|value|note
 # check_type: file_contains | file_exists | command_passes | manual_pending
 
+R001-A1-DeterministicMergeGateSet|file_exists|.github/workflows/ci.yml||CI workflow exists for deterministic merge checks
+R001-A1-DeterministicMergeGateSet|file_exists|.github/workflows/codeql.yml||CodeQL workflow exists
+R001-A1-DeterministicMergeGateSet|file_exists|.github/workflows/dependency-review.yml||dependency-review workflow exists
+R001-A1-DeterministicMergeGateSet|file_contains|.github/workflows/ci.yml|cancel-in-progress: true|stale CI runs are cancelled
+
+R001-A2-ReleaseSmokeRollbackReadiness|file_contains|.github/workflows/release-artifacts.yml|Smoke test pf_lsp startup|release smoke check for pf_lsp binary exists
+R001-A2-ReleaseSmokeRollbackReadiness|file_contains|.github/workflows/release-artifacts.yml|Smoke check VSIX contents|release smoke check for VSIX payload exists
+R001-A2-ReleaseSmokeRollbackReadiness|file_exists|docs/runbooks/release-rollback.md||rollback runbook exists
+
+R001-A3-SupplyChainEvidenceBundle|file_contains|.github/workflows/release-artifacts.yml|Generate release SBOM|SBOM generation is wired in release flow
+R001-A3-SupplyChainEvidenceBundle|file_contains|.github/workflows/release-artifacts.yml|Attest release bundle provenance|provenance attestation step exists
+R001-A3-SupplyChainEvidenceBundle|file_exists|docs/runbooks/supply-chain-verification.md||supply-chain verification runbook exists
+
+R001-A4-WeeklyOpsMetricsCadence|file_exists|scripts/generate_engineering_metrics_report.sh||engineering metrics script exists
+R001-A4-WeeklyOpsMetricsCadence|file_contains|.github/workflows/weekly-engineering-triage.yml|Generate engineering metrics report|weekly metrics workflow executes report generation
+R001-A4-WeeklyOpsMetricsCadence|file_exists|docs/runbooks/weekly-triage.md||weekly triage cadence runbook exists
+
+R002-F1-ProductionValidatorPrimaryPath|file_contains|docs/proposals/002-formal-verification-track.md|Keep Rust validator as production source of truth|formal track preserves Rust validator as primary production path
+R002-F1-ProductionValidatorPrimaryPath|file_contains|.github/workflows/ci.yml|Run formal backend check (non-blocking)|formal backend runs in non-blocking CI stage
+
+R002-F2-AlloyFirstExecutableBaseline|file_contains|scripts/run_formal_backend_check.sh|Formal Backend Check (Alloy)|Alloy-first formal backend check script exists
+R002-F2-AlloyFirstExecutableBaseline|file_contains|scripts/run_adequacy_evidence.sh|Adequacy Differential Report|executable adequacy differential report generation exists
+
+R002-F3-FormalDifferentialTriaging|file_contains|scripts/run_adequacy_evidence.sh|category="rust_only_pass"|differential mismatch categories are explicit
+R002-F3-FormalDifferentialTriaging|file_exists|docs/formal-backend/adequacy-go-no-go-criteria.md||formal mismatch-governance criteria are documented
+
+R003-G1-ICPUseCasePackaging|file_exists|docs/proposals/003-adoption-and-gtm.md||ICP/adoption strategy proposal exists
+R003-G1-ICPUseCasePackaging|file_exists|docs/adoption/product-positioning.md||one-page product positioning memo exists
+R003-G1-ICPUseCasePackaging|file_exists|docs/adoption/canonical-use-case.md||canonical proof-of-value use case is documented
+
+R003-G2-TimeToFirstValueWorkflow|file_contains|README.md|## Quick Start|basic time-to-first-value quick-start path exists
+R003-G2-TimeToFirstValueWorkflow|file_exists|docs/adoption/start-in-30-min.md||dedicated 30-minute onboarding guide exists
+R003-G2-TimeToFirstValueWorkflow|command_passes|bash ./scripts/run_adoption_demo.sh .ci-artifacts/adoption-demo-local models/system/tool_spec.pf||scripted adoption demo flow executes and emits deterministic artifacts
+
+R003-G3-PilotFeedbackOperationalLoop|file_exists|docs/adoption/pilot-evidence.tsv||pilot baseline/post metrics dataset exists
+R003-G3-PilotFeedbackOperationalLoop|command_passes|bash ./scripts/generate_pilot_evidence_report.sh docs/adoption/pilot-evidence.tsv .ci-artifacts/adoption-pilot-local||pilot evidence report generation is executable
+
+R004-L1-LeanTrackSeparation|file_contains|docs/proposals/004-lean-integration-proposal.md|Separate Lifecycle|Lean track separation policy is documented
+R004-L1-LeanTrackSeparation|file_contains|.github/workflows/ci.yml|Run formal backend check (non-blocking)|formal checks are non-blocking in CI
+R004-L1-LeanTrackSeparation|file_contains|.github/workflows/ci.yml|lean-formal-smoke|Lean-specific non-blocking CI lane is declared
+
+R004-L2-LeanEmitterDeterminism|file_exists|crates/pf_dsl/src/lean_export.rs||Lean emitter module exists in pf_dsl
+R004-L2-LeanEmitterDeterminism|file_contains|crates/pf_dsl/src/main.rs|--lean-model|Lean model generation mode is exposed in CLI
+R004-L2-LeanEmitterDeterminism|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-model||Lean model generation runs deterministically from PF source
+
+R004-L3-LeanBuildFeedbackLoop|file_exists|theory/lakefile.lean||Lean theory project scaffold exists
+R004-L3-LeanBuildFeedbackLoop|file_exists|scripts/run_lean_formal_check.sh||Lean formal smoke script exists
+R004-L3-LeanBuildFeedbackLoop|command_passes|bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/lean-formal-local||Lean formal smoke path is executable in non-blocking mode
+
+R004-L4-LeanDifferentialContract|file_exists|docs/proposals/004-lean-integration-proposal.md||Lean differential contract intent is documented
+R004-L4-LeanDifferentialContract|file_exists|docs/formal-backend/lean-differential-policy.md||Lean differential promotion policy is documented
+R004-L4-LeanDifferentialContract|command_passes|bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/lean-differential-local||Lean-vs-Rust differential report pipeline executes
+
 R005-G1-ReleaseReliabilityContract|file_contains|scripts/run_pf_quality_gate.sh|--alloy|quality gate executes formal artifact generation
 R005-G1-ReleaseReliabilityContract|file_contains|scripts/smoke_test_scripts.sh|run_pf_quality_gate.sh|quality gate is exercised in smoke tests
 
@@ -9,6 +62,24 @@ R005-G2-DogfoodingPlanningLoop|file_contains|scripts/generate_dogfooding_triage_
 
 R005-G3-EditorFeedbackQuality|file_contains|crates/pf_lsp/src/main.rs|publish_diagnostics|LSP diagnostics publishing path exists
 R005-G3-EditorFeedbackQuality|file_contains|crates/pf_lsp/tests/lsp_integration.rs|diagnostics_follow_did_change_buffer_state|LSP diagnostics behavior is covered by integration tests
+
+R006-S1-MetamodelV2AsContract|file_exists|metamodel/invariant-catalog.json||metamodel invariant catalog exists
+R006-S1-MetamodelV2AsContract|file_exists|metamodel/rule-test-matrix.tsv||rule-test matrix exists
+
+R006-S2-StrictSemanticInvariantSet|file_contains|crates/pf_dsl/src/validator.rs|expected at most one machine domain|core strict machine invariants are implemented
+R006-S2-StrictSemanticInvariantSet|file_contains|metamodel/invariant-catalog.json|PF-VAL-025|strict semantic rule catalog is maintained
+
+R006-S3-ImportAwareDiagnosticPrecision|file_contains|crates/pf_lsp/src/main.rs|source_path|LSP keeps source-path ownership for semantic entities
+R006-S3-ImportAwareDiagnosticPrecision|file_contains|crates/pf_lsp/tests/lsp_integration.rs|diagnostics_are_attributed_to_imported_file_uri|cross-file diagnostics attribution is covered
+
+R006-S4-FrameFitDecompositionDiscipline|file_contains|crates/pf_dsl/src/validator.rs|InvalidFrameDomain|frame-fit validation errors are implemented
+R006-S4-FrameFitDecompositionDiscipline|file_contains|scripts/run_pf_quality_gate.sh|--decomposition-closure|decomposition closure gate is enforced in quality flow
+
+R006-S5-WSRObligationArtifactPipeline|file_contains|crates/pf_dsl/src/main.rs|--obligations|obligation generation mode is exposed in CLI
+R006-S5-WSRObligationArtifactPipeline|file_contains|models/system/arguments.pf|prove S_roadmap_execution and W_roadmap_context entail R_roadmap_outcomes|self-model includes explicit W/S/R correctness argument
+
+R006-S6-NonBlockingFormalBackendStage|file_contains|.github/workflows/ci.yml|Run formal backend check (non-blocking)|formal backend stage is configured as non-blocking
+R006-S6-NonBlockingFormalBackendStage|file_contains|scripts/run_formal_backend_check.sh|Solver execution: skipped (informational translator stage only)|formal stage is explicitly informational in current rollout
 
 R007-M1-MetamodelContract|file_exists|metamodel/invariant-catalog.json||metamodel invariant catalog is versioned
 R007-M1-MetamodelContract|file_exists|metamodel/rule-test-matrix.tsv||rule-test matrix is versioned

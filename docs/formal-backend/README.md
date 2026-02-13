@@ -15,3 +15,4 @@ Related governance notes:
 - `adequacy-obligation-selection.md`: selected M7 obligation class and fixture bindings.
 - `adequacy-go-no-go-criteria.md`: criteria for future promotion of adequacy checks to blocking.
 - `sysml-api-spike-go-no-go.md`: M5a runtime/reliability/maintenance memo and recommendation.
+- `lean-differential-policy.md`: non-blocking Lean differential policy and promotion criteria.

@@ -1,3 +1,27 @@
+subproblem ProductMaturityOperations {
+    machine: Tool
+    participants: Tool, Developer, CI, ReleaseWorkflow, SecurityEvidence, OpsMetrics, ProposalBacklog
+    requirements: "R001-A1-DeterministicMergeGateSet", "R001-A2-ReleaseSmokeRollbackReadiness", "R001-A3-SupplyChainEvidenceBundle", "R001-A4-WeeklyOpsMetricsCadence"
+}
+
+subproblem FormalTrackGovernance {
+    machine: Tool
+    participants: Tool, Developer, CI, AdequacyEvidence, LeanTheory, LeanToolchain, ProposalBacklog
+    requirements: "R002-F1-ProductionValidatorPrimaryPath", "R002-F2-AlloyFirstExecutableBaseline", "R002-F3-FormalDifferentialTriaging", "R004-L1-LeanTrackSeparation", "R004-L2-LeanEmitterDeterminism", "R004-L3-LeanBuildFeedbackLoop", "R004-L4-LeanDifferentialContract"
+}
+
+subproblem AdoptionAndPilotLoop {
+    machine: Tool
+    participants: Tool, Developer, PilotTeam, AdoptionAssets, ProposalBacklog
+    requirements: "R003-G1-ICPUseCasePackaging", "R003-G2-TimeToFirstValueWorkflow", "R003-G3-PilotFeedbackOperationalLoop"
+}
+
+subproblem MachineCheckableSemanticsFoundation {
+    machine: Tool
+    participants: Tool, Developer, Editor, CI, MetamodelContract, ObligationArtifacts
+    requirements: "R006-S1-MetamodelV2AsContract", "R006-S2-StrictSemanticInvariantSet", "R006-S3-ImportAwareDiagnosticPrecision", "R006-S4-FrameFitDecompositionDiscipline", "R006-S5-WSRObligationArtifactPipeline", "R006-S6-NonBlockingFormalBackendStage"
+}
+
 subproblem ReleaseReliabilityAndFeedback {
     machine: Tool
     participants: Tool, Developer, Editor, SourceFile, CI

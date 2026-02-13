@@ -19,6 +19,7 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 9. Generate adequacy differential evidence (`rust_verdict` vs `formal_verdict` proxy) for selected obligation class.
 10. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
 11. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
+12. Generate Lean research-track artifacts (`--lean-model`, non-blocking Lean smoke, differential report).
 
 ## One-command Gate
 
@@ -46,6 +47,11 @@ Generated artifacts per model:
 - `adequacy-differential.md`
 - `adequacy-evidence.json`
 - `implementation-trace.md`
+- `implementation-trace.policy.status`
+- `lean-model.lean`
+- `lean-check.json`
+- `lean-differential.md`
+- `lean-differential.json`
 - `wrspm.md`
 - `wrspm.json`
 
@@ -76,6 +82,15 @@ If you want implementation trace to act as a blocking gate (instead of informati
 
 ```bash
 bash ./scripts/run_pf_quality_gate.sh --enforce-implementation-trace <model.pf>
+```
+
+If you want staged policy enforcement (instead of strict all-PASS), run:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh \
+  --implementation-policy models/system/implementation_trace_policy.env \
+  --enforce-implementation-policy \
+  <model.pf>
 ```
 
 Document the reason in PR "Why" and list closure/coverage debt explicitly.

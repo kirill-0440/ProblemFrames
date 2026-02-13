@@ -11,21 +11,27 @@ Usage:
 
 Options:
   --manifest <path>           Trace manifest file (default: models/system/implementation_trace.tsv)
+  --policy <path>             Optional policy env file for staged gating thresholds
   --traceability-csv <path>   Pre-generated traceability CSV (record_type=edge, from_kind=requirement)
   --output <path>             Output markdown file path
   --status-file <path>        Output status file path (contains PASS/OPEN/SKIPPED)
+  --policy-status-file <path> Optional policy status output path (PASS/OPEN/SKIPPED)
   --output-dir <dir>          Output directory for derived output paths
   --enforce-pass              Exit non-zero when overall trace status is not PASS
+  --enforce-policy            Exit non-zero when policy status is not PASS
   -h, --help                  Show this help.
 USAGE
 }
 
 manifest_path="${REPO_ROOT}/models/system/implementation_trace.tsv"
+policy_path=""
 traceability_csv=""
 output_path=""
 status_path=""
+policy_status_path=""
 output_dir="${REPO_ROOT}/.ci-artifacts/model-implementation-trace"
 enforce_pass=0
+enforce_policy=0
 model_path=""
 
 while [[ $# -gt 0 ]]; do
@@ -36,6 +42,14 @@ while [[ $# -gt 0 ]]; do
         exit 1
       fi
       manifest_path="$2"
+      shift 2
+      ;;
+    --policy)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --policy" >&2
+        exit 1
+      fi
+      policy_path="$2"
       shift 2
       ;;
     --traceability-csv)
@@ -62,6 +76,14 @@ while [[ $# -gt 0 ]]; do
       status_path="$2"
       shift 2
       ;;
+    --policy-status-file)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --policy-status-file" >&2
+        exit 1
+      fi
+      policy_status_path="$2"
+      shift 2
+      ;;
     --output-dir)
       if [[ $# -lt 2 ]]; then
         echo "Missing value for --output-dir" >&2
@@ -72,6 +94,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --enforce-pass)
       enforce_pass=1
+      shift
+      ;;
+    --enforce-policy)
+      enforce_policy=1
       shift
       ;;
     -h|--help)
@@ -108,6 +134,11 @@ if [[ ! -f "${manifest_path}" ]]; then
   exit 1
 fi
 
+if [[ "${enforce_policy}" -eq 1 && -z "${policy_path}" ]]; then
+  echo "--enforce-policy requires --policy <path>" >&2
+  exit 1
+fi
+
 abs_model="$(cd -- "$(dirname -- "${model_path}")" && pwd)/$(basename -- "${model_path}")"
 if [[ -z "${output_path}" || -z "${status_path}" ]]; then
   mkdir -p "${output_dir}"
@@ -126,8 +157,22 @@ if [[ -z "${output_path}" || -z "${status_path}" ]]; then
   fi
 fi
 
+if [[ -n "${policy_path}" && -z "${policy_status_path}" ]]; then
+  if [[ "${abs_model}" == "${REPO_ROOT}/"* ]]; then
+    model_key="${abs_model#${REPO_ROOT}/}"
+  else
+    model_key="$(basename -- "${abs_model}")"
+  fi
+  model_key="${model_key%.pf}"
+  model_key="${model_key//\//__}"
+  policy_status_path="${output_dir}/${model_key}.implementation-trace.policy.status"
+fi
+
 mkdir -p "$(dirname -- "${output_path}")"
 mkdir -p "$(dirname -- "${status_path}")"
+if [[ -n "${policy_status_path}" ]]; then
+  mkdir -p "$(dirname -- "${policy_status_path}")"
+fi
 
 resolved_traceability_csv="${traceability_csv}"
 cleanup_traceability_csv=0
@@ -271,6 +316,7 @@ planned_count=0
 remaining_partial=()
 remaining_planned=()
 rows=()
+declare -A requirement_status=()
 
 for requirement in "${requirements[@]}"; do
   total="${total_checks["${requirement}"]}"
@@ -300,11 +346,76 @@ for requirement in "${requirements[@]}"; do
   fi
 
   rows+=("${requirement}|${passed}/${total}|${status}|${note}")
+  requirement_status["${requirement}"]="${status}"
 done
 
 overall_status="OPEN"
 if [[ "${partial_count}" -eq 0 && "${planned_count}" -eq 0 ]]; then
   overall_status="PASS"
+fi
+
+policy_status="SKIPPED"
+policy_notes=()
+policy_blocking_open_count=0
+policy_max_partial="unbounded"
+policy_max_planned="unbounded"
+policy_max_blocking_open="unbounded"
+policy_blocking_prefixes=""
+
+if [[ -n "${policy_path}" ]]; then
+  if [[ ! -f "${policy_path}" ]]; then
+    echo "Policy file not found: ${policy_path}" >&2
+    exit 1
+  fi
+
+  # shellcheck disable=SC1090
+  source "${policy_path}"
+
+  trace_policy_max_partial="${TRACE_POLICY_MAX_PARTIAL:--1}"
+  trace_policy_max_planned="${TRACE_POLICY_MAX_PLANNED:--1}"
+  trace_policy_max_blocking_open="${TRACE_POLICY_MAX_BLOCKING_OPEN:--1}"
+  trace_policy_blocking_prefixes="${TRACE_POLICY_BLOCKING_PREFIXES:-}"
+
+  policy_max_partial="${trace_policy_max_partial}"
+  policy_max_planned="${trace_policy_max_planned}"
+  policy_max_blocking_open="${trace_policy_max_blocking_open}"
+  policy_blocking_prefixes="${trace_policy_blocking_prefixes}"
+
+  policy_status="PASS"
+
+  if [[ "${trace_policy_max_partial}" =~ ^[0-9]+$ ]] && [[ "${partial_count}" -gt "${trace_policy_max_partial}" ]]; then
+    policy_status="OPEN"
+    policy_notes+=("partial requirements ${partial_count} exceed policy max ${trace_policy_max_partial}")
+  fi
+
+  if [[ "${trace_policy_max_planned}" =~ ^[0-9]+$ ]] && [[ "${planned_count}" -gt "${trace_policy_max_planned}" ]]; then
+    policy_status="OPEN"
+    policy_notes+=("planned requirements ${planned_count} exceed policy max ${trace_policy_max_planned}")
+  fi
+
+  if [[ -n "${trace_policy_blocking_prefixes}" ]]; then
+    IFS=',' read -r -a prefixes <<< "${trace_policy_blocking_prefixes}"
+    for requirement in "${requirements[@]}"; do
+      status="${requirement_status["${requirement}"]}"
+      if [[ "${status}" == "implemented" ]]; then
+        continue
+      fi
+      for prefix in "${prefixes[@]}"; do
+        trimmed_prefix="${prefix#"${prefix%%[![:space:]]*}"}"
+        trimmed_prefix="${trimmed_prefix%"${trimmed_prefix##*[![:space:]]}"}"
+        if [[ -n "${trimmed_prefix}" && "${requirement}" == "${trimmed_prefix}"* ]]; then
+          policy_blocking_open_count=$((policy_blocking_open_count + 1))
+          break
+        fi
+      done
+    done
+
+    if [[ "${trace_policy_max_blocking_open}" =~ ^[0-9]+$ ]] \
+      && [[ "${policy_blocking_open_count}" -gt "${trace_policy_max_blocking_open}" ]]; then
+      policy_status="OPEN"
+      policy_notes+=("blocking-prefix open requirements ${policy_blocking_open_count} exceed policy max ${trace_policy_max_blocking_open}")
+    fi
+  fi
 fi
 
 unknown_manifest_requirements=()
@@ -327,6 +438,10 @@ fi
   echo "- Partial: ${partial_count}"
   echo "- Planned: ${planned_count}"
   echo "- Manifest: \`${manifest_path}\`"
+  if [[ -n "${policy_path}" ]]; then
+    echo "- Policy file: \`${policy_path}\`"
+    echo "- Policy status: ${policy_status}"
+  fi
   echo
   echo "## Requirement Status Matrix"
   echo
@@ -367,6 +482,25 @@ fi
     done
   fi
   echo
+  echo "## Policy Evaluation"
+  if [[ -z "${policy_path}" ]]; then
+    echo "- Policy status: SKIPPED (no policy file provided)."
+  else
+    echo "- Policy status: ${policy_status}"
+    echo "- Max partial: ${policy_max_partial}"
+    echo "- Max planned: ${policy_max_planned}"
+    echo "- Blocking prefixes: ${policy_blocking_prefixes:-none}"
+    echo "- Blocking open count: ${policy_blocking_open_count}"
+    echo "- Max blocking open: ${policy_max_blocking_open}"
+    if [[ "${#policy_notes[@]}" -eq 0 ]]; then
+      echo "- Policy notes: none."
+    else
+      for note in "${policy_notes[@]}"; do
+        echo "- Policy note: ${note}"
+      done
+    fi
+  fi
+  echo
   echo "## Manifest Entries Outside Model"
   if [[ "${#unknown_manifest_requirements[@]}" -eq 0 ]]; then
     echo "- None."
@@ -379,9 +513,17 @@ fi
 } > "${output_path}"
 
 echo "${overall_status}" > "${status_path}"
+if [[ -n "${policy_status_path}" ]]; then
+  echo "${policy_status}" > "${policy_status_path}"
+fi
 echo "Generated ${output_path} (status: ${overall_status})"
 
 if [[ "${enforce_pass}" -eq 1 && "${overall_status}" != "PASS" ]]; then
   echo "Implementation trace status is ${overall_status}; expected PASS." >&2
+  exit 1
+fi
+
+if [[ "${enforce_policy}" -eq 1 && "${policy_status}" != "PASS" ]]; then
+  echo "Implementation trace policy status is ${policy_status}; expected PASS." >&2
   exit 1
 fi

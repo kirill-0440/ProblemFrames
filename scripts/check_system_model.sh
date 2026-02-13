@@ -32,8 +32,16 @@ ADEQUACY_JSON_FILE="${OUTPUT_DIR}/tool_spec.adequacy-evidence.json"
 ADEQUACY_STATUS_FILE="${OUTPUT_DIR}/tool_spec.adequacy.status"
 IMPLEMENTATION_TRACE_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.md"
 IMPLEMENTATION_TRACE_STATUS_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.status"
+IMPLEMENTATION_TRACE_POLICY_STATUS_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.policy.status"
 WRSPM_REPORT_FILE="${OUTPUT_DIR}/tool_spec.wrspm.md"
 WRSPM_JSON_FILE="${OUTPUT_DIR}/tool_spec.wrspm.json"
+LEAN_MODEL_FILE="${OUTPUT_DIR}/tool_spec.lean"
+LEAN_CHECK_JSON_FILE="${OUTPUT_DIR}/tool_spec.lean-check.json"
+LEAN_CHECK_STATUS_FILE="${OUTPUT_DIR}/tool_spec.lean-check.status"
+LEAN_DIFFERENTIAL_FILE="${OUTPUT_DIR}/tool_spec.lean-differential.md"
+LEAN_DIFFERENTIAL_JSON_FILE="${OUTPUT_DIR}/tool_spec.lean-differential.json"
+LEAN_DIFFERENTIAL_STATUS_FILE="${OUTPUT_DIR}/tool_spec.lean-differential.status"
+IMPLEMENTATION_POLICY_FILE="${REPO_ROOT}/models/system/implementation_trace_policy.env"
 
 cargo run -p pf_dsl -- "${MODEL_FILE}" --report > "${REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --decomposition-closure > "${DECOMPOSITION_FILE}"
@@ -55,7 +63,23 @@ bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
   --traceability-csv "${TRACEABILITY_CSV_FILE}" \
   --output "${IMPLEMENTATION_TRACE_FILE}" \
   --status-file "${IMPLEMENTATION_TRACE_STATUS_FILE}" \
+  --policy "${IMPLEMENTATION_POLICY_FILE}" \
+  --policy-status-file "${IMPLEMENTATION_TRACE_POLICY_STATUS_FILE}" \
+  --enforce-policy \
   "${MODEL_FILE}"
+cargo run -p pf_dsl -- "${MODEL_FILE}" --lean-model > "${LEAN_MODEL_FILE}"
+bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
+  --model "${MODEL_FILE}" \
+  --output-dir "${OUTPUT_DIR}/lean-formal"
+bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
+  --model "${MODEL_FILE}" \
+  --lean-status-json "${OUTPUT_DIR}/lean-formal/lean-check.json" \
+  --output "${LEAN_DIFFERENTIAL_FILE}" \
+  --json "${LEAN_DIFFERENTIAL_JSON_FILE}" \
+  --status-file "${LEAN_DIFFERENTIAL_STATUS_FILE}" \
+  --output-dir "${OUTPUT_DIR}"
+cp "${OUTPUT_DIR}/lean-formal/lean-check.json" "${LEAN_CHECK_JSON_FILE}"
+cp "${OUTPUT_DIR}/lean-formal/lean-check.status" "${LEAN_CHECK_STATUS_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-report > "${WRSPM_REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-json > "${WRSPM_JSON_FILE}"
 bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
@@ -80,6 +104,12 @@ adequacy_status="$(cat "${ADEQUACY_STATUS_FILE}" 2>/dev/null || true)"
 adequacy_status="${adequacy_status:-UNKNOWN}"
 implementation_trace_status="$(cat "${IMPLEMENTATION_TRACE_STATUS_FILE}" 2>/dev/null || true)"
 implementation_trace_status="${implementation_trace_status:-UNKNOWN}"
+implementation_trace_policy_status="$(cat "${IMPLEMENTATION_TRACE_POLICY_STATUS_FILE}" 2>/dev/null || true)"
+implementation_trace_policy_status="${implementation_trace_policy_status:-UNKNOWN}"
+lean_check_status="$(cat "${LEAN_CHECK_STATUS_FILE}" 2>/dev/null || true)"
+lean_check_status="${lean_check_status:-UNKNOWN}"
+lean_differential_status="$(cat "${LEAN_DIFFERENTIAL_STATUS_FILE}" 2>/dev/null || true)"
+lean_differential_status="${lean_differential_status:-UNKNOWN}"
 
 {
   echo "# System Model Quality Gate"
@@ -91,6 +121,9 @@ implementation_trace_status="${implementation_trace_status:-UNKNOWN}"
   echo "- Trace-map coverage status: \`${trace_map_coverage_status}\`"
   echo "- Adequacy evidence status: \`${adequacy_status}\`"
   echo "- Implementation trace status: \`${implementation_trace_status}\`"
+  echo "- Implementation trace policy status: \`${implementation_trace_policy_status}\`"
+  echo "- Lean formal check status: \`${lean_check_status}\`"
+  echo "- Lean differential status: \`${lean_differential_status}\`"
   echo
   echo "## Artifacts"
   echo
@@ -109,6 +142,11 @@ implementation_trace_status="${implementation_trace_status:-UNKNOWN}"
   echo "- \`tool_spec.adequacy-differential.md\`"
   echo "- \`tool_spec.adequacy-evidence.json\`"
   echo "- \`tool_spec.implementation-trace.md\`"
+  echo "- \`tool_spec.implementation-trace.policy.status\`"
+  echo "- \`tool_spec.lean\`"
+  echo "- \`tool_spec.lean-check.json\`"
+  echo "- \`tool_spec.lean-differential.md\`"
+  echo "- \`tool_spec.lean-differential.json\`"
   echo "- \`tool_spec.wrspm.md\`"
   echo "- \`tool_spec.wrspm.json\`"
 } > "${SUMMARY_FILE}"
