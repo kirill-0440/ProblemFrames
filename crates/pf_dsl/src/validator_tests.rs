@@ -64,6 +64,7 @@ mod tests {
             ],
             interfaces: vec![],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -98,6 +99,7 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -131,6 +133,7 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -159,6 +162,7 @@ mod tests {
                 vec![phenomenon("E1", PhenomenonType::Event, "L", "M", "L")],
             )],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -187,6 +191,7 @@ mod tests {
                 vec![phenomenon("Cmd1", PhenomenonType::Command, "M", "C", "M")],
             )],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -221,6 +226,7 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -255,6 +261,7 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -292,6 +299,7 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -329,6 +337,7 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -384,6 +393,7 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -445,6 +455,7 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -482,6 +493,7 @@ mod tests {
                 span: mock_span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -589,6 +601,7 @@ mod tests {
                     source_path: None,
                 },
             ],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -606,6 +619,7 @@ mod tests {
             domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
             interfaces: vec![],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![AssertionSet {
                 name: "W".to_string(),
                 scope: AssertionScope::WorldProperties,
@@ -633,6 +647,7 @@ mod tests {
             domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
             interfaces: vec![],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![AssertionSet {
                 name: "S_ok".to_string(),
                 scope: AssertionScope::Specification,
@@ -675,6 +690,7 @@ mod tests {
             domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
             interfaces: vec![],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![
                 AssertionSet {
                     name: "S_wrong".to_string(),
@@ -730,5 +746,136 @@ mod tests {
                     if name == "A1" && message.contains("wrong scope")
             )
         }));
+    }
+
+    #[test]
+    fn test_subproblem_missing_machine_is_invalid() {
+        let problem = Problem {
+            name: "SubproblemMissingMachine".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![Subproblem {
+                name: "Core".to_string(),
+                machine: None,
+                participants: vec![mock_ref("M")],
+                requirements: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::MissingSubproblemField(name, field, _)
+                    if name == "Core" && field == "machine"
+            )
+        }));
+    }
+
+    #[test]
+    fn test_subproblem_rejects_requirement_outside_participants() {
+        let problem = Problem {
+            name: "SubproblemBoundary".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+                domain("B", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![
+                interface(
+                    "M-A",
+                    &["M", "A"],
+                    vec![phenomenon("ControlA", PhenomenonType::Event, "M", "A", "M")],
+                ),
+                interface(
+                    "M-B",
+                    &["M", "B"],
+                    vec![phenomenon("ControlB", PhenomenonType::Event, "M", "B", "M")],
+                ),
+            ],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("B")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            subproblems: vec![Subproblem {
+                name: "Core".to_string(),
+                machine: Some(mock_ref("M")),
+                participants: vec![mock_ref("M"), mock_ref("A")],
+                requirements: vec![mock_ref("R1")],
+                span: mock_span(),
+                source_path: None,
+            }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidSubproblem(name, message, _)
+                    if name == "Core" && message.contains("outside participants")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_subproblem_valid_decomposition() {
+        let problem = Problem {
+            name: "SubproblemValid".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-A",
+                &["M", "A"],
+                vec![phenomenon("Control", PhenomenonType::Event, "M", "A", "M")],
+            )],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("A")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            subproblems: vec![Subproblem {
+                name: "Core".to_string(),
+                machine: Some(mock_ref("M")),
+                participants: vec![mock_ref("M"), mock_ref("A")],
+                requirements: vec![mock_ref("R1")],
+                span: mock_span(),
+                source_path: None,
+            }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_ok());
     }
 }

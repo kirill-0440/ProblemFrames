@@ -98,6 +98,7 @@ pub fn parse(input: &str) -> Result<Problem> {
         domains: vec![],
         interfaces: vec![],
         requirements: vec![],
+        subproblems: vec![],
         assertion_sets: vec![],
         correctness_arguments: vec![],
     };
@@ -262,6 +263,66 @@ pub fn parse(input: &str) -> Result<Problem> {
                 }
 
                 problem.requirements.push(req);
+            }
+            Rule::subproblem_decl => {
+                let mut inner = pair.into_inner();
+                let name = inner
+                    .next()
+                    .ok_or_else(|| anyhow!("missing subproblem name"))?
+                    .as_str()
+                    .to_string();
+                let body = inner
+                    .next()
+                    .ok_or_else(|| anyhow!("missing subproblem body"))?;
+
+                let mut subproblem = Subproblem {
+                    name,
+                    machine: None,
+                    participants: vec![],
+                    requirements: vec![],
+                    span,
+                    source_path: None,
+                };
+
+                for field in body.into_inner() {
+                    match field.as_rule() {
+                        Rule::subproblem_machine => {
+                            let machine_pair = next_inner(field, "subproblem machine domain")?;
+                            subproblem.machine = Some(Reference {
+                                name: machine_pair.as_str().to_string(),
+                                span: pair_to_span(&machine_pair),
+                            });
+                        }
+                        Rule::subproblem_participants => {
+                            let list_pair = next_inner(field, "subproblem participants list")?;
+                            for participant_pair in list_pair.into_inner() {
+                                if participant_pair.as_rule() == Rule::identifier {
+                                    subproblem.participants.push(Reference {
+                                        name: participant_pair.as_str().to_string(),
+                                        span: pair_to_span(&participant_pair),
+                                    });
+                                }
+                            }
+                        }
+                        Rule::subproblem_requirements => {
+                            let list_pair = next_inner(field, "subproblem requirements list")?;
+                            for requirement_pair in list_pair.into_inner() {
+                                if requirement_pair.as_rule() == Rule::string_literal {
+                                    subproblem.requirements.push(Reference {
+                                        name: requirement_pair
+                                            .as_str()
+                                            .trim_matches('"')
+                                            .to_string(),
+                                        span: pair_to_span(&requirement_pair),
+                                    });
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                problem.subproblems.push(subproblem);
             }
             Rule::world_properties_decl => {
                 problem

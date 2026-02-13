@@ -85,6 +85,18 @@ requirement "FastFeedbackLoop" {
     reference: CI
 }
 
+subproblem PlanningControl {
+    machine: RoadmapBoard
+    participants: RoadmapBoard, Maintainer, Repository
+    requirements: "RoadmapPrioritization"
+}
+
+subproblem QualityAndFeedback {
+    machine: RoadmapBoard
+    participants: RoadmapBoard, Metrics, CI
+    requirements: "QualityDrivenPlanning", "FastFeedbackLoop"
+}
+
 worldProperties W_roadmap {
     assert "QualitySignals eventually reflects current CI and user feedback state" @LTL
 }

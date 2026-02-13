@@ -27,6 +27,7 @@ pub struct Problem {
     pub domains: Vec<Domain>,
     pub interfaces: Vec<Interface>,
     pub requirements: Vec<Requirement>,
+    pub subproblems: Vec<Subproblem>,
     pub assertion_sets: Vec<AssertionSet>,
     pub correctness_arguments: Vec<CorrectnessArgument>,
 }
@@ -103,6 +104,16 @@ pub struct Requirement {
     // these refer to domains
     pub constrains: Option<Reference>,
     pub reference: Option<Reference>,
+    pub span: Span,
+    pub source_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Subproblem {
+    pub name: String,
+    pub machine: Option<Reference>,
+    pub participants: Vec<Reference>,
+    pub requirements: Vec<Reference>,
     pub span: Span,
     pub source_path: Option<PathBuf>,
 }

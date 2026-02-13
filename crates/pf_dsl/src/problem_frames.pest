@@ -9,6 +9,7 @@ declaration = _{
     | domain_decl
     | interface_decl
     | requirement_decl
+    | subproblem_decl
     | world_properties_decl
     | specification_decl
     | requirement_assertions_decl
@@ -38,6 +39,13 @@ frame_type = { "frame:" ~ identifier }
 constraint = { "constraint:" ~ string_literal }
 constrains = { "constrains:" ~ identifier }
 reference = { "reference:" ~ identifier }
+
+subproblem_decl = { "subproblem" ~ identifier ~ "{" ~ subproblem_body ~ "}" }
+subproblem_body = { (subproblem_machine | subproblem_participants | subproblem_requirements)* }
+subproblem_machine = { "machine:" ~ identifier }
+subproblem_participants = { "participants:" ~ identifier_list }
+subproblem_requirements = { "requirements:" ~ string_list }
+string_list = { string_literal ~ ("," ~ string_literal)* }
 
 world_properties_decl = { "worldProperties" ~ identifier ~ "{" ~ assertion_stmt* ~ "}" }
 specification_decl = { "specification" ~ identifier ~ "{" ~ assertion_stmt* ~ "}" }

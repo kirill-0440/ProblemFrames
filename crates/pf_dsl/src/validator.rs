@@ -33,6 +33,14 @@ pub enum ValidationError {
     InterfaceControllerMismatch(String, String, String, Span),
     #[error("Requirement '{0}' cannot reference machine domain '{1}' in strict PF mode.")]
     RequirementReferencesMachine(String, String, Span),
+    #[error("Subproblem '{0}' is missing required field '{1}'.")]
+    MissingSubproblemField(String, String, Span),
+    #[error("Domain '{0}' referenced in subproblem '{1}' but not defined.")]
+    UndefinedDomainInSubproblem(String, String, Span),
+    #[error("Requirement '{0}' referenced in subproblem '{1}' but not defined.")]
+    UndefinedRequirementInSubproblem(String, String, Span),
+    #[error("Subproblem '{0}' is invalid: {1}")]
+    InvalidSubproblem(String, String, Span),
     #[error("Duplicate assertion set definition: '{0}'")]
     DuplicateAssertionSet(String, Span),
     #[error("Assertion set '{0}' must contain at least one assertion.")]
@@ -246,6 +254,118 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     req.name.clone(),
                     r.span,
                 ));
+            }
+        }
+    }
+
+    for subproblem in &problem.subproblems {
+        if subproblem.machine.is_none() {
+            errors.push(ValidationError::MissingSubproblemField(
+                subproblem.name.clone(),
+                "machine".to_string(),
+                subproblem.span,
+            ));
+        }
+        if subproblem.participants.is_empty() {
+            errors.push(ValidationError::MissingSubproblemField(
+                subproblem.name.clone(),
+                "participants".to_string(),
+                subproblem.span,
+            ));
+        }
+        if subproblem.requirements.is_empty() {
+            errors.push(ValidationError::MissingSubproblemField(
+                subproblem.name.clone(),
+                "requirements".to_string(),
+                subproblem.span,
+            ));
+        }
+
+        if let Some(machine) = &subproblem.machine {
+            if !defined_domains.contains(&machine.name) {
+                errors.push(ValidationError::UndefinedDomainInSubproblem(
+                    machine.name.clone(),
+                    subproblem.name.clone(),
+                    machine.span,
+                ));
+            } else if let Some(domain) = find_domain(problem, &machine.name) {
+                if domain.role != DomainRole::Machine {
+                    errors.push(ValidationError::InvalidSubproblem(
+                        subproblem.name.clone(),
+                        format!("machine '{}' must have role machine", machine.name),
+                        machine.span,
+                    ));
+                }
+            }
+        }
+
+        let mut participant_names = HashSet::new();
+        for participant in &subproblem.participants {
+            if !defined_domains.contains(&participant.name) {
+                errors.push(ValidationError::UndefinedDomainInSubproblem(
+                    participant.name.clone(),
+                    subproblem.name.clone(),
+                    participant.span,
+                ));
+            } else {
+                participant_names.insert(participant.name.as_str());
+            }
+        }
+
+        if let Some(machine) = &subproblem.machine {
+            if !participant_names.contains(machine.name.as_str()) {
+                errors.push(ValidationError::InvalidSubproblem(
+                    subproblem.name.clone(),
+                    format!("participants must include machine '{}'", machine.name),
+                    subproblem.span,
+                ));
+            }
+        }
+
+        for requirement_ref in &subproblem.requirements {
+            if !problem
+                .requirements
+                .iter()
+                .any(|requirement| requirement.name == requirement_ref.name)
+            {
+                errors.push(ValidationError::UndefinedRequirementInSubproblem(
+                    requirement_ref.name.clone(),
+                    subproblem.name.clone(),
+                    requirement_ref.span,
+                ));
+            }
+        }
+
+        for requirement_ref in &subproblem.requirements {
+            if let Some(requirement) = problem
+                .requirements
+                .iter()
+                .find(|requirement| requirement.name == requirement_ref.name)
+            {
+                if let Some(constrains) = &requirement.constrains {
+                    if !participant_names.contains(constrains.name.as_str()) {
+                        errors.push(ValidationError::InvalidSubproblem(
+                            subproblem.name.clone(),
+                            format!(
+                                "requirement '{}' constrains '{}' outside participants",
+                                requirement.name, constrains.name
+                            ),
+                            requirement_ref.span,
+                        ));
+                    }
+                }
+                if let Some(reference) = &requirement.reference {
+                    if !participant_names.contains(reference.name.as_str()) {
+                        errors.push(ValidationError::InvalidSubproblem(
+                            subproblem.name.clone(),
+                            format!(
+                                "requirement '{}' references '{}' outside participants",
+                                requirement.name, reference.name
+                            ),
+                            requirement_ref.span,
+                        ));
+                    }
+                }
             }
         }
     }
@@ -654,6 +774,10 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         | ValidationError::InterfaceWithoutPhenomena(_, span)
         | ValidationError::InterfaceControllerMismatch(_, _, _, span)
         | ValidationError::RequirementReferencesMachine(_, _, span)
+        | ValidationError::MissingSubproblemField(_, _, span)
+        | ValidationError::UndefinedDomainInSubproblem(_, _, span)
+        | ValidationError::UndefinedRequirementInSubproblem(_, _, span)
+        | ValidationError::InvalidSubproblem(_, _, span)
         | ValidationError::DuplicateAssertionSet(_, span)
         | ValidationError::EmptyAssertionSet(_, span)
         | ValidationError::InvalidCorrectnessArgument(_, _, span) => *span,
@@ -732,6 +856,14 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
             .iter()
             .find(|argument| argument.name == *name)
             .and_then(|argument| argument.source_path.clone()),
+        ValidationError::MissingSubproblemField(name, _, _)
+        | ValidationError::InvalidSubproblem(name, _, _)
+        | ValidationError::UndefinedDomainInSubproblem(_, name, _)
+        | ValidationError::UndefinedRequirementInSubproblem(_, name, _) => problem
+            .subproblems
+            .iter()
+            .find(|subproblem| subproblem.name == *name)
+            .and_then(|subproblem| subproblem.source_path.clone()),
     }
 }
 

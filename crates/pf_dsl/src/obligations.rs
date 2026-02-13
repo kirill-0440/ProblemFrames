@@ -111,6 +111,7 @@ mod tests {
             domains: vec![],
             interfaces: vec![],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![
                 AssertionSet {
                     name: "S_control".to_string(),

@@ -61,6 +61,36 @@ pub fn generate_alloy(problem: &Problem) -> String {
         .unwrap();
     }
 
+    if !problem.subproblems.is_empty() {
+        writeln!(&mut output).unwrap();
+        writeln!(&mut output, "// Subproblem decomposition").unwrap();
+        for subproblem in &problem.subproblems {
+            let machine = subproblem
+                .machine
+                .as_ref()
+                .map(|machine| machine.name.as_str())
+                .unwrap_or("<missing>");
+            let participants = subproblem
+                .participants
+                .iter()
+                .map(|participant| participant.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
+            let requirements = subproblem
+                .requirements
+                .iter()
+                .map(|requirement| requirement.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ");
+            writeln!(
+                &mut output,
+                "// - {}: machine={}, participants=[{}], requirements=[{}]",
+                subproblem.name, machine, participants, requirements
+            )
+            .unwrap();
+        }
+    }
+
     if !problem.correctness_arguments.is_empty() {
         writeln!(&mut output).unwrap();
         writeln!(&mut output, "// Proof obligations").unwrap();
@@ -192,6 +222,7 @@ mod tests {
                 span: span(),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![
                 AssertionSet {
                     name: "S_control".to_string(),

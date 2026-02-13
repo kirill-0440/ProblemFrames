@@ -77,6 +77,18 @@ requirement "ScaffoldGeneration" {
     reference: Developer
 }
 
+subproblem FeedbackLoop {
+    machine: Tool
+    participants: Tool, Developer, Editor
+    requirements: "ImmediateFeedback"
+}
+
+subproblem CodeScaffolding {
+    machine: Tool
+    participants: Tool, Developer, GeneratedCode
+    requirements: "ScaffoldGeneration"
+}
+
 worldProperties W_tooling {
     assert "SourceFile content can be read after each Edit event" @LTL
 }

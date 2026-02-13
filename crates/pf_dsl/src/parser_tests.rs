@@ -103,4 +103,36 @@ mod tests {
         assert_eq!(problem.correctness_arguments[0].world_set, "W_base");
         assert_eq!(problem.correctness_arguments[0].requirement_set, "R_goal");
     }
+
+    #[test]
+    fn test_parse_subproblem_decomposition() {
+        let input = r#"
+            problem: Decomposed
+            domain M kind causal role machine
+            domain A kind causal role given
+
+            requirement "R1" {
+                frame: RequiredBehavior
+                constrains: A
+            }
+
+            subproblem CoreControl {
+                machine: M
+                participants: M, A
+                requirements: "R1"
+            }
+        "#;
+
+        let problem = parse(input).expect("Failed to parse subproblem");
+        assert_eq!(problem.subproblems.len(), 1);
+        let subproblem = &problem.subproblems[0];
+        assert_eq!(subproblem.name, "CoreControl");
+        assert_eq!(
+            subproblem.machine.as_ref().map(|r| r.name.as_str()),
+            Some("M")
+        );
+        assert_eq!(subproblem.participants.len(), 2);
+        assert_eq!(subproblem.requirements.len(), 1);
+        assert_eq!(subproblem.requirements[0].name, "R1");
+    }
 }

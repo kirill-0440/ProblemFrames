@@ -31,7 +31,7 @@
       "patterns": [
         {
           "name": "keyword.control.pf",
-          "match": "\\b(problem|domain|kind|role|interface|connects|phenomenon|controlledBy|requirement|shared|frame|constraint|constrains|reference|worldProperties|specification|requirementAssertions|correctnessArgument|assert|prove|and|entail)\\b"
+          "match": "\\b(problem|domain|kind|role|interface|connects|phenomenon|controlledBy|requirement|shared|subproblem|machine|participants|requirements|frame|constraint|constrains|reference|worldProperties|specification|requirementAssertions|correctnessArgument|assert|prove|and|entail)\\b"
         }
       ]
     },

@@ -90,6 +90,9 @@ fn resolve_recursive(
         for requirement in &mut imported_problem.requirements {
             requirement.source_path = Some(import_source_path.clone());
         }
+        for subproblem in &mut imported_problem.subproblems {
+            subproblem.source_path = Some(import_source_path.clone());
+        }
         for assertion_set in &mut imported_problem.assertion_sets {
             assertion_set.source_path = Some(import_source_path.clone());
         }
@@ -102,6 +105,7 @@ fn resolve_recursive(
         problem.domains.extend(imported_problem.domains);
         problem.interfaces.extend(imported_problem.interfaces);
         problem.requirements.extend(imported_problem.requirements);
+        problem.subproblems.extend(imported_problem.subproblems);
         problem
             .assertion_sets
             .extend(imported_problem.assertion_sets);
@@ -233,6 +237,7 @@ mod tests {
                 source_path: None,
             }],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -277,6 +282,7 @@ mod tests {
                 span: mock_span(70, 90),
                 source_path: None,
             }],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
@@ -325,6 +331,7 @@ mod tests {
                 source_path: Some(PathBuf::from("/tmp/imported.pf")),
             }],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };

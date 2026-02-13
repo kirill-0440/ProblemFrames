@@ -177,6 +177,7 @@ mod tests {
                 source_path: None,
             }],
             requirements: vec![],
+            subproblems: vec![],
             assertion_sets: vec![],
             correctness_arguments: vec![],
         };
