@@ -15,6 +15,8 @@ pub fn resolve(entry_file: &Path, content_override: Option<&str>) -> Result<Prob
     let mut problem =
         parse(&content).with_context(|| format!("Failed to parse file: {:?}", entry_file))?;
 
+    set_problem_source_path(&mut problem, entry_file);
+
     // Track loaded files to avoid cycles (simple check)
     let mut loaded = HashSet::new();
     if let Ok(canon) = fs::canonicalize(entry_file) {
@@ -30,6 +32,44 @@ pub fn resolve(entry_file: &Path, content_override: Option<&str>) -> Result<Prob
     Ok(problem)
 }
 
+fn set_problem_source_path(problem: &mut Problem, source_path: &Path) {
+    for domain in &mut problem.domains {
+        domain.source_path = Some(source_path.to_path_buf());
+    }
+    for interface in &mut problem.interfaces {
+        interface.source_path = Some(source_path.to_path_buf());
+    }
+    for requirement in &mut problem.requirements {
+        requirement.source_path = Some(source_path.to_path_buf());
+    }
+    for subproblem in &mut problem.subproblems {
+        subproblem.source_path = Some(source_path.to_path_buf());
+    }
+    for assertion_set in &mut problem.assertion_sets {
+        assertion_set.source_path = Some(source_path.to_path_buf());
+    }
+    for correctness_argument in &mut problem.correctness_arguments {
+        correctness_argument.source_path = Some(source_path.to_path_buf());
+    }
+}
+
+fn load_standard_import(import_path_str: &str) -> Option<(&'static str, PathBuf)> {
+    let content = match import_path_str {
+        "std/RequiredBehavior.pf" => include_str!("std/RequiredBehavior.pf"),
+        "std/CommandedBehavior.pf" => include_str!("std/CommandedBehavior.pf"),
+        "std/InformationDisplay.pf" => include_str!("std/InformationDisplay.pf"),
+        "std/SimpleWorkpieces.pf" => include_str!("std/SimpleWorkpieces.pf"),
+        "std/Transformation.pf" => include_str!("std/Transformation.pf"),
+        _ => return None,
+    };
+
+    let source_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join(import_path_str);
+
+    Some((content, source_path))
+}
+
 fn resolve_recursive(
     problem: &mut Problem,
     current_file: &Path,
@@ -41,21 +81,15 @@ fn resolve_recursive(
     let imports = problem.imports.clone();
 
     for import_path_str in imports {
-        let (content, import_source_path) = if import_path_str.starts_with("std/") {
-            // Handle Standard Library
-            let content = match import_path_str.as_str() {
-                "std/RequiredBehavior.pf" => include_str!("std/RequiredBehavior.pf").to_string(),
-                "std/CommandedBehavior.pf" => include_str!("std/CommandedBehavior.pf").to_string(),
-                "std/InformationDisplay.pf" => {
-                    include_str!("std/InformationDisplay.pf").to_string()
-                }
-                "std/SimpleWorkpieces.pf" => include_str!("std/SimpleWorkpieces.pf").to_string(),
-                "std/Transformation.pf" => include_str!("std/Transformation.pf").to_string(),
-                _ => anyhow::bail!("Standard library file not found: {}", import_path_str),
-            };
-            // For std imports, we use the import string itself as a unique identifier
-            // and a dummy path for recursion context.
-            (content, PathBuf::from(import_path_str.clone()))
+        let (content, import_source_path) = if let Some((content, import_path)) =
+            load_standard_import(import_path_str.as_str())
+        {
+            if loaded.contains(&import_path) {
+                // Cycle detected or already loaded.
+                continue;
+            }
+            loaded.insert(import_path.clone());
+            (content.to_string(), import_path)
         } else {
             let import_path = base_dir.join(&import_path_str);
 
@@ -119,21 +153,12 @@ fn resolve_recursive(
     Ok(())
 }
 
-fn path_eq(left: &Path, right: &Path) -> bool {
-    if left == right {
-        return true;
-    }
-    match (fs::canonicalize(left), fs::canonicalize(right)) {
-        (Ok(a), Ok(b)) => a == b,
-        _ => false,
-    }
-}
-
 pub fn find_definition(
     problem: &Problem,
     source_file: &Path,
     offset: usize,
 ) -> Option<(Option<PathBuf>, Span)> {
+    let _ = source_file;
     // Helper to find domain definition
     let find_domain = |name: &str| -> Option<(Option<PathBuf>, Span)> {
         problem
@@ -167,12 +192,6 @@ pub fn find_definition(
 
     // 1. Check Interfaces (Phenomena)
     for interface in &problem.interfaces {
-        if let Some(source_path) = interface.source_path.as_deref() {
-            if !path_eq(source_path, source_file) {
-                continue;
-            }
-        }
-
         for domain_ref in &interface.connects {
             if offset >= domain_ref.span.start && offset < domain_ref.span.end {
                 return find_domain(&domain_ref.name);
@@ -193,12 +212,6 @@ pub fn find_definition(
 
     // 2. Check Requirements
     for req in &problem.requirements {
-        if let Some(source_path) = req.source_path.as_deref() {
-            if !path_eq(source_path, source_file) {
-                continue;
-            }
-        }
-
         if let Some(ref c) = req.constrains {
             if offset >= c.span.start && offset < c.span.end {
                 return find_domain(&c.name);
@@ -213,12 +226,6 @@ pub fn find_definition(
 
     // 3. Check Subproblems
     for subproblem in &problem.subproblems {
-        if let Some(source_path) = subproblem.source_path.as_deref() {
-            if !path_eq(source_path, source_file) {
-                continue;
-            }
-        }
-
         if let Some(machine_ref) = &subproblem.machine {
             if is_offset_in_ref(machine_ref) {
                 return find_domain(&machine_ref.name);
@@ -240,12 +247,6 @@ pub fn find_definition(
 
     // 4. Check Correctness Arguments
     for argument in &problem.correctness_arguments {
-        if let Some(source_path) = argument.source_path.as_deref() {
-            if !path_eq(source_path, source_file) {
-                continue;
-            }
-        }
-
         if is_offset_in_ref(&argument.specification_ref) {
             return find_assertion_set(
                 &argument.specification_ref.name,
@@ -388,7 +389,8 @@ mod tests {
     }
 
     #[test]
-    fn test_find_definition_ignores_other_source_files() {
+    fn test_find_definition_from_imported_source_file() {
+        let imported_path = PathBuf::from("/tmp/imported.pf");
         let problem = Problem {
             name: "Test".to_string(),
             span: mock_span(0, 200),
@@ -399,14 +401,14 @@ mod tests {
                     kind: DomainKind::Causal,
                     role: DomainRole::Machine,
                     span: mock_span(10, 20),
-                    source_path: None,
+                    source_path: Some(imported_path.clone()),
                 },
                 Domain {
                     name: "B".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
                     span: mock_span(21, 30),
-                    source_path: None,
+                    source_path: Some(imported_path.clone()),
                 },
             ],
             interfaces: vec![Interface {
@@ -421,7 +423,7 @@ mod tests {
                     span: mock_span(44, 70),
                 }],
                 span: mock_span(30, 80),
-                source_path: Some(PathBuf::from("/tmp/imported.pf")),
+                source_path: Some(imported_path.clone()),
             }],
             requirements: vec![],
             subproblems: vec![],
@@ -429,8 +431,11 @@ mod tests {
             correctness_arguments: vec![],
         };
 
-        let result = find_definition(&problem, Path::new("/tmp/root.pf"), 52);
-        assert!(result.is_none());
+        let result = find_definition(&problem, Path::new("/tmp/root.pf"), 52)
+            .expect("definition should be resolved from imported source file");
+        let (source_path, span) = result;
+        assert_eq!(source_path.as_deref(), Some(Path::new("/tmp/imported.pf")));
+        assert_eq!(span, mock_span(10, 20));
     }
 
     #[test]
