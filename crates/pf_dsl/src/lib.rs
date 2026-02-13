@@ -10,5 +10,6 @@ mod parser_tests;
 pub mod report_gen;
 pub mod resolver;
 mod resolver_tests;
+pub mod traceability;
 pub mod validator;
 mod validator_tests;

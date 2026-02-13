@@ -22,6 +22,7 @@ Implemented in `crates/pf_dsl`:
   - `specification` (`S`)
   - `requirementAssertions` (`R`)
   - `correctnessArgument` (`S and W entail R`)
+- relationship graph extraction API for traceability/impact workflows (`traceability` module)
 
 ### Validation and Semantics
 

@@ -62,9 +62,9 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - Owner: `Tooling Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add relationship graph extraction for requirement/domain/interface/phenomenon/subproblem links.
-- [ ] Add unit tests for graph construction on at least one multi-subproblem model.
-- [ ] Reuse resolved/validated AST as the only source of truth.
+- [x] Add relationship graph extraction for requirement/domain/interface/phenomenon/subproblem links.
+- [x] Add unit tests for graph construction on at least one multi-subproblem model.
+- [x] Reuse resolved/validated AST as the only source of truth.
 
 #### R007-M2-02 - CLI Export for Matrix + Impact
 
