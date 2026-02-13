@@ -46,6 +46,11 @@ fn resolve_recursive(
             let content = match import_path_str.as_str() {
                 "std/RequiredBehavior.pf" => include_str!("std/RequiredBehavior.pf").to_string(),
                 "std/CommandedBehavior.pf" => include_str!("std/CommandedBehavior.pf").to_string(),
+                "std/InformationDisplay.pf" => {
+                    include_str!("std/InformationDisplay.pf").to_string()
+                }
+                "std/SimpleWorkpieces.pf" => include_str!("std/SimpleWorkpieces.pf").to_string(),
+                "std/Transformation.pf" => include_str!("std/Transformation.pf").to_string(),
                 _ => anyhow::bail!("Standard library file not found: {}", import_path_str),
             };
             // For std imports, we use the import string itself as a unique identifier

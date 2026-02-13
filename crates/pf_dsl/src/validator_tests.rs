@@ -326,4 +326,248 @@ mod tests {
             )
         }));
     }
+
+    #[test]
+    fn test_information_display_reference_must_be_biddable() {
+        let problem = Problem {
+            name: "InfoDisplay".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("Ops", DomainKind::Causal, DomainRole::Given),
+                domain("Metrics", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![
+                interface(
+                    "Ops-M",
+                    &["Ops", "M"],
+                    vec![phenomenon("Push", PhenomenonType::Event, "Ops", "M", "Ops")],
+                ),
+                interface(
+                    "Metrics-M",
+                    &["Metrics", "M"],
+                    vec![phenomenon(
+                        "Snapshot",
+                        PhenomenonType::Value,
+                        "Metrics",
+                        "M",
+                        "Metrics",
+                    )],
+                ),
+            ],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::InformationDisplay,
+                constrains: Some(mock_ref("Metrics")),
+                reference: Some(mock_ref("Ops")),
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|e| {
+            matches!(
+                e,
+                ValidationError::InvalidFrameDomain(req, frame, _, _)
+                    if req == "R1" && frame == "InformationDisplay"
+            )
+        }));
+    }
+
+    #[test]
+    fn test_simple_workpieces_requires_lexical_constrained_domain() {
+        let problem = Problem {
+            name: "SimpleWorkpieces".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("User", DomainKind::Biddable, DomainRole::Given),
+                domain("Work", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![
+                interface(
+                    "User-M",
+                    &["User", "M"],
+                    vec![phenomenon(
+                        "Edit",
+                        PhenomenonType::Event,
+                        "User",
+                        "M",
+                        "User",
+                    )],
+                ),
+                interface(
+                    "Work-M",
+                    &["Work", "M"],
+                    vec![phenomenon(
+                        "State",
+                        PhenomenonType::State,
+                        "Work",
+                        "M",
+                        "Work",
+                    )],
+                ),
+            ],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::SimpleWorkpieces,
+                constrains: Some(mock_ref("Work")),
+                reference: Some(mock_ref("User")),
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|e| {
+            matches!(
+                e,
+                ValidationError::InvalidFrameDomain(req, frame, _, _)
+                    if req == "R1" && frame == "SimpleWorkpieces"
+            )
+        }));
+    }
+
+    #[test]
+    fn test_transformation_requires_connection_to_machine() {
+        let problem = Problem {
+            name: "Transformation".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("Out", DomainKind::Lexical, DomainRole::Given),
+            ],
+            interfaces: vec![],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::Transformation,
+                constrains: Some(mock_ref("Out")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|e| {
+            matches!(
+                e,
+                ValidationError::MissingConnection(domain, _, frame, _)
+                    if domain == "Out" && frame == "Transformation"
+            )
+        }));
+    }
+
+    #[test]
+    fn test_additional_frames_valid_when_fit() {
+        let problem = Problem {
+            name: "AllFrames".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("Viewer", DomainKind::Biddable, DomainRole::Given),
+                domain("Sensor", DomainKind::Causal, DomainRole::Given),
+                domain("Workpiece", DomainKind::Lexical, DomainRole::Given),
+                domain("Output", DomainKind::Lexical, DomainRole::Given),
+            ],
+            interfaces: vec![
+                interface(
+                    "Viewer-M",
+                    &["Viewer", "M"],
+                    vec![phenomenon(
+                        "RequestView",
+                        PhenomenonType::Event,
+                        "Viewer",
+                        "M",
+                        "Viewer",
+                    )],
+                ),
+                interface(
+                    "Sensor-M",
+                    &["Sensor", "M"],
+                    vec![phenomenon(
+                        "Signal",
+                        PhenomenonType::Value,
+                        "Sensor",
+                        "M",
+                        "Sensor",
+                    )],
+                ),
+                interface(
+                    "Workpiece-M",
+                    &["Workpiece", "M"],
+                    vec![phenomenon(
+                        "Draft",
+                        PhenomenonType::Value,
+                        "Workpiece",
+                        "M",
+                        "Workpiece",
+                    )],
+                ),
+                interface(
+                    "M-Output",
+                    &["M", "Output"],
+                    vec![phenomenon(
+                        "Produced",
+                        PhenomenonType::Value,
+                        "M",
+                        "Output",
+                        "M",
+                    )],
+                ),
+            ],
+            requirements: vec![
+                Requirement {
+                    name: "ShowState".to_string(),
+                    frame: FrameType::InformationDisplay,
+                    constrains: Some(mock_ref("Sensor")),
+                    reference: Some(mock_ref("Viewer")),
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                Requirement {
+                    name: "EditWorkpiece".to_string(),
+                    frame: FrameType::SimpleWorkpieces,
+                    constrains: Some(mock_ref("Workpiece")),
+                    reference: Some(mock_ref("Viewer")),
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                Requirement {
+                    name: "GenerateOutput".to_string(),
+                    frame: FrameType::Transformation,
+                    constrains: Some(mock_ref("Output")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_ok());
+    }
 }

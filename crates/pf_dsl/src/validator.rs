@@ -54,6 +54,16 @@ fn is_machine(domain: &Domain) -> bool {
     domain.role == DomainRole::Machine
 }
 
+fn find_domain<'a>(problem: &'a Problem, name: &str) -> Option<&'a Domain> {
+    problem.domains.iter().find(|domain| domain.name == name)
+}
+
+fn connected_to_machine(problem: &Problem, domain_name: &str) -> bool {
+    problem.domains.iter().any(|domain| {
+        domain.role == DomainRole::Machine && is_connected(problem, domain_name, &domain.name)
+    })
+}
+
 pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     let mut errors = vec![];
     let mut defined_domains = HashSet::new();
@@ -307,7 +317,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                 }
 
                 if let Some(ref r) = req.reference {
-                    if let Some(domain) = problem.domains.iter().find(|d| d.name == r.name) {
+                    if let Some(domain) = find_domain(problem, &r.name) {
                         if domain.kind != DomainKind::Biddable {
                             errors.push(ValidationError::InvalidFrameDomain(
                                 req.name.clone(),
@@ -320,12 +330,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                             ));
                         }
 
-                        let connected_to_machine = problem.domains.iter().any(|d| {
-                            d.role == DomainRole::Machine
-                                && is_connected(problem, &domain.name, &d.name)
-                        });
-
-                        if !connected_to_machine {
+                        if !connected_to_machine(problem, &domain.name) {
                             errors.push(ValidationError::MissingConnection(
                                 domain.name.clone(),
                                 "machine".to_string(),
@@ -346,30 +351,182 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                 }
 
                 if let Some(ref c) = req.constrains {
-                    if let Some(domain) = problem.domains.iter().find(|d| d.name == c.name) {
-                        if domain.kind != DomainKind::Causal && domain.kind != DomainKind::Biddable
-                        {
+                    if let Some(domain) = find_domain(problem, &c.name) {
+                        if domain.kind != DomainKind::Causal {
                             errors.push(ValidationError::InvalidFrameDomain(
                                 req.name.clone(),
                                 "RequiredBehavior".to_string(),
                                 format!(
-                                    "constrained domain '{}' should be causal or biddable, found {:?}/{:?}",
+                                    "constrained domain '{}' should be causal, found {:?}/{:?}",
                                     c.name, domain.kind, domain.role
                                 ),
                                 c.span,
                             ));
                         }
 
-                        let connected_to_machine = problem.domains.iter().any(|d| {
-                            d.role == DomainRole::Machine
-                                && is_connected(problem, &domain.name, &d.name)
-                        });
-
-                        if !connected_to_machine {
+                        if !connected_to_machine(problem, &domain.name) {
                             errors.push(ValidationError::MissingConnection(
                                 domain.name.clone(),
                                 "machine".to_string(),
                                 "RequiredBehavior".to_string(),
+                                req.span,
+                            ));
+                        }
+                    }
+                }
+            }
+            FrameType::InformationDisplay => {
+                if req.reference.is_none() {
+                    errors.push(ValidationError::MissingRequiredField(
+                        req.name.clone(),
+                        "reference".to_string(),
+                        req.span,
+                    ));
+                }
+                if req.constrains.is_none() {
+                    errors.push(ValidationError::MissingRequiredField(
+                        req.name.clone(),
+                        "constrains".to_string(),
+                        req.span,
+                    ));
+                }
+
+                if let Some(ref r) = req.reference {
+                    if let Some(domain) = find_domain(problem, &r.name) {
+                        if domain.kind != DomainKind::Biddable {
+                            errors.push(ValidationError::InvalidFrameDomain(
+                                req.name.clone(),
+                                "InformationDisplay".to_string(),
+                                format!(
+                                    "reference domain '{}' should be biddable, found {:?}/{:?}",
+                                    r.name, domain.kind, domain.role
+                                ),
+                                r.span,
+                            ));
+                        }
+                        if !connected_to_machine(problem, &domain.name) {
+                            errors.push(ValidationError::MissingConnection(
+                                domain.name.clone(),
+                                "machine".to_string(),
+                                "InformationDisplay".to_string(),
+                                req.span,
+                            ));
+                        }
+                    }
+                }
+
+                if let Some(ref c) = req.constrains {
+                    if let Some(domain) = find_domain(problem, &c.name) {
+                        if domain.kind == DomainKind::Biddable {
+                            errors.push(ValidationError::InvalidFrameDomain(
+                                req.name.clone(),
+                                "InformationDisplay".to_string(),
+                                format!("constrained domain '{}' cannot be biddable", c.name),
+                                c.span,
+                            ));
+                        }
+                        if !connected_to_machine(problem, &domain.name) {
+                            errors.push(ValidationError::MissingConnection(
+                                domain.name.clone(),
+                                "machine".to_string(),
+                                "InformationDisplay".to_string(),
+                                req.span,
+                            ));
+                        }
+                    }
+                }
+            }
+            FrameType::SimpleWorkpieces => {
+                if req.reference.is_none() {
+                    errors.push(ValidationError::MissingRequiredField(
+                        req.name.clone(),
+                        "reference".to_string(),
+                        req.span,
+                    ));
+                }
+                if req.constrains.is_none() {
+                    errors.push(ValidationError::MissingRequiredField(
+                        req.name.clone(),
+                        "constrains".to_string(),
+                        req.span,
+                    ));
+                }
+
+                if let Some(ref r) = req.reference {
+                    if let Some(domain) = find_domain(problem, &r.name) {
+                        if domain.kind != DomainKind::Biddable {
+                            errors.push(ValidationError::InvalidFrameDomain(
+                                req.name.clone(),
+                                "SimpleWorkpieces".to_string(),
+                                format!(
+                                    "reference domain '{}' should be biddable, found {:?}/{:?}",
+                                    r.name, domain.kind, domain.role
+                                ),
+                                r.span,
+                            ));
+                        }
+                        if !connected_to_machine(problem, &domain.name) {
+                            errors.push(ValidationError::MissingConnection(
+                                domain.name.clone(),
+                                "machine".to_string(),
+                                "SimpleWorkpieces".to_string(),
+                                req.span,
+                            ));
+                        }
+                    }
+                }
+
+                if let Some(ref c) = req.constrains {
+                    if let Some(domain) = find_domain(problem, &c.name) {
+                        if domain.kind != DomainKind::Lexical {
+                            errors.push(ValidationError::InvalidFrameDomain(
+                                req.name.clone(),
+                                "SimpleWorkpieces".to_string(),
+                                format!(
+                                    "constrained domain '{}' should be lexical, found {:?}/{:?}",
+                                    c.name, domain.kind, domain.role
+                                ),
+                                c.span,
+                            ));
+                        }
+                        if !connected_to_machine(problem, &domain.name) {
+                            errors.push(ValidationError::MissingConnection(
+                                domain.name.clone(),
+                                "machine".to_string(),
+                                "SimpleWorkpieces".to_string(),
+                                req.span,
+                            ));
+                        }
+                    }
+                }
+            }
+            FrameType::Transformation => {
+                if req.constrains.is_none() {
+                    errors.push(ValidationError::MissingRequiredField(
+                        req.name.clone(),
+                        "constrains".to_string(),
+                        req.span,
+                    ));
+                }
+
+                if let Some(ref c) = req.constrains {
+                    if let Some(domain) = find_domain(problem, &c.name) {
+                        if domain.kind != DomainKind::Lexical {
+                            errors.push(ValidationError::InvalidFrameDomain(
+                                req.name.clone(),
+                                "Transformation".to_string(),
+                                format!(
+                                    "constrained domain '{}' should be lexical, found {:?}/{:?}",
+                                    c.name, domain.kind, domain.role
+                                ),
+                                c.span,
+                            ));
+                        }
+                        if !connected_to_machine(problem, &domain.name) {
+                            errors.push(ValidationError::MissingConnection(
+                                domain.name.clone(),
+                                "machine".to_string(),
+                                "Transformation".to_string(),
                                 req.span,
                             ));
                         }

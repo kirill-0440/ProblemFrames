@@ -1,0 +1,21 @@
+domain Machine kind causal role machine
+domain InformationSource kind causal role given
+domain Viewer kind biddable role given
+
+interface "Machine-InformationSource" connects Machine, InformationSource {
+    shared: {
+        phenomenon observe : value [InformationSource -> Machine] controlledBy InformationSource
+    }
+}
+
+interface "Viewer-Machine" connects Viewer, Machine {
+    shared: {
+        phenomenon request : command [Viewer -> Machine] controlledBy Viewer
+    }
+}
+
+requirement "InformationDisplay" {
+    frame: InformationDisplay
+    constrains: InformationSource
+    reference: Viewer
+}

@@ -25,6 +25,32 @@ mod tests {
     }
 
     #[test]
+    fn test_resolve_extended_standard_library_embedded() {
+        let input = r#"
+            problem: ExtendedStdTest
+            import "std/InformationDisplay.pf"
+            import "std/SimpleWorkpieces.pf"
+            import "std/Transformation.pf"
+        "#;
+
+        let dummy_path = Path::new("dummy.pf");
+        let problem = resolve(dummy_path, Some(input)).expect("Failed to resolve with std imports");
+
+        assert!(problem
+            .requirements
+            .iter()
+            .any(|r| r.name == "InformationDisplay"));
+        assert!(problem
+            .requirements
+            .iter()
+            .any(|r| r.name == "SimpleWorkpieces"));
+        assert!(problem
+            .requirements
+            .iter()
+            .any(|r| r.name == "Transformation"));
+    }
+
+    #[test]
     fn test_resolve_unknown_standard_file() {
         let input = r#"
             problem: Fail
