@@ -17,6 +17,7 @@ This directory contains product and engineering proposals for Problem Frames.
 - `009-pf-canonical-retro-addendum.md`: retrospective alignment addendum that adds canonical PF method quality gates (concern coverage, view separation, decomposition closure) to execution.
 - `010-pf-wrspm-contract-bridge.md`: WRSPM (`W/R/S/P/M`) bridge track that operationalizes PF outputs into explicit contract evidence and adequacy-oriented checks.
 - `010-execution-backlog-m6-m7.md`: execution-ready backlog for proposal `010` milestones (`M6-M7`) across WRSPM mapping, coverage rules, and executable adequacy evidence.
+- `011-execution-hardening-contracts.md`: hardening contracts for solver-backed adequacy evidence and git-diff model-first governance enforcement.
 
 ## Companion Guides
 

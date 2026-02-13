@@ -214,3 +214,15 @@ R010-M7-FormalTrackPolicySwitch|file_contains|.github/workflows/ci.yml|PF_FORMAL
 R010-M7-FormalTrackPolicySwitch|file_contains|.github/workflows/ci.yml|continue-on-error: ${{ vars.PF_FORMAL_TRACK_BLOCKING != '1' }}|CI jobs switch between non-blocking and blocking formal-track mode
 R010-M7-FormalTrackPolicySwitch|file_contains|models/system/subproblems.pf|R010-M7-FormalTrackPolicySwitch|formal-track policy-switch requirement is mapped in canonical PF decomposition
 R010-M7-FormalTrackPolicySwitch|command_passes|PF_FORMAL_TRACK_BLOCKING=1 bash ./scripts/run_pf_quality_gate.sh --help||formal-track policy switch is accepted through environment without changing CLI contract
+
+R011-H1-SolverBackedAdequacyEvidence|file_contains|models/system/requirements.pf|R011-H1-SolverBackedAdequacyEvidence|solver-backed adequacy requirement is modeled
+R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_adequacy_evidence.sh|run_alloy_solver_check.sh|adequacy evidence formal verdict is backed by Alloy solver checks
+R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_adequacy_evidence.sh|expected_solver="UNSAT"|adequacy evidence defines explicit UNSAT expectation for failing fixture class
+R011-H1-SolverBackedAdequacyEvidence|file_contains|models/system/subproblems.pf|R011-H1-SolverBackedAdequacyEvidence|solver-backed adequacy requirement is mapped in canonical PF decomposition
+R011-H1-SolverBackedAdequacyEvidence|command_passes|bash ./scripts/run_adequacy_evidence.sh||solver-backed adequacy evidence generation executes end-to-end
+
+R011-H2-DiffBasedModelFirstGate|file_contains|models/system/requirements.pf|R011-H2-DiffBasedModelFirstGate|diff-based model-first requirement is modeled
+R011-H2-DiffBasedModelFirstGate|file_contains|scripts/check_codex_self_model_contract.sh|git -C "${REPO_ROOT}" diff --name-only --diff-filter=ACMR|model-first contract evaluates changed artifacts from git diff
+R011-H2-DiffBasedModelFirstGate|file_contains|scripts/check_codex_self_model_contract.sh|Model-first contract violation|model-first contract rejects implementation-only diffs without canonical model updates
+R011-H2-DiffBasedModelFirstGate|file_contains|models/system/subproblems.pf|R011-H2-DiffBasedModelFirstGate|diff-based model-first requirement is mapped in canonical PF decomposition
+R011-H2-DiffBasedModelFirstGate|command_passes|bash ./scripts/check_codex_self_model_contract.sh||diff-based model-first contract check executes successfully

@@ -104,8 +104,16 @@ evaluate_fixture() {
 
   local rust_verdict="ERROR"
   local formal_verdict="ERROR"
+  local formal_solver_status="OPEN"
   local category=""
   local expected_match="false"
+  local expected_solver="SAT"
+  local model_rel="${model_path#${REPO_ROOT}/}"
+  local fixture_dir="${output_dir}/solver/${label}"
+  local fixture_expectations_file="${fixture_dir}/expectations.tsv"
+  local fixture_solver_status_file="${fixture_dir}/alloy-solver.status"
+  local fixture_solver_report_file="${fixture_dir}/alloy-solver.md"
+  local fixture_solver_json_file="${fixture_dir}/alloy-solver.json"
 
   if concern_output="$(cd -- "${REPO_ROOT}" && cargo run -p pf_dsl -- "${model_path}" --concern-coverage 2>&1)"; then
     rust_verdict="$(
@@ -116,8 +124,26 @@ evaluate_fixture() {
     rust_verdict="${rust_verdict:-ERROR}"
   fi
 
-  if alloy_output="$(cd -- "${REPO_ROOT}" && cargo run -p pf_dsl -- "${model_path}" --alloy 2>&1)"; then
-    if printf '%s\n' "${alloy_output}" | grep -q "pred Obl_"; then
+  if [[ "${expected}" == "FAIL" ]]; then
+    expected_solver="UNSAT"
+  fi
+
+  mkdir -p "${fixture_dir}"
+  cat > "${fixture_expectations_file}" <<EOF
+# model_pattern|command_pattern|expected|note
+${model_rel}|*|${expected_solver}|Selected adequacy expectation for ${label}
+*|*|SAT|Default expectation for non-selected models
+EOF
+
+  if bash "${REPO_ROOT}/scripts/run_alloy_solver_check.sh" \
+    --model "${model_path}" \
+    --output-dir "${fixture_dir}" \
+    --report "${fixture_solver_report_file}" \
+    --json "${fixture_solver_json_file}" \
+    --status-file "${fixture_solver_status_file}" \
+    --expectations "${fixture_expectations_file}" >/dev/null 2>&1; then
+    formal_solver_status="$(cat "${fixture_solver_status_file}" 2>/dev/null || true)"
+    if [[ "${formal_solver_status}" == "PASS" ]]; then
       formal_verdict="PASS"
     else
       formal_verdict="FAIL"
@@ -142,7 +168,7 @@ evaluate_fixture() {
     expected_match="true"
   fi
 
-  records+=("${label}|${model_path}|${expected}|${rust_verdict}|${formal_verdict}|${category}|${expected_match}")
+  records+=("${label}|${model_path}|${expected}|${expected_solver}|${rust_verdict}|${formal_verdict}|${formal_solver_status}|${category}|${expected_match}")
 }
 
 evaluate_fixture "expected_pass" "${pass_fixture_path}" "PASS"
@@ -150,7 +176,7 @@ evaluate_fixture "expected_fail" "${fail_fixture_path}" "FAIL"
 
 mismatch_count=0
 for record in "${records[@]}"; do
-  IFS='|' read -r _ _ _ _ _ _ expected_match <<< "${record}"
+  IFS='|' read -r _ _ _ _ _ _ _ _ expected_match <<< "${record}"
   if [[ "${expected_match}" != "true" ]]; then
     mismatch_count=$((mismatch_count + 1))
   fi
@@ -171,11 +197,11 @@ fi
   echo
   echo "## Fixture Verdicts"
   echo
-  echo "| Fixture | Expected | Rust Verdict | Formal Verdict | Category | Match |"
-  echo "| --- | --- | --- | --- | --- | --- |"
+  echo "| Fixture | Expected | Expected Solver | Rust Verdict | Formal Verdict | Solver Status | Category | Match |"
+  echo "| --- | --- | --- | --- | --- | --- | --- | --- |"
   for record in "${records[@]}"; do
-    IFS='|' read -r label model expected rust formal category expected_match <<< "${record}"
-    echo "| ${label} (\`${model#${REPO_ROOT}/}\`) | ${expected} | ${rust} | ${formal} | ${category} | ${expected_match} |"
+    IFS='|' read -r label model expected expected_solver rust formal formal_solver_status category expected_match <<< "${record}"
+    echo "| ${label} (\`${model#${REPO_ROOT}/}\`) | ${expected} | ${expected_solver} | ${rust} | ${formal} | ${formal_solver_status} | ${category} | ${expected_match} |"
   done
 } > "${output_file}"
 
@@ -187,7 +213,7 @@ fi
   echo "  \"mismatches\": ${mismatch_count},"
   echo "  \"fixtures\": ["
   for index in "${!records[@]}"; do
-    IFS='|' read -r label model expected rust formal category expected_match <<< "${records[$index]}"
+    IFS='|' read -r label model expected expected_solver rust formal formal_solver_status category expected_match <<< "${records[$index]}"
     comma=","
     if [[ "${index}" -eq "$((${#records[@]} - 1))" ]]; then
       comma=""
@@ -196,8 +222,10 @@ fi
     echo "      \"label\": \"${label}\","
     echo "      \"model\": \"${model#${REPO_ROOT}/}\","
     echo "      \"expected\": \"${expected}\","
+    echo "      \"expected_solver\": \"${expected_solver}\","
     echo "      \"rust_verdict\": \"${rust}\","
     echo "      \"formal_verdict\": \"${formal}\","
+    echo "      \"formal_solver_status\": \"${formal_solver_status}\","
     echo "      \"category\": \"${category}\","
     echo "      \"match\": ${expected_match}"
     echo "    }${comma}"

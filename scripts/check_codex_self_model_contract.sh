@@ -35,6 +35,16 @@ grep -q '^requirement "R009-A7-ModelDirectoryPFContainment"' "${REQUIREMENTS_FIL
   exit 1
 }
 
+grep -q '^requirement "R011-H1-SolverBackedAdequacyEvidence"' "${REQUIREMENTS_FILE}" || {
+  echo "R011-H1 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
+grep -q '^requirement "R011-H2-DiffBasedModelFirstGate"' "${REQUIREMENTS_FILE}" || {
+  echo "R011-H2 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
 grep -q '@mda.layer("CIM")' "${REQUIREMENTS_FILE}" || {
   echo "CIM requirement layer marks are missing in ${REQUIREMENTS_FILE}" >&2
   exit 1
@@ -70,7 +80,66 @@ grep -q 'requirements: .*"R009-A7-ModelDirectoryPFContainment"' "${SUBPROBLEMS_F
   exit 1
 }
 
-# 2) Repository layout contract: all PF models and fixtures must live under models/.
+grep -q 'requirements: .*"R011-H1-SolverBackedAdequacyEvidence"' "${SUBPROBLEMS_FILE}" || {
+  echo "R011-H1 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+grep -q 'requirements: .*"R011-H2-DiffBasedModelFirstGate"' "${SUBPROBLEMS_FILE}" || {
+  echo "R011-H2 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+# 2) Diff-based model-first contract: implementation changes must include canonical model updates.
+if git -C "${REPO_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  base_ref="${PF_MODEL_FIRST_BASE_REF:-}"
+  if [[ -z "${base_ref}" ]]; then
+    for candidate in origin/main main origin/master master; do
+      if git -C "${REPO_ROOT}" rev-parse --verify "${candidate}" >/dev/null 2>&1; then
+        base_ref="${candidate}"
+        break
+      fi
+    done
+  fi
+
+  base_commit=""
+  if [[ -n "${base_ref}" ]]; then
+    base_commit="$(git -C "${REPO_ROOT}" merge-base HEAD "${base_ref}" 2>/dev/null || true)"
+  fi
+  if [[ -z "${base_commit}" ]]; then
+    base_commit="$(git -C "${REPO_ROOT}" rev-parse --verify HEAD~1 2>/dev/null || true)"
+  fi
+
+  if [[ -n "${base_commit}" ]]; then
+    mapfile -t changed_files < <(
+      git -C "${REPO_ROOT}" diff --name-only --diff-filter=ACMR "${base_commit}...HEAD" || true
+    )
+
+    canonical_model_changed=0
+    implementation_changed=0
+    implementation_files=()
+    for changed in "${changed_files[@]}"; do
+      if [[ "${changed}" =~ ^models/system/.*\.pf$ ]]; then
+        canonical_model_changed=1
+      fi
+      if [[ "${changed}" =~ ^(crates/|scripts/|editors/|metamodel/|theory/|\.github/workflows/) ]]; then
+        implementation_changed=1
+        implementation_files+=("${changed}")
+      fi
+    done
+
+    if [[ "${implementation_changed}" -eq 1 && "${canonical_model_changed}" -eq 0 ]]; then
+      echo "Model-first contract violation: implementation files changed without canonical models/system/*.pf updates." >&2
+      echo "Base reference: ${base_ref:-HEAD~1}" >&2
+      for changed in "${implementation_files[@]}"; do
+        echo " - ${changed}" >&2
+      done
+      exit 1
+    fi
+  fi
+fi
+
+# 3) Repository layout contract: all PF models and fixtures must live under models/.
 pf_outside_models="$(rg --files -g '**/*.pf' | rg -v '^models/' || true)"
 if [[ -n "${pf_outside_models}" ]]; then
   echo "Found .pf files outside models/:"
@@ -78,7 +147,7 @@ if [[ -n "${pf_outside_models}" ]]; then
   exit 1
 fi
 
-# 3) Requirement layer contract: each requirement has an explicit CIM/PIM/PSM layer.
+# 4) Requirement layer contract: each requirement has an explicit CIM/PIM/PSM layer.
 requirements_tsv_file="$(mktemp)"
 traceability_file="$(mktemp)"
 trap 'rm -f "${requirements_tsv_file}" "${traceability_file}"' EXIT
@@ -96,7 +165,7 @@ if [[ -n "${invalid_requirements_layer_rows}" ]]; then
   exit 1
 fi
 
-# 4) Executable contract: impact path for R009-A5/R009-A6 must resolve through traceability mode.
+# 5) Executable contract: impact path for R009-A5/R009-A6 must resolve through traceability mode.
 
 cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-md \
   --impact=requirement:R009-A5-AgentAssistedModelExecution \
