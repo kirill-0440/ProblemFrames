@@ -160,6 +160,17 @@ Exit criteria:
 
 - explicit go/no-go memo confirms whether process-model track should continue
 
+## Implementation Timeline (Proposal 007 Scope)
+
+- M1 (Metamodel Contract): February 16, 2026 -> February 27, 2026
+- M2 (Traceability + Impact): March 2, 2026 -> March 27, 2026
+- M3 (Executable Obligation Check): March 30, 2026 -> April 24, 2026
+
+Execution note:
+
+- This timeline is intentionally front-loaded to align with the `v0.2.0` release window ending on April 30, 2026 (`docs/proposals/005-v0.2.0-scope-and-exit-criteria.md`).
+- Proposal `008` starts immediately after this foundation and must not bypass M1-M3 outputs.
+
 ## Sequencing Against Existing Proposals
 
 - `005-v0.2.0-scope-and-exit-criteria.md` remains the release gate for near-term scope.

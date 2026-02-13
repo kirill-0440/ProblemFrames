@@ -165,6 +165,18 @@ Exit criteria:
 - one reproducible API smoke run against configured environment
 - go/no-go decision recorded in proposal update
 
+## Implementation Timeline (Proposal 008 Scope)
+
+- M4a (Marks + Validator Contract): May 4, 2026 -> May 15, 2026
+- M4b (DDD/SysML File Generators): May 18, 2026 -> June 12, 2026
+- M4c (Trace Contract + CI Publication): June 15, 2026 -> June 26, 2026
+- M5a (SysML API Bridge Spike): June 29, 2026 -> July 10, 2026
+
+Execution note:
+
+- Proposal `008` is a follow-on track and starts only after Proposal `007` M1-M3 completion.
+- API bridge work stays non-blocking until file-based generators and trace coverage are stable.
+
 ## Risks
 
 - model zoo effect (multiple diverging truths)
