@@ -149,6 +149,8 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Complete M4a before enabling M4b outputs by default.
 - M4c starts after first stable outputs from M4b.
 - M5a starts only after two successful CI cycles with M4b/M4c artifacts.
+- Start execution only after `R007-M3-04` is closed (canonical concern coverage baseline).
+- Reuse `010` M6 contract outputs when available; this is recommended for quality but not a hard blocker.
 
 ## Tracking Recommendation
 
@@ -156,3 +158,4 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
   - `roadmap:008`
   - `milestone:m4a`, `milestone:m4b`, `milestone:m4c`, `milestone:m5a`
   - `owner:dsl`, `owner:codegen`, `owner:traceability`, `owner:platform`
+- Require one explicit DRI (GitHub handle) for each backlog item before status changes to `in_progress`.

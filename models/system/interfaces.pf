@@ -11,6 +11,8 @@ interface "Dev-Source" connects Developer, SourceFile {
 interface "Dev-Tool" connects Developer, Tool {
     shared: {
         phenomenon RunValidation : command [Developer -> Tool] controlledBy Developer
+        phenomenon RunGeneration : command [Developer -> Tool] controlledBy Developer
+        phenomenon TriggerApiBridgeSpike : command [Developer -> Tool] controlledBy Developer
     }
 }
 
@@ -46,5 +48,65 @@ interface "Dev-View" connects Developer, Editor, GeneratedCode {
     shared: {
         phenomenon SeeSquiggles : event [Editor -> Developer] controlledBy Editor
         phenomenon ReadCode : value [GeneratedCode -> Developer] controlledBy GeneratedCode
+    }
+}
+
+// Tool publishes quality gate runs and receives verdicts from CI.
+interface "Tool-CI" connects Tool, CI {
+    shared: {
+        phenomenon TriggerQualityGate : event [Tool -> CI] controlledBy Tool
+        phenomenon PublishCIVerdict : event [CI -> Tool] controlledBy CI
+    }
+}
+
+// Tool writes and reloads metamodel contract artifacts (M1 alignment).
+interface "Tool-Metamodel" connects Tool, MetamodelContract {
+    shared: {
+        phenomenon ExportInvariantCatalog : value [Tool -> MetamodelContract] controlledBy Tool
+        phenomenon ImportRuleMatrix : value [MetamodelContract -> Tool] controlledBy MetamodelContract
+    }
+}
+
+// Tool persists traceability exports and reuses them for impact reports (M2/M4c alignment).
+interface "Tool-Traceability" connects Tool, TraceabilityStore {
+    shared: {
+        phenomenon PersistTraceMap : value [Tool -> TraceabilityStore] controlledBy Tool
+        phenomenon LoadImpactSlice : value [TraceabilityStore -> Tool] controlledBy TraceabilityStore
+        phenomenon PersistDecompositionClosure : value [Tool -> TraceabilityStore] controlledBy Tool
+        phenomenon PersistConcernCoverage : value [Tool -> TraceabilityStore] controlledBy Tool
+    }
+}
+
+// Tool generates DDD and SysML packages in file-based form (M4b alignment).
+interface "Tool-PIMArtifacts" connects Tool, PIMArtifacts {
+    shared: {
+        phenomenon GenerateDDDPim : value [Tool -> PIMArtifacts] controlledBy Tool
+        phenomenon GenerateSysMLText : value [Tool -> PIMArtifacts] controlledBy Tool
+        phenomenon GenerateSysMLJson : value [Tool -> PIMArtifacts] controlledBy Tool
+    }
+}
+
+// Optional API bridge communication for SysML repository integration (M5a alignment).
+interface "Tool-SysMLApi" connects Tool, SysMLApi {
+    shared: {
+        phenomenon PushModelPackage : event [Tool -> SysMLApi] controlledBy Tool
+        phenomenon PullBridgeStatus : event [SysMLApi -> Tool] controlledBy SysMLApi
+    }
+}
+
+// Tool projects validated PF models into WRSPM bridge artifacts (M6 alignment).
+interface "Tool-WRSPMContract" connects Tool, WRSPMContract {
+    shared: {
+        phenomenon GenerateWRSPMReport : value [Tool -> WRSPMContract] controlledBy Tool
+        phenomenon GenerateWRSPMJson : value [Tool -> WRSPMContract] controlledBy Tool
+        phenomenon LoadWRSPMCoverage : value [WRSPMContract -> Tool] controlledBy WRSPMContract
+    }
+}
+
+// Tool writes adequacy-oriented formal evidence and differential verdict artifacts (M7 alignment).
+interface "Tool-AdequacyEvidence" connects Tool, AdequacyEvidence {
+    shared: {
+        phenomenon PersistAdequacyRun : value [Tool -> AdequacyEvidence] controlledBy Tool
+        phenomenon PersistDifferentialVerdict : value [Tool -> AdequacyEvidence] controlledBy Tool
     }
 }

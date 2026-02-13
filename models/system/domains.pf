@@ -4,3 +4,10 @@ domain SourceFile kind lexical role given // The .pf file on disk
 domain Tool kind causal role machine      // The CLI/LSP tool
 domain Editor kind causal role given      // VS Code or other editor (interacting with LSP)
 domain GeneratedCode kind lexical role given // The Rust code or DOT output
+domain CI kind causal role given // CI pipeline executing quality gates
+domain MetamodelContract kind lexical role given // invariant catalog and rule matrix artifacts
+domain TraceabilityStore kind lexical role given // relationship graph and impact exports
+domain PIMArtifacts kind lexical role given // generated DDD/SysML model packages
+domain SysMLApi kind causal role given // optional API bridge endpoint for model publishing
+domain WRSPMContract kind lexical role given // derived W/R/S/P/M bridge and coverage outputs
+domain AdequacyEvidence kind lexical role given // executable pass/fail and differential verdict artifacts

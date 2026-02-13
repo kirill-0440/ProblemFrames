@@ -168,6 +168,12 @@ The roadmap is maintained as proposal documents in `docs/proposals`.
   - PF -> DDD/SysML v2 integration track (`CIM -> PIM -> PSM`)
 - `docs/proposals/008-execution-backlog-m4-m5.md`
   - execution-ready backlog for marks, generators, trace contract, API spike
+- `docs/proposals/009-pf-canonical-retro-addendum.md`
+  - canonical PF alignment addendum (explicit PF views, decomposition closure, concern coverage gate)
+- `docs/proposals/010-pf-wrspm-contract-bridge.md`
+  - WRSPM (`W/R/S/P/M`) operational bridge from PF artifacts to explicit contract evidence
+- `docs/proposals/010-execution-backlog-m6-m7.md`
+  - execution-ready backlog for WRSPM bridge coverage and executable adequacy evidence
 
 ## Dogfooding and Reporting
 

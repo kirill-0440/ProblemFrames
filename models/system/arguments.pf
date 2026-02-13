@@ -1,15 +1,21 @@
-worldProperties W_tooling {
-    assert "SourceFile content can be read after each Edit event" @LTL
+worldProperties W_roadmap_context {
+    assert "Proposal artifacts in docs/proposals remain the planning authority for 005 through 010 tracks" @LTL
+    assert "CI can execute reproducible jobs for validator, obligations, and generation checks" @LTL
+    assert "Canonical PF alignment requires explicit views, decomposition closure, and concern coverage evidence" @LTL
 }
 
-specification S_tooling {
-    assert "RunValidation eventually triggers PublishDiagnostics for open files" @LTL
+specification S_roadmap_execution {
+    assert "Tool consumes the canonical system model and produces deterministic quality gate artifacts" @LTL
+    assert "RunGeneration eventually emits PIM artifacts and trace outputs for roadmap-aligned requirements" @LTL
+    assert "WRSPM bridge outputs and adequacy evidence artifacts are generated and published in CI" @LTL
 }
 
-requirementAssertions R_feedback {
-    assert "Developer sees validation feedback without leaving the editor flow" @LTL
+requirementAssertions R_roadmap_outcomes {
+    assert "Milestone commitments from proposals 005 through 010 remain testable through the self-model" @LTL
+    assert "Planning decisions stay linked to executable evidence in CI artifacts" @LTL
+    assert "Coverage gates prevent PF-complete claims without concern and WRSPM contract evidence" @LTL
 }
 
-correctnessArgument A_feedback_loop {
-    prove S_tooling and W_tooling entail R_feedback
+correctnessArgument A_roadmap_alignment {
+    prove S_roadmap_execution and W_roadmap_context entail R_roadmap_outcomes
 }

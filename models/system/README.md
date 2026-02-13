@@ -13,6 +13,7 @@ roadmap alignment.
 - `requirements.pf`: requirement set and frame typing.
 - `subproblems.pf`: decomposition into delivery-sized concerns.
 - `arguments.pf`: W/S/R assertion sets and correctness argument.
+- `roadmap_alignment.md`: mapping from system-model requirement IDs to proposal/backlog items (`005` through `010`).
 
 ## Development Workflow
 
