@@ -11,6 +11,8 @@ Usage:
 
 Options:
   --allow-open-closure        Do not fail if decomposition closure status is FAIL.
+  --allow-open-concern-coverage
+                              Do not fail if concern coverage status is FAIL.
   --impact <selectors>        Impact seeds for traceability export (e.g. requirement:R1,domain:D1).
   --impact-hops <n>           Max hops for impact traversal in traceability export.
   -h, --help                  Show this help.
@@ -21,6 +23,7 @@ USAGE
 }
 
 allow_open_closure=0
+allow_open_concern_coverage=0
 impact_selectors=""
 impact_hops=""
 models=()
@@ -29,6 +32,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --allow-open-closure)
       allow_open_closure=1
+      shift
+      ;;
+    --allow-open-concern-coverage)
+      allow_open_concern_coverage=1
       shift
       ;;
     --impact)
@@ -94,6 +101,7 @@ for model in "${models[@]}"; do
   report_file="${model_output_dir}/report.md"
   decomposition_file="${model_output_dir}/decomposition-closure.md"
   obligations_file="${model_output_dir}/obligations.md"
+  concern_coverage_file="${model_output_dir}/concern-coverage.md"
   alloy_file="${model_output_dir}/model.als"
   traceability_md_file="${model_output_dir}/traceability.md"
   traceability_csv_file="${model_output_dir}/traceability.csv"
@@ -112,6 +120,7 @@ for model in "${models[@]}"; do
   cargo run -p pf_dsl -- "${model}" --report > "${report_file}"
   cargo run -p pf_dsl -- "${model}" --decomposition-closure > "${decomposition_file}"
   cargo run -p pf_dsl -- "${model}" --obligations > "${obligations_file}"
+  cargo run -p pf_dsl -- "${model}" --concern-coverage > "${concern_coverage_file}"
   cargo run -p pf_dsl -- "${model}" --alloy > "${alloy_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-md "${traceability_args[@]}" > "${traceability_md_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-csv "${traceability_args[@]}" > "${traceability_csv_file}"
@@ -123,6 +132,11 @@ for model in "${models[@]}"; do
       | sed -e 's/^- Closure status: //'
   )"
   closure_status="${closure_status:-UNKNOWN}"
+  concern_coverage_status="$(
+    grep -E "^- Concern coverage status: " "${concern_coverage_file}" \
+      | sed -e 's/^- Concern coverage status: //'
+  )"
+  concern_coverage_status="${concern_coverage_status:-UNKNOWN}"
 
   {
     echo "# PF Quality Gate Summary"
@@ -130,12 +144,14 @@ for model in "${models[@]}"; do
     echo "- Generated (UTC): \`$(date -u +"%Y-%m-%dT%H:%M:%SZ")\`"
     echo "- Model: \`${model}\`"
     echo "- Decomposition closure status: \`${closure_status}\`"
+    echo "- Concern coverage status: \`${concern_coverage_status}\`"
     echo
     echo "## Artifacts"
     echo
     echo "- \`report.md\`"
     echo "- \`decomposition-closure.md\`"
     echo "- \`obligations.md\`"
+    echo "- \`concern-coverage.md\`"
     echo "- \`model.als\`"
     echo "- \`traceability.md\`"
     echo "- \`traceability.csv\`"
@@ -147,6 +163,10 @@ for model in "${models[@]}"; do
 
   if [[ "${closure_status}" != "PASS" && "${allow_open_closure}" -eq 0 ]]; then
     echo "Decomposition closure failed for ${model}; re-run with --allow-open-closure to override." >&2
+    failure_count=$((failure_count + 1))
+  fi
+  if [[ "${concern_coverage_status}" != "PASS" && "${allow_open_concern_coverage}" -eq 0 ]]; then
+    echo "Concern coverage failed for ${model}; re-run with --allow-open-concern-coverage to override." >&2
     failure_count=$((failure_count + 1))
   fi
 done

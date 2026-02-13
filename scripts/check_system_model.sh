@@ -18,6 +18,7 @@ mkdir -p "${OUTPUT_DIR}"
 REPORT_FILE="${OUTPUT_DIR}/tool_spec.report.md"
 DECOMPOSITION_FILE="${OUTPUT_DIR}/tool_spec.decomposition-closure.md"
 OBLIGATIONS_FILE="${OUTPUT_DIR}/tool_spec.obligations.md"
+CONCERN_COVERAGE_FILE="${OUTPUT_DIR}/tool_spec.concern-coverage.md"
 DOT_FILE="${OUTPUT_DIR}/tool_spec.dot"
 ALLOY_FILE="${OUTPUT_DIR}/tool_spec.als"
 TRACEABILITY_MD_FILE="${OUTPUT_DIR}/tool_spec.traceability.md"
@@ -28,6 +29,7 @@ WRSPM_JSON_FILE="${OUTPUT_DIR}/tool_spec.wrspm.json"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --report > "${REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --decomposition-closure > "${DECOMPOSITION_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --obligations > "${OBLIGATIONS_FILE}"
+cargo run -p pf_dsl -- "${MODEL_FILE}" --concern-coverage > "${CONCERN_COVERAGE_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --dot > "${DOT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --alloy > "${ALLOY_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-md > "${TRACEABILITY_MD_FILE}"
@@ -41,6 +43,11 @@ closure_status="$(
     | sed -e 's/^- Closure status: //'
 )"
 closure_status="${closure_status:-UNKNOWN}"
+concern_coverage_status="$(
+  grep -E "^- Concern coverage status: " "${CONCERN_COVERAGE_FILE}" \
+    | sed -e 's/^- Concern coverage status: //'
+)"
+concern_coverage_status="${concern_coverage_status:-UNKNOWN}"
 
 {
   echo "# System Model Quality Gate"
@@ -48,12 +55,14 @@ closure_status="${closure_status:-UNKNOWN}"
   echo "- Generated (UTC): \`$(date -u +"%Y-%m-%dT%H:%M:%SZ")\`"
   echo "- Model: \`models/system/tool_spec.pf\`"
   echo "- Decomposition closure status: \`${closure_status}\`"
+  echo "- Concern coverage status: \`${concern_coverage_status}\`"
   echo
   echo "## Artifacts"
   echo
   echo "- \`tool_spec.report.md\`"
   echo "- \`tool_spec.decomposition-closure.md\`"
   echo "- \`tool_spec.obligations.md\`"
+  echo "- \`tool_spec.concern-coverage.md\`"
   echo "- \`tool_spec.dot\`"
   echo "- \`tool_spec.als\`"
   echo "- \`tool_spec.traceability.md\`"
@@ -66,5 +75,10 @@ echo "Generated ${SUMMARY_FILE}"
 
 if [[ "${closure_status}" != "PASS" ]]; then
   echo "System model decomposition closure failed (${closure_status})" >&2
+  exit 1
+fi
+
+if [[ "${concern_coverage_status}" != "PASS" ]]; then
+  echo "System model concern coverage failed (${concern_coverage_status})" >&2
   exit 1
 fi

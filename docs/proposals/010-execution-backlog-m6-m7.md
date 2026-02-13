@@ -58,9 +58,9 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - Owner: `Tooling Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Reuse `R007-M3-04` concern coverage output as baseline input (no duplicate engine).
-- [ ] Extend output with WRSPM contract links (`W/R/S` plus unresolved `P/M` placeholders).
-- [ ] Integrate extended concern coverage in `scripts/run_pf_quality_gate.sh` with controlled exception path.
+- [x] Reuse `R007-M3-04` concern coverage output as baseline input (no duplicate engine).
+- [x] Extend output with WRSPM contract links (`W/R/S` plus unresolved `P/M` placeholders).
+- [x] Integrate extended concern coverage in `scripts/run_pf_quality_gate.sh` with controlled exception path.
 
 ### M7 - Executable Adequacy Evidence
 

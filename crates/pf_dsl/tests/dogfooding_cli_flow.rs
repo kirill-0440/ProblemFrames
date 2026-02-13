@@ -113,6 +113,16 @@ correctnessArgument A1 {
         "decomposition closure should pass for covered model"
     );
 
+    let concern_coverage = run_pf_dsl(&root_path, "--concern-coverage");
+    assert!(
+        concern_coverage.status.success(),
+        "concern coverage mode should succeed: {}",
+        String::from_utf8_lossy(&concern_coverage.stderr)
+    );
+    let concern_stdout = String::from_utf8_lossy(&concern_coverage.stdout);
+    assert!(concern_stdout.contains("# Concern Coverage Report: Root"));
+    assert!(concern_stdout.contains("- Concern coverage status: PASS"));
+
     let alloy = run_pf_dsl(&root_path, "--alloy");
     assert!(
         alloy.status.success(),
@@ -423,6 +433,19 @@ subproblem Execution {
     assert!(stdout.contains("| R_uncovered | - | uncovered |"));
     assert!(stdout.contains("### Orphan Subproblems"));
     assert!(stdout.contains("- None."));
+
+    let concern_output = run_pf_dsl(&path, "--concern-coverage");
+    assert!(
+        concern_output.status.success(),
+        "concern coverage mode should succeed: {}",
+        String::from_utf8_lossy(&concern_output.stderr)
+    );
+    let concern_stdout = String::from_utf8_lossy(&concern_output.stdout);
+    assert!(concern_stdout.contains("# Concern Coverage Report: Closure"));
+    assert!(concern_stdout.contains("- Concern coverage status: FAIL"));
+    assert!(concern_stdout.contains("| R_uncovered | - | - |"));
+    assert!(concern_stdout.contains("## Explicit Uncovered Entries"));
+    assert!(concern_stdout.contains("- R_uncovered: requirement is not mapped to any subproblem"));
 
     let _ = fs::remove_dir_all(dir);
 }

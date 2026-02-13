@@ -27,6 +27,7 @@ Quick checks:
 cargo run -p pf_dsl -- models/system/tool_spec.pf --report
 cargo run -p pf_dsl -- models/system/tool_spec.pf --obligations
 cargo run -p pf_dsl -- models/system/tool_spec.pf --decomposition-closure
+cargo run -p pf_dsl -- models/system/tool_spec.pf --concern-coverage
 cargo run -p pf_dsl -- models/system/tool_spec.pf --wrspm-report
 cargo run -p pf_dsl -- models/system/tool_spec.pf --traceability-md --impact=requirement:R009-A4-OneCommandPFQualityGate --impact-hops=2
 cargo run -p pf_dsl -- models/system/tool_spec.pf --alloy > system_model.als

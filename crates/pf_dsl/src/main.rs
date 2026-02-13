@@ -7,7 +7,7 @@ use std::env;
 const DEFAULT_IMPACT_HOPS: usize = 2;
 
 fn usage() -> &'static str {
-    "Usage: pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv | --decomposition-closure | --wrspm-report | --wrspm-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]"
+    "Usage: pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv | --decomposition-closure | --concern-coverage | --wrspm-report | --wrspm-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]"
 }
 
 fn parse_impact_seeds(raw: &str) -> Result<Vec<TraceEntity>> {
@@ -195,6 +195,9 @@ fn main() -> Result<()> {
                         "{}",
                         pf_dsl::decomposition_closure::generate_markdown(&problem)
                     );
+                }
+                "--concern-coverage" => {
+                    println!("{}", pf_dsl::concern_coverage::generate_markdown(&problem));
                 }
                 "--wrspm-report" => {
                     println!("{}", pf_dsl::wrspm::generate_markdown(&problem));

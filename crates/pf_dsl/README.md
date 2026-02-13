@@ -17,11 +17,15 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
     ```
-5.  **Generate Alloy backend artifact**:
+5.  **Generate concern coverage report**:
+    ```bash
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --concern-coverage
+    ```
+6.  **Generate Alloy backend artifact**:
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
     ```
-6.  **Generate an image** (requires Graphviz):
+7.  **Generate an image** (requires Graphviz):
     ```bash
     dot -Tpng output.dot -o output.png
     ```

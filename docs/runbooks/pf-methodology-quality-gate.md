@@ -11,9 +11,10 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 1. Model the problem world first (domains, interfaces, requirements), then adjust implementation artifacts.
 2. Enforce frame fit and strict semantic validation through `pf_dsl`.
 3. Verify decomposition closure (no uncovered requirements, no orphan subproblems, no boundary mismatches).
-4. Generate correctness evidence (`obligations`, `alloy`) from the validated model.
-5. Generate traceability artifacts (relationship matrix + optional impact analysis).
-6. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
+4. Verify frame concern coverage (`requirement -> correctness argument`) with explicit uncovered/deferred entries.
+5. Generate correctness evidence (`obligations`, `alloy`) from the validated model.
+6. Generate traceability artifacts (relationship matrix + optional impact analysis).
+7. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
 
 ## One-command Gate
 
@@ -30,6 +31,7 @@ Generated artifacts per model:
 - `report.md`
 - `decomposition-closure.md`
 - `obligations.md`
+- `concern-coverage.md`
 - `model.als`
 - `traceability.md`
 - `traceability.csv`
@@ -53,11 +55,17 @@ If a PR intentionally carries open decomposition closure items (for exploratory 
 bash ./scripts/run_pf_quality_gate.sh --allow-open-closure <model.pf>
 ```
 
-Document the reason in PR "Why" and list closure debt explicitly.
+If a PR intentionally carries open concern coverage items (for staged argumentation), run:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh --allow-open-concern-coverage <model.pf>
+```
+
+Document the reason in PR "Why" and list closure/coverage debt explicitly.
 
 `--impact` and `--impact-hops` are forwarded to `pf_dsl --traceability-*`
-for impact-aware traceability artifacts. The decomposition closure verdict rule
-remains unchanged.
+for impact-aware traceability artifacts. Decomposition closure and concern
+coverage verdict rules remain unchanged.
 
 ## CI Alignment
 
@@ -65,7 +73,7 @@ CI publishes equivalent evidence through dogfooding artifacts:
 
 - `dogfooding-reports`
 - `dogfooding-obligations`
-- `system-model` (includes decomposition closure and WRSPM outputs)
+- `system-model` (includes decomposition closure, concern coverage, and WRSPM outputs)
 - `formal-backend`
 
 For agent-assisted model execution, run:
