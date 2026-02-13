@@ -153,6 +153,9 @@ jobs:
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked
 
+      - name: Reset coverage profile workspace
+        run: rm -rf target/llvm-cov-target
+
       - name: Coverage gate
         run: |
           cargo llvm-cov \

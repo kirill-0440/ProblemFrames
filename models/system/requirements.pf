@@ -156,7 +156,7 @@ requirement "R004-L4-LeanDifferentialContract" {
 // Proposal 005: v0.2.0 scope and exit criteria.
 requirement "R005-G1-ReleaseReliabilityContract" {
     frame: RequiredBehavior
-    constraint: "CI quality gates execute reliably for merge-time contract enforcement"
+    constraint: "CI quality gates execute reliably for merge-time contract enforcement, including cache-hygienic coverage runs that reset transient llvm-cov profile artifacts before threshold checks"
     marks: {
         @formal.argument("A_roadmap_alignment")
         @mda.layer("CIM")
