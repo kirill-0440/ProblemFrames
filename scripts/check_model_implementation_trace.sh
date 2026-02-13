@@ -275,7 +275,8 @@ while IFS='|' read -r requirement_id check_type target value note; do
       ;;
     command_passes)
       if [[ -n "${target}" ]]; then
-        if (cd -- "${REPO_ROOT}" && bash -lc "${target}" >/dev/null 2>&1); then
+        # Run in the current shell environment so CI-injected toolchain paths stay visible.
+        if (cd -- "${REPO_ROOT}" && bash -c "${target}" >/dev/null 2>&1); then
           passed=1
         fi
       fi
