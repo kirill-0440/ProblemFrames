@@ -75,7 +75,100 @@ mod tests {
         let errors = result.unwrap_err();
         assert!(errors
             .iter()
-            .any(|e| matches!(e, ValidationError::DuplicateDomain(n, _) if n == "D1")));
+            .any(|e| matches!(e, ValidationError::DuplicateDomain(n, _, _) if n == "D1")));
+    }
+
+    #[test]
+    fn test_duplicate_domain_uses_duplicate_source_path() {
+        let problem = Problem {
+            name: "DuplicateDomainSources".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                Domain {
+                    name: "D1".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Given,
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Domain {
+                    name: "D1".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Given,
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let duplicate = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::DuplicateDomain(ref name, _, _) if name == "D1"
+            )
+        });
+        assert!(duplicate.is_some());
+        assert_eq!(
+            duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_duplicate_interface_uses_duplicate_source_path() {
+        let problem = Problem {
+            name: "DuplicateInterfaceSources".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("C")],
+                    shared_phenomena: vec![phenomenon("P1", PhenomenonType::Event, "C", "M", "C")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("C")],
+                    shared_phenomena: vec![phenomenon("P2", PhenomenonType::Event, "C", "M", "C")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let duplicate = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::DuplicateInterface(ref name, _, _) if name == "I1"
+            )
+        });
+        assert!(duplicate.is_some());
+        assert_eq!(
+            duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
     }
 
     #[test]

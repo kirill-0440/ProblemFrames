@@ -12,9 +12,9 @@ pub enum ValidationError {
     #[error("Requirement '{0}' with frame '{1}': {2}")]
     InvalidFrameDomain(String, String, String, Span),
     #[error("Duplicate domain definition: '{0}'")]
-    DuplicateDomain(String, Span),
+    DuplicateDomain(String, Span, usize),
     #[error("Duplicate interface definition: '{0}'")]
-    DuplicateInterface(String, Span),
+    DuplicateInterface(String, Span, usize),
     #[error("Duplicate requirement definition: '{0}'")]
     DuplicateRequirement(String, Span, usize),
     #[error("Missing connection between '{0}' and '{1}' required by frame '{2}'")]
@@ -85,11 +85,12 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     let mut defined_domains = HashSet::new();
     let mut machine_count = 0_usize;
 
-    for domain in &problem.domains {
+    for (index, domain) in problem.domains.iter().enumerate() {
         if defined_domains.contains(&domain.name) {
             errors.push(ValidationError::DuplicateDomain(
                 domain.name.clone(),
                 domain.span,
+                index,
             ));
         } else {
             defined_domains.insert(domain.name.clone());
@@ -122,11 +123,12 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     }
 
     let mut defined_interfaces = HashSet::new();
-    for interface in &problem.interfaces {
+    for (index, interface) in problem.interfaces.iter().enumerate() {
         if defined_interfaces.contains(&interface.name) {
             errors.push(ValidationError::DuplicateInterface(
                 interface.name.clone(),
                 interface.span,
+                index,
             ));
         } else {
             defined_interfaces.insert(interface.name.clone());
@@ -777,8 +779,8 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         ValidationError::UndefinedDomainInInterface(_, _, span)
         | ValidationError::UndefinedDomainInRequirement(_, _, span)
         | ValidationError::InvalidFrameDomain(_, _, _, span)
-        | ValidationError::DuplicateDomain(_, span)
-        | ValidationError::DuplicateInterface(_, span)
+        | ValidationError::DuplicateDomain(_, span, _)
+        | ValidationError::DuplicateInterface(_, span, _)
         | ValidationError::DuplicateRequirement(_, span, _)
         | ValidationError::MissingConnection(_, _, _, span)
         | ValidationError::InvalidCausality(_, _, _, _, span)
@@ -840,15 +842,13 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
             .iter()
             .find(|requirement| requirement.span == *span)
             .and_then(|requirement| requirement.source_path.clone()),
-        ValidationError::DuplicateDomain(domain_name, span) => problem
+        ValidationError::DuplicateDomain(_, _, index) => problem
             .domains
-            .iter()
-            .find(|domain| domain.name == *domain_name && domain.span == *span)
+            .get(*index)
             .and_then(|domain| domain.source_path.clone()),
-        ValidationError::DuplicateInterface(interface_name, span) => problem
+        ValidationError::DuplicateInterface(_, _, index) => problem
             .interfaces
-            .iter()
-            .find(|interface| interface.name == *interface_name && interface.span == *span)
+            .get(*index)
             .and_then(|interface| interface.source_path.clone()),
         ValidationError::DuplicateRequirement(_, _, index) => problem
             .requirements
