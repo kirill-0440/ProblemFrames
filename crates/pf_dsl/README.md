@@ -64,3 +64,8 @@ correctnessArgument A1 {
     prove S_controller and W_base entail R_safe
 }
 ```
+
+## Related Guides
+
+- `docs/pf-mode-guide.md`
+- `docs/migration-v2.md`
