@@ -6,7 +6,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ValidationError {
     #[error("Domain '{0}' referenced in interface '{1}' but not defined.")]
-    UndefinedDomainInInterface(String, String, Span),
+    UndefinedDomainInInterface(String, String, Span, usize),
     #[error("Domain '{0}' referenced in requirement '{1}' but not defined.")]
     UndefinedDomainInRequirement(String, String, Span),
     #[error("Requirement '{0}' with frame '{1}': {2}")]
@@ -20,7 +20,7 @@ pub enum ValidationError {
     #[error("Missing connection between '{0}' and '{1}' required by frame '{2}'")]
     MissingConnection(String, String, String, Span, usize),
     #[error("Invalid causality: Phenomenon '{0}' ({1:?}) cannot originate from '{2}' ({3}).")]
-    InvalidCausality(String, PhenomenonType, String, String, Span),
+    InvalidCausality(String, PhenomenonType, String, String, Span, usize),
     #[error("Requirement '{0}' is missing required field '{1}'.")]
     MissingRequiredField(String, String, Span),
     #[error("Requirement '{0}' uses unsupported frame '{1}'.")]
@@ -28,11 +28,11 @@ pub enum ValidationError {
     #[error("Domain '{0}' has invalid role/kind combination: {1}")]
     InvalidDomainRole(String, String, Span),
     #[error("Interface '{0}' must connect at least two domains.")]
-    InterfaceInsufficientConnections(String, Span),
+    InterfaceInsufficientConnections(String, Span, usize),
     #[error("Interface '{0}' must declare at least one phenomenon.")]
-    InterfaceWithoutPhenomena(String, Span),
+    InterfaceWithoutPhenomena(String, Span, usize),
     #[error("Phenomenon '{0}' in interface '{1}' uses controller '{2}' that is not in interface connects list.")]
-    InterfaceControllerMismatch(String, String, String, Span),
+    InterfaceControllerMismatch(String, String, String, Span, usize),
     #[error("Requirement '{0}' cannot reference machine domain '{1}' in strict PF mode.")]
     RequirementReferencesMachine(String, String, Span),
     #[error("Subproblem '{0}' is missing required field '{1}'.")]
@@ -139,17 +139,19 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
         }
     }
 
-    for interface in &problem.interfaces {
+    for (interface_index, interface) in problem.interfaces.iter().enumerate() {
         if interface.connects.len() < 2 {
             errors.push(ValidationError::InterfaceInsufficientConnections(
                 interface.name.clone(),
                 interface.span,
+                interface_index,
             ));
         }
         if interface.shared_phenomena.is_empty() {
             errors.push(ValidationError::InterfaceWithoutPhenomena(
                 interface.name.clone(),
                 interface.span,
+                interface_index,
             ));
         }
 
@@ -159,6 +161,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     connected.name.clone(),
                     interface.name.clone(),
                     connected.span,
+                    interface_index,
                 ));
             }
         }
@@ -169,6 +172,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     phenomenon.from.name.clone(),
                     interface.name.clone(),
                     phenomenon.from.span,
+                    interface_index,
                 ));
             }
             if !defined_domains.contains(&phenomenon.to.name) {
@@ -176,6 +180,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     phenomenon.to.name.clone(),
                     interface.name.clone(),
                     phenomenon.to.span,
+                    interface_index,
                 ));
             }
             if !defined_domains.contains(&phenomenon.controlled_by.name) {
@@ -183,6 +188,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     phenomenon.controlled_by.name.clone(),
                     interface.name.clone(),
                     phenomenon.controlled_by.span,
+                    interface_index,
                 ));
             }
 
@@ -197,6 +203,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     interface.name.clone(),
                     phenomenon.controlled_by.name.clone(),
                     phenomenon.controlled_by.span,
+                    interface_index,
                 ));
             }
             if phenomenon.controlled_by.name != phenomenon.from.name {
@@ -205,6 +212,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     interface.name.clone(),
                     phenomenon.controlled_by.name.clone(),
                     phenomenon.controlled_by.span,
+                    interface_index,
                 ));
             }
 
@@ -224,6 +232,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 from_domain.name.clone(),
                                 format!("{:?}/{:?}", from_domain.kind, from_domain.role),
                                 phenomenon.span,
+                                interface_index,
                             ));
                         }
                         if phenomenon.type_ == PhenomenonType::Command
@@ -235,6 +244,7 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                                 from_domain.name.clone(),
                                 format!("{:?}/{:?}", from_domain.kind, from_domain.role),
                                 phenomenon.span,
+                                interface_index,
                             ));
                         }
                     }
@@ -809,20 +819,20 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
 
 pub fn validation_error_span(error: &ValidationError) -> Span {
     match error {
-        ValidationError::UndefinedDomainInInterface(_, _, span)
+        ValidationError::UndefinedDomainInInterface(_, _, span, _)
         | ValidationError::UndefinedDomainInRequirement(_, _, span)
         | ValidationError::InvalidFrameDomain(_, _, _, span)
         | ValidationError::DuplicateDomain(_, span, _)
         | ValidationError::DuplicateInterface(_, span, _)
         | ValidationError::DuplicateRequirement(_, span, _)
         | ValidationError::MissingConnection(_, _, _, span, _)
-        | ValidationError::InvalidCausality(_, _, _, _, span)
+        | ValidationError::InvalidCausality(_, _, _, _, span, _)
         | ValidationError::MissingRequiredField(_, _, span)
         | ValidationError::UnsupportedFrame(_, _, span)
         | ValidationError::InvalidDomainRole(_, _, span)
-        | ValidationError::InterfaceInsufficientConnections(_, span)
-        | ValidationError::InterfaceWithoutPhenomena(_, span)
-        | ValidationError::InterfaceControllerMismatch(_, _, _, span)
+        | ValidationError::InterfaceInsufficientConnections(_, span, _)
+        | ValidationError::InterfaceWithoutPhenomena(_, span, _)
+        | ValidationError::InterfaceControllerMismatch(_, _, _, span, _)
         | ValidationError::RequirementReferencesMachine(_, _, span)
         | ValidationError::MissingSubproblemField(_, _, span)
         | ValidationError::UndefinedDomainInSubproblem(_, _, span)
@@ -869,69 +879,13 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
     };
 
     match error {
-        ValidationError::UndefinedDomainInInterface(domain_name, interface_name, span) => problem
+        ValidationError::UndefinedDomainInInterface(_, _, _, index)
+        | ValidationError::InterfaceInsufficientConnections(_, _, index)
+        | ValidationError::InterfaceWithoutPhenomena(_, _, index)
+        | ValidationError::InterfaceControllerMismatch(_, _, _, _, index)
+        | ValidationError::InvalidCausality(_, _, _, _, _, index) => problem
             .interfaces
-            .iter()
-            .find(|interface| {
-                interface.name == *interface_name
-                    && (interface.span == *span
-                        || interface.connects.iter().any(|reference| {
-                            reference.name == *domain_name && reference.span == *span
-                        })
-                        || interface.shared_phenomena.iter().any(|phenomenon| {
-                            (phenomenon.from.name == *domain_name && phenomenon.from.span == *span)
-                                || (phenomenon.to.name == *domain_name
-                                    && phenomenon.to.span == *span)
-                                || (phenomenon.controlled_by.name == *domain_name
-                                    && phenomenon.controlled_by.span == *span)
-                        }))
-            })
-            .or_else(|| {
-                problem
-                    .interfaces
-                    .iter()
-                    .find(|interface| interface.name == *interface_name)
-            })
-            .and_then(|interface| interface.source_path.clone()),
-        ValidationError::InterfaceInsufficientConnections(interface_name, span)
-        | ValidationError::InterfaceWithoutPhenomena(interface_name, span) => problem
-            .interfaces
-            .iter()
-            .find(|interface| interface.name == *interface_name && interface.span == *span)
-            .or_else(|| {
-                problem
-                    .interfaces
-                    .iter()
-                    .find(|interface| interface.name == *interface_name)
-            })
-            .and_then(|interface| interface.source_path.clone()),
-        ValidationError::InterfaceControllerMismatch(_, interface_name, controller_name, span) => {
-            problem
-                .interfaces
-                .iter()
-                .find(|interface| {
-                    interface.name == *interface_name
-                        && interface.shared_phenomena.iter().any(|phenomenon| {
-                            phenomenon.controlled_by.name == *controller_name
-                                && phenomenon.controlled_by.span == *span
-                        })
-                })
-                .or_else(|| {
-                    problem
-                        .interfaces
-                        .iter()
-                        .find(|interface| interface.name == *interface_name)
-                })
-                .and_then(|interface| interface.source_path.clone())
-        }
-        ValidationError::InvalidCausality(phenomenon_name, _, _, _, span) => problem
-            .interfaces
-            .iter()
-            .find(|interface| {
-                interface.shared_phenomena.iter().any(|phenomenon| {
-                    phenomenon.name == *phenomenon_name && phenomenon.span == *span
-                })
-            })
+            .get(*index)
             .and_then(|interface| interface.source_path.clone()),
         ValidationError::UndefinedDomainInRequirement(domain_name, requirement_name, span) => {
             problem

@@ -738,3 +738,133 @@ fn imported_diagnostics_are_cleared_after_import_removed() {
 
     let _ = fs::remove_dir_all(dir);
 }
+
+#[test]
+fn dogfooding_flow_handles_import_collision_and_definition_rebind() {
+    let dir = make_temp_dir("pf-lsp-dogfooding-flow");
+    let root_path = dir.join("root.pf");
+    let import_path = dir.join("imp.pf");
+    let root_uri = file_uri(&root_path);
+    let import_uri = file_uri(&import_path);
+
+    let imported_text = "problem: Imported\ndomain M kind causal role machine\ndomain A kind causal role given\ninterface \"M-A\" connects M, A {\n  shared: {\n    phenomenon Observe : event [A -> M] controlledBy A\n  }\n}\nrequirement \"R_shared\" {\n  frame: RequiredBehavior\n  constrains: A\n}\n";
+    fs::write(&import_path, imported_text).expect("failed to write imported model");
+
+    let root_v1 = "problem: Root\nimport \"imp.pf\"\nsubproblem Core {\n  machine: M\n  participants: M, A\n  requirements: \"R_shared\"\n}\n";
+    let root_v2 = "problem: Root\nimport \"imp.pf\"\nrequirement \"R_shared\" {\n  frame: RequiredBehavior\n  constrains: A\n}\nsubproblem Core {\n  machine: M\n  participants: M, A\n  requirements: \"R_shared\"\n}\n";
+    let reference_pos_v1 = position_of(root_v1, "\"R_shared\"", 0);
+    let reference_pos_v2 = position_of(root_v2, "\"R_shared\"", 1);
+
+    let mut client = TestLspClient::spawn();
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": root_uri,
+                "languageId": "pf",
+                "version": 1,
+                "text": root_v1
+            }
+        }
+    }));
+
+    let root_diag_v1 = client
+        .wait_for(|msg| {
+            msg.get("method") == Some(&json!("textDocument/publishDiagnostics"))
+                && msg["params"]["uri"] == json!(root_uri)
+        })
+        .expect("did not receive diagnostics for root on didOpen");
+    let root_v1_diagnostics = root_diag_v1["params"]["diagnostics"]
+        .as_array()
+        .expect("diagnostics must be array");
+    assert!(
+        root_v1_diagnostics.is_empty(),
+        "initial dogfooding model should be valid"
+    );
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 31,
+        "method": "textDocument/definition",
+        "params": {
+            "textDocument": { "uri": root_uri },
+            "position": {
+                "line": reference_pos_v1.line,
+                "character": reference_pos_v1.character
+            }
+        }
+    }));
+
+    let def_v1 = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(31)))
+        .expect("did not receive initial definition response");
+    assert_eq!(
+        def_v1["result"]["uri"].as_str(),
+        Some(import_uri.as_str()),
+        "initial definition should resolve into imported model"
+    );
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didChange",
+        "params": {
+            "textDocument": {
+                "uri": root_uri,
+                "version": 2
+            },
+            "contentChanges": [
+                { "text": root_v2 }
+            ]
+        }
+    }));
+
+    let imported_duplicate_diag = client
+        .wait_for(|msg| {
+            msg.get("method") == Some(&json!("textDocument/publishDiagnostics"))
+                && msg["params"]["uri"] == json!(import_uri)
+                && msg["params"]["diagnostics"]
+                    .as_array()
+                    .map(|diagnostics| {
+                        diagnostics.iter().any(|diagnostic| {
+                            diagnostic["message"]
+                                .as_str()
+                                .unwrap_or_default()
+                                .contains("Duplicate requirement definition")
+                        })
+                    })
+                    .unwrap_or(false)
+        })
+        .expect("did not receive duplicate requirement diagnostics for import");
+    let imported_v2_diagnostics = imported_duplicate_diag["params"]["diagnostics"]
+        .as_array()
+        .expect("diagnostics must be array");
+    assert!(
+        !imported_v2_diagnostics.is_empty(),
+        "expected diagnostics after introducing import collision"
+    );
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 32,
+        "method": "textDocument/definition",
+        "params": {
+            "textDocument": { "uri": root_uri },
+            "position": {
+                "line": reference_pos_v2.line,
+                "character": reference_pos_v2.character
+            }
+        }
+    }));
+
+    let def_v2 = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(32)))
+        .expect("did not receive updated definition response");
+    assert_eq!(
+        def_v2["result"]["uri"].as_str(),
+        Some(root_uri.as_str()),
+        "after adding local symbol, definition should resolve in root file"
+    );
+
+    let _ = fs::remove_dir_all(dir);
+}

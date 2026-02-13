@@ -69,3 +69,17 @@ correctnessArgument A1 {
 
 - `docs/pf-mode-guide.md`
 - `docs/migration-v2.md`
+
+## Import Collision Policy
+
+Imports are resolved into one merged model for validation and tooling.
+
+- Top-level names must be unique across the merged scope for:
+  - `domain`
+  - `interface`
+  - `requirement`
+  - `subproblem`
+  - assertion sets (`worldProperties`, `specification`, `requirementAssertions`)
+  - `correctnessArgument`
+- Name collisions are treated as validation errors. There is no implicit override by import order.
+- Diagnostics for collisions are attributed to the later declaration (the duplicate occurrence).

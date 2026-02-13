@@ -15,6 +15,13 @@ mod tests {
         }
     }
 
+    fn mock_ref_with_span(name: &str, start: usize, end: usize) -> Reference {
+        Reference {
+            name: name.to_string(),
+            span: Span { start, end },
+        }
+    }
+
     fn domain(name: &str, kind: DomainKind, role: DomainRole) -> Domain {
         Domain {
             name: name.to_string(),
@@ -167,6 +174,168 @@ mod tests {
         assert!(duplicate.is_some());
         assert_eq!(
             duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_undefined_domain_in_interface_uses_matching_source_path() {
+        let problem = Problem {
+            name: "InterfaceUndefinedDomainSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("A")],
+                    shared_phenomena: vec![phenomenon("P1", PhenomenonType::Event, "A", "M", "A")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![
+                        mock_ref_with_span("M", 10, 11),
+                        mock_ref_with_span("Missing", 20, 27),
+                    ],
+                    shared_phenomena: vec![Phenomenon {
+                        name: "P2".to_string(),
+                        type_: PhenomenonType::Event,
+                        from: mock_ref_with_span("Missing", 30, 37),
+                        to: mock_ref_with_span("M", 38, 39),
+                        controlled_by: mock_ref_with_span("Missing", 40, 47),
+                        span: Span { start: 30, end: 47 },
+                    }],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let undefined = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::UndefinedDomainInInterface(ref domain, _, _, _) if domain == "Missing"
+            )
+        });
+        assert!(undefined.is_some());
+        assert_eq!(
+            undefined.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_interface_controller_mismatch_uses_matching_source_path() {
+        let problem = Problem {
+            name: "InterfaceControllerMismatchSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("A")],
+                    shared_phenomena: vec![phenomenon("P1", PhenomenonType::Event, "A", "M", "A")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("A")],
+                    shared_phenomena: vec![phenomenon(
+                        "P_bad",
+                        PhenomenonType::Event,
+                        "A",
+                        "M",
+                        "M",
+                    )],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let mismatch = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InterfaceControllerMismatch(ref phenomenon, _, _, _, _)
+                    if phenomenon == "P_bad"
+            )
+        });
+        assert!(mismatch.is_some());
+        assert_eq!(
+            mismatch.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_invalid_causality_uses_matching_source_path() {
+        let problem = Problem {
+            name: "InterfaceCausalitySource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("L", DomainKind::Lexical, DomainRole::Given),
+            ],
+            interfaces: vec![
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("L")],
+                    shared_phenomena: vec![phenomenon("E", PhenomenonType::Event, "M", "L", "M")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Interface {
+                    name: "I1".to_string(),
+                    connects: vec![mock_ref("M"), mock_ref("L")],
+                    shared_phenomena: vec![phenomenon("E", PhenomenonType::Event, "L", "M", "L")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let invalid = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InvalidCausality(ref phenomenon, _, ref domain, _, _, _)
+                    if phenomenon == "E" && domain == "L"
+            )
+        });
+        assert!(invalid.is_some());
+        assert_eq!(
+            invalid.and_then(|issue| issue.source_path.as_deref()),
             Some(std::path::Path::new("b.pf"))
         );
     }
@@ -542,7 +711,7 @@ mod tests {
         assert!(result.is_err());
         let errors = result.unwrap_err();
         assert!(errors.iter().any(
-            |e| matches!(e, ValidationError::InvalidCausality(p, _, d, _, _) if p == "E1" && d == "L")
+            |e| matches!(e, ValidationError::InvalidCausality(p, _, d, _, _, _) if p == "E1" && d == "L")
         ));
     }
 
@@ -573,7 +742,7 @@ mod tests {
         assert!(errors.iter().any(|e| {
             matches!(
                 e,
-                ValidationError::InvalidCausality(p, t, d, _, _)
+                ValidationError::InvalidCausality(p, t, d, _, _, _)
                     if p == "Cmd1" && matches!(t, PhenomenonType::Command) && d == "M"
             )
         }));
