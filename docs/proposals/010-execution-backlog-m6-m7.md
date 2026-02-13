@@ -104,6 +104,26 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - [x] Add runbook update describing rerun and triage procedure.
 - [x] Record go/no-go checkpoint criteria for future blocking gate decision.
 
+#### R010-M7-05 - Formal Closure Referential Integrity
+
+- Proposed issue title: `R010 M7: Enforce requirement formal.argument references to declared correctness arguments`
+- Owner: `DSL Maintainer`
+- Priority: `P1`
+- Definition of Done:
+- [x] Extend requirement-mark validation to reject `@formal.argument("...")` references to undefined correctness arguments.
+- [x] Keep canonical formal-closure mapping model-derived from requirement marks.
+- [x] Add valid/invalid tests for the referential integrity contract.
+
+#### R010-M7-06 - LeanAtom Subset Entailment Mode
+
+- Proposed issue title: `R010 M7: Formalize LeanAtom subset entailment when requirement projection is covered by S/W`
+- Owner: `Formal Track Owner`
+- Priority: `P1`
+- Definition of Done:
+- [x] Extend Lean coverage formalization decision with subset entailment mode (in addition to mirror mode).
+- [x] Emit closed-coverage and entailment theorems for subset-covered requirement projections.
+- [x] Publish mode in coverage JSON and cover with deterministic tests.
+
 ## Sequencing and Dependencies
 
 - `R010-M6-04` depends on closure of `R007-M3-04` concern coverage baseline.

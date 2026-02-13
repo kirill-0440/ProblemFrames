@@ -232,6 +232,7 @@ fn lean_atom_assertion_values(set: &AssertionSet) -> Vec<String> {
 
 enum FormalCoverageDecision {
     Formalized {
+        mode: FormalizationMode,
         specification_values: Vec<String>,
         world_values: Vec<String>,
         requirement_values: Vec<String>,
@@ -239,6 +240,31 @@ enum FormalCoverageDecision {
     Skipped {
         reason: &'static str,
     },
+}
+
+#[derive(Clone, Copy)]
+enum FormalizationMode {
+    MirrorEntailment,
+    SubsetEntailment,
+}
+
+impl FormalizationMode {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::MirrorEntailment => "lean_atom_projection_mirror_entailment",
+            Self::SubsetEntailment => "lean_atom_projection_subset_entailment",
+        }
+    }
+}
+
+fn requirement_projection_is_covered(
+    specification_values: &[String],
+    world_values: &[String],
+    requirement_values: &[String],
+) -> bool {
+    requirement_values
+        .iter()
+        .all(|value| specification_values.contains(value) || world_values.contains(value))
 }
 
 fn evaluate_formal_argument(
@@ -283,19 +309,148 @@ fn evaluate_formal_argument(
         };
     }
 
-    // The current strict closure mode proves formal entailment only when
-    // requirement LeanAtom projection mirrors specification LeanAtom
-    // projection exactly.
-    if specification_values != requirement_values {
+    let mode = if specification_values == requirement_values {
+        FormalizationMode::MirrorEntailment
+    } else if requirement_projection_is_covered(
+        &specification_values,
+        &world_values,
+        &requirement_values,
+    ) {
+        FormalizationMode::SubsetEntailment
+    } else {
         return FormalCoverageDecision::Skipped {
-            reason: "requirement_not_mirror_specification_projection",
+            reason: "requirement_not_covered_by_specification_or_world_projection",
         };
-    }
+    };
 
     FormalCoverageDecision::Formalized {
+        mode,
         specification_values,
         world_values,
         requirement_values,
+    }
+}
+
+fn requirement_case_expr(variable: &str, requirement_values: &[String]) -> String {
+    requirement_values
+        .iter()
+        .map(|value| format!("{variable} = \"{}\"", escape_lean_string(value)))
+        .collect::<Vec<_>>()
+        .join(" \\/ ")
+}
+
+fn requirement_case_pattern(requirement_values: &[String]) -> String {
+    requirement_values
+        .iter()
+        .enumerate()
+        .map(|(index, _)| format!("hEq{}", index + 1))
+        .collect::<Vec<_>>()
+        .join(" | ")
+}
+
+fn emit_subset_coverage_branch(
+    base: &str,
+    eq_name: &str,
+    requirement_value: &str,
+    specification_values: &[String],
+    world_values: &[String],
+    output: &mut String,
+) {
+    let in_specification = specification_values
+        .iter()
+        .any(|value| value == requirement_value);
+    let in_world = world_values.iter().any(|value| value == requirement_value);
+    debug_assert!(in_specification || in_world);
+
+    let (target_set_name, target_or_side) = if in_specification {
+        ("Spec", "inl")
+    } else {
+        ("World", "inr")
+    };
+
+    output.push_str(&format!(
+        "    have hMem : \"{}\" ∈ {}{}Assertions := by\n",
+        escape_lean_string(requirement_value),
+        base,
+        target_set_name,
+    ));
+    output.push_str(&format!(
+        "      simp [{}{}Assertions]\n",
+        base, target_set_name
+    ));
+    output.push_str(&format!(
+        "    exact Or.{} (by simpa [{}] using hMem)\n",
+        target_or_side, eq_name
+    ));
+}
+
+fn emit_coverage_closed_theorem(
+    base: &str,
+    argument_name: &str,
+    mode: FormalizationMode,
+    specification_values: &[String],
+    world_values: &[String],
+    requirement_values: &[String],
+    output: &mut String,
+) {
+    output.push_str(&format!(
+        "/-- Closed coverage witness generated for correctness argument `{}`. -/\n",
+        escape_lean_string(argument_name),
+    ));
+    output.push_str(&format!("theorem {}CoverageClosed :\n", base));
+    output.push_str(&format!(
+        "    forall a, List.Mem a {}ReqAssertions -> List.Mem a {}SpecAssertions \\/ List.Mem a {}WorldAssertions := by\n",
+        base, base, base,
+    ));
+    output.push_str("  intro a hReq\n");
+
+    match mode {
+        FormalizationMode::MirrorEntailment => {
+            output.push_str(&format!(
+                "  exact Or.inl (by simpa [{}ReqAssertions, {}SpecAssertions] using hReq)\n\n",
+                base, base,
+            ));
+        }
+        FormalizationMode::SubsetEntailment => {
+            output.push_str(&format!(
+                "  have hReq' : a ∈ {}ReqAssertions := hReq\n",
+                base
+            ));
+            output.push_str(&format!("  have hReqCases : {} := by\n", {
+                requirement_case_expr("a", requirement_values)
+            }));
+            output.push_str(&format!("    simpa [{}ReqAssertions] using hReq'\n", base));
+
+            if requirement_values.len() == 1 {
+                output.push_str("  have hEq1 := hReqCases\n");
+                emit_subset_coverage_branch(
+                    base,
+                    "hEq1",
+                    &requirement_values[0],
+                    specification_values,
+                    world_values,
+                    output,
+                );
+                output.push('\n');
+            } else {
+                output.push_str(&format!(
+                    "  rcases hReqCases with {}\n",
+                    requirement_case_pattern(requirement_values),
+                ));
+                for (index, requirement_value) in requirement_values.iter().enumerate() {
+                    output.push_str("  ·\n");
+                    emit_subset_coverage_branch(
+                        base,
+                        &format!("hEq{}", index + 1),
+                        requirement_value,
+                        specification_values,
+                        world_values,
+                        output,
+                    );
+                }
+                output.push('\n');
+            }
+        }
     }
 }
 
@@ -313,13 +468,14 @@ fn emit_formal_correctness_argument_proofs(problem: &Problem, output: &mut Strin
     let mut emitted_names = BTreeSet::new();
 
     for argument in sorted_arguments {
-        let (spec_values, world_values, req_values) =
+        let (mode, spec_values, world_values, req_values) =
             match evaluate_formal_argument(&argument, &sets_by_name) {
                 FormalCoverageDecision::Formalized {
+                    mode,
                     specification_values,
                     world_values,
                     requirement_values,
-                } => (specification_values, world_values, requirement_values),
+                } => (mode, specification_values, world_values, requirement_values),
                 FormalCoverageDecision::Skipped { .. } => continue,
             };
 
@@ -346,20 +502,15 @@ fn emit_formal_correctness_argument_proofs(problem: &Problem, output: &mut Strin
             lean_string_list_expr(&req_values),
         ));
 
-        output.push_str(&format!(
-            "/-- Closed coverage witness generated for correctness argument `{}`. -/\n",
-            escape_lean_string(&argument.name),
-        ));
-        output.push_str(&format!("theorem {}CoverageClosed :\n", base,));
-        output.push_str(&format!(
-            "    forall a, List.Mem a {}ReqAssertions -> List.Mem a {}SpecAssertions \\/ List.Mem a {}WorldAssertions := by\n",
-            base, base, base,
-        ));
-        output.push_str("  intro a hReq\n");
-        output.push_str(&format!(
-            "  exact Or.inl (by simpa [{}ReqAssertions, {}SpecAssertions] using hReq)\n\n",
-            base, base,
-        ));
+        emit_coverage_closed_theorem(
+            &base,
+            &argument.name,
+            mode,
+            &spec_values,
+            &world_values,
+            &req_values,
+            output,
+        );
         output.push_str(&format!(
             "/-- Formal W/S/R entailment closure for correctness argument `{}`. -/\n",
             escape_lean_string(&argument.name),
@@ -426,13 +577,14 @@ pub fn generate_lean_coverage_json(problem: &Problem) -> Result<String, serde_js
     for argument in sorted_arguments {
         match evaluate_formal_argument(&argument, &sets_by_name) {
             FormalCoverageDecision::Formalized {
+                mode,
                 specification_values,
                 world_values,
                 requirement_values,
             } => {
                 formalized.push(LeanCoverageFormalizedEntry {
                     argument: argument.name.clone(),
-                    mode: "lean_atom_projection_mirror_entailment".to_string(),
+                    mode: mode.as_str().to_string(),
                     specification_assertions: specification_values.len(),
                     world_assertions: world_values.len(),
                     requirement_assertions: requirement_values.len(),
@@ -776,5 +928,86 @@ mod tests {
         let coverage_json = generate_lean_coverage_json(&problem).expect("coverage json");
         assert!(coverage_json.contains("\"formalized_count\": 1"));
         assert!(coverage_json.contains("\"mode\": \"lean_atom_projection_mirror_entailment\""));
+    }
+
+    #[test]
+    fn formalizes_subset_requirement_projection_with_world_support() {
+        let problem = Problem {
+            name: "SubsetProjection".to_string(),
+            span: span(),
+            imports: vec![],
+            domains: vec![Domain {
+                name: "Machine".to_string(),
+                kind: DomainKind::Causal,
+                role: DomainRole::Machine,
+                marks: vec![],
+                span: span(),
+                source_path: None,
+            }],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "WorldFact".to_string(),
+                        language: Some("LeanAtom".to_string()),
+                        span: span(),
+                    }],
+                    span: span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "SpecFact".to_string(),
+                        language: Some("LeanAtom".to_string()),
+                        span: span(),
+                    }],
+                    span: span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![
+                        Assertion {
+                            text: "SpecFact".to_string(),
+                            language: Some("LeanAtom".to_string()),
+                            span: span(),
+                        },
+                        Assertion {
+                            text: "WorldFact".to_string(),
+                            language: Some("LeanAtom".to_string()),
+                            span: span(),
+                        },
+                    ],
+                    span: span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A_subset".to_string(),
+                specification_set: "S".to_string(),
+                world_set: "W".to_string(),
+                requirement_set: "R".to_string(),
+                specification_ref: reference("S"),
+                world_ref: reference("W"),
+                requirement_ref: reference("R"),
+                span: span(),
+                source_path: None,
+            }],
+        };
+
+        let lean_model = generate_lean_model(&problem);
+        assert!(lean_model.contains("theorem A_subsetEntailment"));
+        assert!(lean_model.contains("have hReqCases"));
+
+        let coverage_json = generate_lean_coverage_json(&problem).expect("coverage json");
+        assert!(coverage_json.contains("\"formalized_count\": 1"));
+        assert!(coverage_json.contains("\"mode\": \"lean_atom_projection_subset_entailment\""));
     }
 }

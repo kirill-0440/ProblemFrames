@@ -40,7 +40,7 @@ requirement "R1" {
 
 - `@sysml.requirement`
 - `@ddd.application_service("...")` (value required)
-- `@formal.argument("...")` (value required; binds requirement to correctness argument for closure reports)
+- `@formal.argument("...")` (value required; must reference a declared `correctnessArgument` and binds requirement to formal closure reports)
 
 ## Validation Rules
 
@@ -48,6 +48,7 @@ requirement "R1" {
 - `ddd.aggregate_root` and `ddd.value_object` require `ddd.bounded_context`.
 - Unsupported mark names are rejected.
 - Duplicate marks on the same element are rejected.
+- `formal.argument` references to undefined correctness arguments are rejected.
 - Unmarked models keep existing strict PF behavior.
 
 ## Anti-patterns

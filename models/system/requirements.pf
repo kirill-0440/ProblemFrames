@@ -410,7 +410,7 @@ requirement "R010-M7-DifferentialVerdictArtifacts" {
 
 requirement "R010-M7-FormalClosureCoverageReport" {
     frame: Transformation
-    constraint: "Lean formal checks export per-correctness-argument formalized-versus-skipped coverage with explicit reasons"
+    constraint: "Lean formal checks export per-correctness-argument formalized-versus-skipped coverage with explicit reasons and entailment mode (mirror or subset over W/S projections)"
     marks: {
         @formal.argument("A_roadmap_alignment_formal")
     }
@@ -428,7 +428,7 @@ requirement "R010-M7-MinFormalClosureFloor" {
 
 requirement "R010-M7-RequirementFormalClosureTrace" {
     frame: Transformation
-    constraint: "Canonical system-model gate exports per-requirement formal-closure status mapped to correctness arguments and fails on open entries"
+    constraint: "Canonical system-model gate exports per-requirement formal-closure status mapped only to declared correctness arguments and fails on open entries"
     marks: {
         @formal.argument("A_roadmap_alignment_formal")
     }

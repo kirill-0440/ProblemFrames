@@ -167,6 +167,9 @@ R010-M7-DifferentialVerdictArtifacts|file_exists|docs/formal-backend/adequacy-go
 
 R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/main.rs|--lean-coverage-json|Lean coverage mode is exposed in CLI
 R010-M7-FormalClosureCoverageReport|file_contains|scripts/run_lean_formal_check.sh|coverage_status|Lean formal check status includes formalized/skipped coverage verdict
+R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/lean_export.rs|lean_atom_projection_subset_entailment|Lean coverage report includes subset-entailment formalization mode
+R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/lean_export.rs|requirement_not_covered_by_specification_or_world_projection|Lean coverage report emits explicit uncovered-projection skip reason
+R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/lean_export.rs|formalizes_subset_requirement_projection_with_world_support|subset-entailment formalization path is covered by deterministic unit test
 R010-M7-FormalClosureCoverageReport|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-coverage-json||Lean coverage JSON is generated from canonical model
 
 R010-M7-MinFormalClosureFloor|file_contains|scripts/check_system_model.sh|--min-formalized-args 2|canonical system-model gate enforces full formalized correctness arguments
@@ -177,4 +180,6 @@ R010-M7-RequirementFormalClosureTrace|file_exists|scripts/check_requirement_form
 R010-M7-RequirementFormalClosureTrace|file_contains|scripts/check_system_model.sh|tool_spec.formal-closure.md|system-model gate publishes per-requirement formal closure report
 R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/main.rs|--formal-closure-map-tsv|CLI exposes model-derived requirement formal-closure map mode
 R010-M7-RequirementFormalClosureTrace|file_contains|models/system/requirements.pf|@formal.argument("A_roadmap_alignment_formal")|formal closure mapping is declared in requirement marks inside canonical model
+R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/validator.rs|references undefined correctness argument|validator enforces requirement mark -> declared correctness argument referential integrity
+R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/validator_tests.rs|test_mark_contract_rejects_formal_argument_unknown_correctness_argument|formal.argument referential-integrity validation is covered by deterministic unit test
 R010-M7-RequirementFormalClosureTrace|command_passes|bash ./scripts/check_requirement_formal_closure.sh --model models/system/tool_spec.pf --requirements-file models/system/requirements.pf --arguments-file models/system/arguments.pf --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json --output .ci-artifacts/system-model/formal-closure-local.md --json .ci-artifacts/system-model/formal-closure-local.json --status-file .ci-artifacts/system-model/formal-closure-local.status||per-requirement formal closure check executes for canonical model

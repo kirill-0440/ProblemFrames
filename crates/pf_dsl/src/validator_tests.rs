@@ -2261,6 +2261,18 @@ mod tests {
                     @formal.argument("A1")
                 }
             }
+            worldProperties W1 {
+                assert "WorldStable" @LeanAtom
+            }
+            specification S1 {
+                assert "RenderPaymentState" @LeanAtom
+            }
+            requirementAssertions Rset {
+                assert "RenderPaymentState" @LeanAtom
+            }
+            correctnessArgument A1 {
+                prove S1 and W1 entail Rset
+            }
         "#;
 
         let problem = parse(input).expect("failed to parse marked model");
@@ -2371,6 +2383,52 @@ mod tests {
                 error,
                 ValidationError::InvalidRequirementMark(name, message, _)
                     if name == "R1" && message.contains("mark 'formal.argument' requires non-empty string value")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_formal_argument_unknown_correctness_argument() {
+        let input = r#"
+            problem: MarkContractFormalArgumentUnknownReference
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                constrains: Store
+                marks: {
+                    @formal.argument("A_missing")
+                }
+            }
+            worldProperties W1 {
+                assert "WorldStable" @LeanAtom
+            }
+            specification S1 {
+                assert "PersistCalled" @LeanAtom
+            }
+            requirementAssertions Rset {
+                assert "PersistCalled" @LeanAtom
+            }
+            correctnessArgument A1 {
+                prove S1 and W1 entail Rset
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1"
+                        && message.contains("references undefined correctness argument 'A_missing'")
             )
         }));
     }

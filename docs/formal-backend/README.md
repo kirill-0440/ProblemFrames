@@ -21,7 +21,8 @@ Related governance notes:
 
 `pf_dsl --lean-model` now emits machine-checked closure theorems for
 `correctnessArgument` entries when all three linked assertion sets use
-`@LeanAtom` assertions and requirement assertions mirror specification assertions.
+`@LeanAtom` assertions and requirement assertions are covered by the
+specification/world projection (`mirror` or `subset` entailment mode).
 
 This keeps the theorem closure explicit and non-placeholder while preserving
 the existing natural-language (`@LTL`) argumentation track.

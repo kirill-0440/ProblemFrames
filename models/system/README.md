@@ -11,7 +11,7 @@ roadmap alignment.
 - `domains.pf`: domain catalog.
 - `interfaces.pf`: shared phenomena and control boundaries.
 - `requirements.pf`: requirement set and frame typing.
-  - includes `@formal.argument("...")` marks for requirement-to-correctness-argument closure mapping.
+  - includes `@formal.argument("...")` marks for requirement-to-correctness-argument closure mapping with referential integrity checks.
 - `subproblems.pf`: decomposition into delivery-sized concerns.
 - `arguments.pf`: W/S/R assertion sets and correctness argument.
 - `implementation_trace.tsv`: requirement-to-implementation evidence map (`implemented/partial/planned`).

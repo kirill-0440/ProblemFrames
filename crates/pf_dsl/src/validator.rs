@@ -3,6 +3,8 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use thiserror::Error;
 
+const FORMAL_ARGUMENT_MARK: &str = "formal.argument";
+
 #[derive(Error, Debug)]
 pub enum ValidationError {
     #[error("Domain '{0}' referenced in interface '{1}' but not defined.")]
@@ -221,7 +223,7 @@ fn validate_requirement_marks(requirement: &Requirement, errors: &mut Vec<Valida
     let allowed_marks = [
         "sysml.requirement",
         "ddd.application_service",
-        "formal.argument",
+        FORMAL_ARGUMENT_MARK,
     ];
     let mut seen_marks = HashSet::new();
 
@@ -269,7 +271,7 @@ fn validate_requirement_marks(requirement: &Requirement, errors: &mut Vec<Valida
                     ));
                 }
             }
-            "formal.argument" => {
+            FORMAL_ARGUMENT_MARK => {
                 let is_missing = mark
                     .value
                     .as_ref()
@@ -278,7 +280,10 @@ fn validate_requirement_marks(requirement: &Requirement, errors: &mut Vec<Valida
                 if is_missing {
                     errors.push(ValidationError::InvalidRequirementMark(
                         requirement.name.clone(),
-                        "mark 'formal.argument' requires non-empty string value".to_string(),
+                        format!(
+                            "mark '{}' requires non-empty string value",
+                            FORMAL_ARGUMENT_MARK
+                        ),
                         mark.span,
                     ));
                 }
@@ -286,6 +291,20 @@ fn validate_requirement_marks(requirement: &Requirement, errors: &mut Vec<Valida
             _ => {}
         }
     }
+}
+
+fn requirement_formal_argument_mark(requirement: &Requirement) -> Option<(String, Span)> {
+    requirement.marks.iter().find_map(|mark| {
+        if mark.name != FORMAL_ARGUMENT_MARK {
+            return None;
+        }
+
+        mark.value
+            .as_ref()
+            .map(|value| value.trim())
+            .filter(|value| !value.is_empty())
+            .map(|value| (value.to_string(), mark.span))
+    })
 }
 
 pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
@@ -734,6 +753,21 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                 ),
                 argument.span,
             )),
+        }
+    }
+
+    for requirement in &problem.requirements {
+        if let Some((argument_name, span)) = requirement_formal_argument_mark(requirement) {
+            if !correctness_argument_names.contains(argument_name.as_str()) {
+                errors.push(ValidationError::InvalidRequirementMark(
+                    requirement.name.clone(),
+                    format!(
+                        "mark '{}' references undefined correctness argument '{}'",
+                        FORMAL_ARGUMENT_MARK, argument_name
+                    ),
+                    span,
+                ));
+            }
         }
     }
 
