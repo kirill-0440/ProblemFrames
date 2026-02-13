@@ -126,12 +126,21 @@ fi
 
 lean_verdict="$(grep -E '"lean_verdict": "' "${LEAN_STATUS_JSON}" | sed -E 's/.*"lean_verdict": "([^"]+)".*/\1/')"
 lean_verdict="${lean_verdict:-UNKNOWN}"
+coverage_status="$(grep -E '"coverage_status": "' "${LEAN_STATUS_JSON}" | sed -E 's/.*"coverage_status": "([^"]+)".*/\1/')"
+coverage_status="${coverage_status:-UNKNOWN}"
+formalized_count="$(grep -E '"formalized_count": ' "${LEAN_STATUS_JSON}" | sed -E 's/.*"formalized_count": *([0-9]+).*/\1/')"
+formalized_count="${formalized_count:-0}"
+min_formalized_args="$(grep -E '"min_formalized_args": ' "${LEAN_STATUS_JSON}" | sed -E 's/.*"min_formalized_args": *([0-9]+).*/\1/')"
+min_formalized_args="${min_formalized_args:-0}"
 
 category="mixed_non_pass"
 status="OPEN"
 match="false"
 
-if [[ "${rust_verdict}" == "${lean_verdict}" ]]; then
+if [[ "${coverage_status}" != "PASS" ]]; then
+  category="coverage_open"
+  status="OPEN"
+elif [[ "${rust_verdict}" == "${lean_verdict}" ]]; then
   case "${rust_verdict}" in
     PASS)
       category="both_pass"
@@ -172,10 +181,11 @@ fi
   echo "- Model: \`${MODEL_FILE#${REPO_ROOT}/}\`"
   echo "- Lean status source: \`${LEAN_STATUS_JSON#${REPO_ROOT}/}\`"
   echo "- Differential status: \`${status}\`"
+  echo "- Coverage status: \`${coverage_status}\` (${formalized_count}/${min_formalized_args} required)"
   echo
-  echo "| Rust Verdict | Lean Verdict | Category | Match |"
-  echo "| --- | --- | --- | --- |"
-  echo "| ${rust_verdict} | ${lean_verdict} | ${category} | ${match} |"
+  echo "| Rust Verdict | Lean Verdict | Coverage | Category | Match |"
+  echo "| --- | --- | --- | --- | --- |"
+  echo "| ${rust_verdict} | ${lean_verdict} | ${coverage_status} | ${category} | ${match} |"
 } > "${OUTPUT_FILE}"
 
 {
@@ -185,6 +195,9 @@ fi
   echo "  \"lean_status_source\": \"${LEAN_STATUS_JSON#${REPO_ROOT}/}\","
   echo "  \"rust_verdict\": \"${rust_verdict}\","
   echo "  \"lean_verdict\": \"${lean_verdict}\","
+  echo "  \"coverage_status\": \"${coverage_status}\","
+  echo "  \"formalized_count\": ${formalized_count},"
+  echo "  \"min_formalized_args\": ${min_formalized_args},"
   echo "  \"category\": \"${category}\","
   echo "  \"match\": ${match}"
   echo "}"

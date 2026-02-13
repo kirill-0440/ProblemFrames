@@ -29,14 +29,18 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --lean-model > model.lean
     ```
-8.  **Generate PIM outputs**:
+8.  **Generate Lean formal coverage summary**:
+    ```bash
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --lean-coverage-json
+    ```
+9.  **Generate PIM outputs**:
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --ddd-pim
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --sysml2-text
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --sysml2-json
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --trace-map-json
     ```
-9.  **Generate an image** (requires Graphviz):
+10.  **Generate an image** (requires Graphviz):
     ```bash
     dot -Tpng output.dot -o output.png
     ```

@@ -36,6 +36,7 @@ IMPLEMENTATION_TRACE_POLICY_STATUS_FILE="${OUTPUT_DIR}/tool_spec.implementation-
 WRSPM_REPORT_FILE="${OUTPUT_DIR}/tool_spec.wrspm.md"
 WRSPM_JSON_FILE="${OUTPUT_DIR}/tool_spec.wrspm.json"
 LEAN_MODEL_FILE="${OUTPUT_DIR}/tool_spec.lean"
+LEAN_COVERAGE_JSON_FILE="${OUTPUT_DIR}/tool_spec.lean-coverage.json"
 LEAN_CHECK_JSON_FILE="${OUTPUT_DIR}/tool_spec.lean-check.json"
 LEAN_CHECK_STATUS_FILE="${OUTPUT_DIR}/tool_spec.lean-check.status"
 LEAN_DIFFERENTIAL_FILE="${OUTPUT_DIR}/tool_spec.lean-differential.md"
@@ -70,6 +71,7 @@ bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
 cargo run -p pf_dsl -- "${MODEL_FILE}" --lean-model > "${LEAN_MODEL_FILE}"
 bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
   --model "${MODEL_FILE}" \
+  --min-formalized-args 1 \
   --output-dir "${OUTPUT_DIR}/lean-formal"
 bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
   --model "${MODEL_FILE}" \
@@ -80,6 +82,7 @@ bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
   --output-dir "${OUTPUT_DIR}"
 cp "${OUTPUT_DIR}/lean-formal/lean-check.json" "${LEAN_CHECK_JSON_FILE}"
 cp "${OUTPUT_DIR}/lean-formal/lean-check.status" "${LEAN_CHECK_STATUS_FILE}"
+cp "${OUTPUT_DIR}/lean-formal/lean-coverage.json" "${LEAN_COVERAGE_JSON_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-report > "${WRSPM_REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-json > "${WRSPM_JSON_FILE}"
 bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
@@ -108,6 +111,24 @@ implementation_trace_policy_status="$(cat "${IMPLEMENTATION_TRACE_POLICY_STATUS_
 implementation_trace_policy_status="${implementation_trace_policy_status:-UNKNOWN}"
 lean_check_status="$(cat "${LEAN_CHECK_STATUS_FILE}" 2>/dev/null || true)"
 lean_check_status="${lean_check_status:-UNKNOWN}"
+lean_coverage_status="$(
+  grep -E '"coverage_status": "' "${LEAN_CHECK_JSON_FILE}" 2>/dev/null \
+    | head -n 1 \
+    | sed -E 's/.*"coverage_status": "([^"]+)".*/\1/' || true
+)"
+lean_coverage_status="${lean_coverage_status:-UNKNOWN}"
+lean_formalized_count="$(
+  grep -E '"formalized_count": ' "${LEAN_CHECK_JSON_FILE}" 2>/dev/null \
+    | head -n 1 \
+    | sed -E 's/.*"formalized_count": *([0-9]+).*/\1/' || true
+)"
+lean_formalized_count="${lean_formalized_count:-0}"
+lean_total_correctness_arguments="$(
+  grep -E '"total_correctness_arguments": ' "${LEAN_CHECK_JSON_FILE}" 2>/dev/null \
+    | head -n 1 \
+    | sed -E 's/.*"total_correctness_arguments": *([0-9]+).*/\1/' || true
+)"
+lean_total_correctness_arguments="${lean_total_correctness_arguments:-0}"
 lean_differential_status="$(cat "${LEAN_DIFFERENTIAL_STATUS_FILE}" 2>/dev/null || true)"
 lean_differential_status="${lean_differential_status:-UNKNOWN}"
 
@@ -123,6 +144,7 @@ lean_differential_status="${lean_differential_status:-UNKNOWN}"
   echo "- Implementation trace status: \`${implementation_trace_status}\`"
   echo "- Implementation trace policy status: \`${implementation_trace_policy_status}\`"
   echo "- Lean formal check status: \`${lean_check_status}\`"
+  echo "- Lean formal coverage status: \`${lean_coverage_status}\` (${lean_formalized_count}/${lean_total_correctness_arguments} formalized)"
   echo "- Lean differential status: \`${lean_differential_status}\`"
   echo
   echo "## Artifacts"
@@ -144,6 +166,7 @@ lean_differential_status="${lean_differential_status:-UNKNOWN}"
   echo "- \`tool_spec.implementation-trace.md\`"
   echo "- \`tool_spec.implementation-trace.policy.status\`"
   echo "- \`tool_spec.lean\`"
+  echo "- \`tool_spec.lean-coverage.json\`"
   echo "- \`tool_spec.lean-check.json\`"
   echo "- \`tool_spec.lean-differential.md\`"
   echo "- \`tool_spec.lean-differential.json\`"
@@ -165,5 +188,10 @@ fi
 
 if [[ "${trace_map_coverage_status}" != "PASS" ]]; then
   echo "System model trace-map coverage failed (${trace_map_coverage_status})" >&2
+  exit 1
+fi
+
+if [[ "${lean_coverage_status}" != "PASS" ]]; then
+  echo "System model Lean formal coverage failed (${lean_coverage_status})" >&2
   exit 1
 fi

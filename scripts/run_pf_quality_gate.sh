@@ -19,6 +19,8 @@ Options:
                               Policy env file for staged implementation-trace enforcement.
   --enforce-implementation-policy
                               Fail if implementation-trace policy status is not PASS.
+  --min-lean-formalized-args <n>
+                              Minimum number of formalized Lean correctness arguments (default: 0).
   --impact <selectors>        Impact seeds for traceability export (e.g. requirement:R1,domain:D1).
   --impact-hops <n>           Max hops for impact traversal in traceability export.
   -h, --help                  Show this help.
@@ -33,6 +35,7 @@ allow_open_concern_coverage=0
 enforce_implementation_trace=0
 implementation_policy_path=""
 enforce_implementation_policy=0
+min_lean_formalized_args=0
 impact_selectors=""
 impact_hops=""
 models=()
@@ -62,6 +65,14 @@ while [[ $# -gt 0 ]]; do
     --enforce-implementation-policy)
       enforce_implementation_policy=1
       shift
+      ;;
+    --min-lean-formalized-args)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --min-lean-formalized-args" >&2
+        exit 1
+      fi
+      min_lean_formalized_args="$2"
+      shift 2
       ;;
     --impact)
       if [[ $# -lt 2 ]]; then
@@ -93,6 +104,11 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if ! [[ "${min_lean_formalized_args}" =~ ^[0-9]+$ ]]; then
+  echo "Invalid value for --min-lean-formalized-args: ${min_lean_formalized_args}" >&2
+  exit 1
+fi
 
 if [[ ${#models[@]} -eq 0 ]]; then
   usage
@@ -195,6 +211,7 @@ for model in "${models[@]}"; do
   cargo run -p pf_dsl -- "${model}" --lean-model > "${lean_model_file}"
   bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
     --model "${model}" \
+    --min-formalized-args "${min_lean_formalized_args}" \
     --output-dir "${model_output_dir}"
   bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
     --model "${model}" \
@@ -233,6 +250,24 @@ for model in "${models[@]}"; do
   fi
   lean_check_status="$(cat "${lean_check_status_file}" 2>/dev/null || true)"
   lean_check_status="${lean_check_status:-UNKNOWN}"
+  lean_coverage_status="$(
+    grep -E '"coverage_status": "' "${lean_check_json_file}" 2>/dev/null \
+      | head -n 1 \
+      | sed -E 's/.*"coverage_status": "([^"]+)".*/\1/' || true
+  )"
+  lean_coverage_status="${lean_coverage_status:-UNKNOWN}"
+  lean_formalized_count="$(
+    grep -E '"formalized_count": ' "${lean_check_json_file}" 2>/dev/null \
+      | head -n 1 \
+      | sed -E 's/.*"formalized_count": *([0-9]+).*/\1/' || true
+  )"
+  lean_formalized_count="${lean_formalized_count:-0}"
+  lean_total_arguments="$(
+    grep -E '"total_correctness_arguments": ' "${lean_check_json_file}" 2>/dev/null \
+      | head -n 1 \
+      | sed -E 's/.*"total_correctness_arguments": *([0-9]+).*/\1/' || true
+  )"
+  lean_total_arguments="${lean_total_arguments:-0}"
   lean_differential_status="$(cat "${lean_differential_status_file}" 2>/dev/null || true)"
   lean_differential_status="${lean_differential_status:-UNKNOWN}"
 
@@ -248,6 +283,7 @@ for model in "${models[@]}"; do
     echo "- Implementation trace status: \`${implementation_trace_status}\`"
     echo "- Implementation trace policy status: \`${implementation_trace_policy_status}\`"
     echo "- Lean formal check status: \`${lean_check_status}\`"
+    echo "- Lean formal coverage status: \`${lean_coverage_status}\` (${lean_formalized_count}/${lean_total_arguments} formalized)"
     echo "- Lean differential status: \`${lean_differential_status}\`"
     echo
     echo "## Artifacts"
@@ -268,6 +304,7 @@ for model in "${models[@]}"; do
     echo "- \`implementation-trace.md\`"
     echo "- \`implementation-trace.policy.status\`"
     echo "- \`lean-model.lean\`"
+    echo "- \`lean-coverage.json\`"
     echo "- \`lean-check.json\`"
     echo "- \`lean-differential.md\`"
     echo "- \`lean-differential.json\`"

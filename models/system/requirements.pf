@@ -274,3 +274,15 @@ requirement "R010-M7-DifferentialVerdictArtifacts" {
     constraint: "Differential rust-versus-formal verdict artifacts are generated deterministically"
     constrains: AdequacyEvidence
 }
+
+requirement "R010-M7-FormalClosureCoverageReport" {
+    frame: Transformation
+    constraint: "Lean formal checks export per-correctness-argument formalized-versus-skipped coverage with explicit reasons"
+    constrains: AdequacyEvidence
+}
+
+requirement "R010-M7-MinFormalClosureFloor" {
+    frame: RequiredBehavior
+    constraint: "Canonical system-model gate enforces a minimum formalized correctness-argument floor for the LeanAtom track"
+    constrains: CI
+}

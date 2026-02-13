@@ -2,6 +2,7 @@ use crate::ast::{
     AssertionScope, AssertionSet, CorrectnessArgument, Domain, DomainKind, DomainRole, FrameType,
     Interface, Phenomenon, PhenomenonType, Problem, Requirement,
 };
+use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
 fn escape_lean_string(value: &str) -> String {
@@ -229,6 +230,79 @@ fn assertion_set_is_formal(set: &AssertionSet) -> bool {
             .all(|assertion| assertion.language.as_deref() == Some("LeanAtom"))
 }
 
+enum FormalCoverageDecision {
+    Formalized {
+        specification_values: Vec<String>,
+        world_values: Vec<String>,
+        requirement_values: Vec<String>,
+    },
+    Skipped {
+        reason: &'static str,
+    },
+}
+
+fn assertion_values(set: &AssertionSet) -> Vec<String> {
+    set.assertions
+        .iter()
+        .map(|assertion| assertion.text.clone())
+        .collect()
+}
+
+fn evaluate_formal_argument(
+    argument: &CorrectnessArgument,
+    sets_by_name: &BTreeMap<&str, &AssertionSet>,
+) -> FormalCoverageDecision {
+    let Some(specification_set) = sets_by_name.get(argument.specification_set.as_str()) else {
+        return FormalCoverageDecision::Skipped {
+            reason: "missing_specification_set",
+        };
+    };
+    let Some(world_set) = sets_by_name.get(argument.world_set.as_str()) else {
+        return FormalCoverageDecision::Skipped {
+            reason: "missing_world_set",
+        };
+    };
+    let Some(requirement_set) = sets_by_name.get(argument.requirement_set.as_str()) else {
+        return FormalCoverageDecision::Skipped {
+            reason: "missing_requirement_set",
+        };
+    };
+
+    if !assertion_set_is_formal(specification_set) {
+        return FormalCoverageDecision::Skipped {
+            reason: "non_leanatom_specification_set",
+        };
+    }
+    if !assertion_set_is_formal(world_set) {
+        return FormalCoverageDecision::Skipped {
+            reason: "non_leanatom_world_set",
+        };
+    }
+    if !assertion_set_is_formal(requirement_set) {
+        return FormalCoverageDecision::Skipped {
+            reason: "non_leanatom_requirement_set",
+        };
+    }
+
+    let specification_values = assertion_values(specification_set);
+    let world_values = assertion_values(world_set);
+    let requirement_values = assertion_values(requirement_set);
+
+    // The current strict closure mode proves formal entailment only when
+    // requirement assertions mirror specification assertions exactly.
+    if specification_values != requirement_values {
+        return FormalCoverageDecision::Skipped {
+            reason: "requirement_not_mirror_specification",
+        };
+    }
+
+    FormalCoverageDecision::Formalized {
+        specification_values,
+        world_values,
+        requirement_values,
+    }
+}
+
 fn emit_formal_correctness_argument_proofs(problem: &Problem, output: &mut String) {
     let mut sets_by_name = BTreeMap::new();
     for set in &problem.assertion_sets {
@@ -243,50 +317,21 @@ fn emit_formal_correctness_argument_proofs(problem: &Problem, output: &mut Strin
     let mut emitted_names = BTreeSet::new();
 
     for argument in sorted_arguments {
-        let Some(specification_set) = sets_by_name.get(argument.specification_set.as_str()) else {
-            continue;
-        };
-        let Some(world_set) = sets_by_name.get(argument.world_set.as_str()) else {
-            continue;
-        };
-        let Some(requirement_set) = sets_by_name.get(argument.requirement_set.as_str()) else {
-            continue;
-        };
-
-        if !(assertion_set_is_formal(specification_set)
-            && assertion_set_is_formal(world_set)
-            && assertion_set_is_formal(requirement_set))
-        {
-            continue;
-        }
+        let (spec_values, world_values, req_values) =
+            match evaluate_formal_argument(&argument, &sets_by_name) {
+                FormalCoverageDecision::Formalized {
+                    specification_values,
+                    world_values,
+                    requirement_values,
+                } => (specification_values, world_values, requirement_values),
+                FormalCoverageDecision::Skipped { .. } => continue,
+            };
 
         let mut base = lean_ident(&argument.name);
         let mut suffix = 2usize;
         while !emitted_names.insert(base.clone()) {
             base = format!("{}_{}", lean_ident(&argument.name), suffix);
             suffix += 1;
-        }
-
-        let spec_values = specification_set
-            .assertions
-            .iter()
-            .map(|assertion| assertion.text.clone())
-            .collect::<Vec<_>>();
-        let world_values = world_set
-            .assertions
-            .iter()
-            .map(|assertion| assertion.text.clone())
-            .collect::<Vec<_>>();
-        let req_values = requirement_set
-            .assertions
-            .iter()
-            .map(|assertion| assertion.text.clone())
-            .collect::<Vec<_>>();
-
-        // The current strict closure mode proves formal entailment only when
-        // requirement assertions mirror specification assertions exactly.
-        if spec_values != req_values {
-            continue;
         }
 
         output.push_str(&format!(
@@ -343,6 +388,77 @@ fn emit_formal_correctness_argument_proofs(problem: &Problem, output: &mut Strin
         output.push_str("  | inl hSpecMem => exact hSpec a hSpecMem\n");
         output.push_str("  | inr hWorldMem => exact hWorld a hWorldMem\n\n");
     }
+}
+
+#[derive(Serialize)]
+struct LeanCoverageFormalizedEntry {
+    argument: String,
+    mode: String,
+    specification_assertions: usize,
+    world_assertions: usize,
+    requirement_assertions: usize,
+}
+
+#[derive(Serialize)]
+struct LeanCoverageSkippedEntry {
+    argument: String,
+    reason: String,
+}
+
+#[derive(Serialize)]
+struct LeanCoverageReport {
+    problem: String,
+    total_correctness_arguments: usize,
+    formalized_count: usize,
+    skipped_count: usize,
+    formalized: Vec<LeanCoverageFormalizedEntry>,
+    skipped: Vec<LeanCoverageSkippedEntry>,
+}
+
+pub fn generate_lean_coverage_json(problem: &Problem) -> Result<String, serde_json::Error> {
+    let mut sets_by_name = BTreeMap::new();
+    for set in &problem.assertion_sets {
+        sets_by_name.insert(set.name.as_str(), set);
+    }
+
+    let mut sorted_arguments = problem.correctness_arguments.clone();
+    sorted_arguments.sort_by(|left, right| left.name.cmp(&right.name));
+
+    let mut formalized = Vec::new();
+    let mut skipped = Vec::new();
+
+    for argument in sorted_arguments {
+        match evaluate_formal_argument(&argument, &sets_by_name) {
+            FormalCoverageDecision::Formalized {
+                specification_values,
+                world_values,
+                requirement_values,
+            } => {
+                formalized.push(LeanCoverageFormalizedEntry {
+                    argument: argument.name.clone(),
+                    mode: "lean_atom_mirror_entailment".to_string(),
+                    specification_assertions: specification_values.len(),
+                    world_assertions: world_values.len(),
+                    requirement_assertions: requirement_values.len(),
+                });
+            }
+            FormalCoverageDecision::Skipped { reason } => {
+                skipped.push(LeanCoverageSkippedEntry {
+                    argument: argument.name.clone(),
+                    reason: reason.to_string(),
+                });
+            }
+        }
+    }
+
+    serde_json::to_string_pretty(&LeanCoverageReport {
+        problem: problem.name.clone(),
+        total_correctness_arguments: problem.correctness_arguments.len(),
+        formalized_count: formalized.len(),
+        skipped_count: skipped.len(),
+        formalized,
+        skipped,
+    })
 }
 
 pub fn generate_lean_model(problem: &Problem) -> String {
@@ -467,7 +583,7 @@ pub fn generate_lean_model(problem: &Problem) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::generate_lean_model;
+    use super::{generate_lean_coverage_json, generate_lean_model};
     use crate::ast::{
         Assertion, AssertionScope, AssertionSet, CorrectnessArgument, Domain, DomainKind,
         DomainRole, FrameType, Interface, Phenomenon, PhenomenonType, Problem, Reference, Span,
@@ -566,5 +682,9 @@ mod tests {
         assert!(first.contains("def domains : List Domain"));
         assert!(first.contains("def interfaces : List Interface"));
         assert!(first.contains("theorem machineBoundaryCaptured"));
+
+        let coverage_json = generate_lean_coverage_json(&problem).expect("coverage json");
+        assert!(coverage_json.contains("\"formalized_count\": 0"));
+        assert!(coverage_json.contains("\"reason\": \"missing_world_set\""));
     }
 }

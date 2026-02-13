@@ -33,6 +33,7 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --decomposition-closure
 cargo run -p pf_dsl -- models/system/tool_spec.pf --concern-coverage
 cargo run -p pf_dsl -- models/system/tool_spec.pf --wrspm-report
 cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-model
+cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-coverage-json
 cargo run -p pf_dsl -- models/system/tool_spec.pf --ddd-pim
 cargo run -p pf_dsl -- models/system/tool_spec.pf --sysml2-text
 cargo run -p pf_dsl -- models/system/tool_spec.pf --sysml2-json
@@ -40,7 +41,7 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --trace-map-json
 cargo run -p pf_dsl -- models/system/tool_spec.pf --traceability-md --impact=requirement:R009-A4-OneCommandPFQualityGate --impact-hops=2
 cargo run -p pf_dsl -- models/system/tool_spec.pf --alloy > system_model.als
 bash ./scripts/run_adequacy_evidence.sh
-bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf
+bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 1
 bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf
 bash ./scripts/run_sysml_api_smoke.sh
 bash ./scripts/check_model_implementation_trace.sh models/system/tool_spec.pf

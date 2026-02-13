@@ -7,7 +7,7 @@ use std::env;
 const DEFAULT_IMPACT_HOPS: usize = 2;
 
 fn usage() -> &'static str {
-    "Usage: pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --lean-model | --traceability-md | --traceability-csv | --decomposition-closure | --concern-coverage | --wrspm-report | --wrspm-json | --ddd-pim | --sysml2-text | --sysml2-json | --trace-map-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]"
+    "Usage: pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --lean-model | --lean-coverage-json | --traceability-md | --traceability-csv | --decomposition-closure | --concern-coverage | --wrspm-report | --wrspm-json | --ddd-pim | --sysml2-text | --sysml2-json | --trace-map-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]"
 }
 
 fn parse_impact_seeds(raw: &str) -> Result<Vec<TraceEntity>> {
@@ -155,6 +155,15 @@ fn main() -> Result<()> {
                 }
                 "--lean-model" => {
                     println!("{}", pf_dsl::lean_export::generate_lean_model(&problem));
+                }
+                "--lean-coverage-json" => {
+                    match pf_dsl::lean_export::generate_lean_coverage_json(&problem) {
+                        Ok(json) => println!("{}", json),
+                        Err(error) => {
+                            eprintln!("Error generating Lean coverage JSON: {}", error);
+                            std::process::exit(1);
+                        }
+                    }
                 }
                 "--obligations" => {
                     println!(

@@ -159,3 +159,11 @@ R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/run_adequacy_evidence
 R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/run_pf_quality_gate.sh|adequacy-differential.md|quality gate publishes adequacy differential artifacts
 R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/check_system_model.sh|tool_spec.adequacy-differential.md|system-model gate publishes adequacy differential artifacts
 R010-M7-DifferentialVerdictArtifacts|file_exists|docs/formal-backend/adequacy-go-no-go-criteria.md||go/no-go checkpoint criteria are documented
+
+R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/main.rs|--lean-coverage-json|Lean coverage mode is exposed in CLI
+R010-M7-FormalClosureCoverageReport|file_contains|scripts/run_lean_formal_check.sh|coverage_status|Lean formal check status includes formalized/skipped coverage verdict
+R010-M7-FormalClosureCoverageReport|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-coverage-json||Lean coverage JSON is generated from canonical model
+
+R010-M7-MinFormalClosureFloor|file_contains|scripts/check_system_model.sh|--min-formalized-args 1|canonical system-model gate enforces minimum formalized correctness arguments
+R010-M7-MinFormalClosureFloor|file_contains|scripts/check_system_model.sh|System model Lean formal coverage failed|system-model gate fails when formalized floor is not met
+R010-M7-MinFormalClosureFloor|command_passes|bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 1 --output-dir .ci-artifacts/lean-formal-floor-local||minimum formalized-floor check executes for canonical model
