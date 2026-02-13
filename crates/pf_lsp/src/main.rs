@@ -18,7 +18,7 @@ const JSONRPC_INVALID_PARAMS: i32 = -32602;
 #[derive(Default)]
 struct ServerState {
     documents: HashMap<Uri, String>,
-    diagnostic_targets_by_owner: HashMap<Uri, HashSet<Uri>>,
+    diagnostic_targets_by_owner: HashMap<String, HashSet<String>>,
 }
 
 impl ServerState {
@@ -37,11 +37,12 @@ impl ServerState {
     fn update_diagnostic_targets(
         &mut self,
         owner_uri: &Uri,
-        current_targets: HashSet<Uri>,
-    ) -> Vec<Uri> {
+        current_targets: HashSet<String>,
+    ) -> Vec<String> {
+        let owner_key = owner_uri.as_str().to_string();
         let previous_targets = self
             .diagnostic_targets_by_owner
-            .insert(owner_uri.clone(), current_targets.clone())
+            .insert(owner_key, current_targets.clone())
             .unwrap_or_default();
 
         previous_targets
@@ -50,9 +51,9 @@ impl ServerState {
             .collect()
     }
 
-    fn clear_diagnostic_targets(&mut self, owner_uri: &Uri) -> Vec<Uri> {
+    fn clear_diagnostic_targets(&mut self, owner_uri: &Uri) -> Vec<String> {
         self.diagnostic_targets_by_owner
-            .remove(owner_uri)
+            .remove(owner_uri.as_str())
             .unwrap_or_default()
             .into_iter()
             .collect()
@@ -214,10 +215,14 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                             };
                         state.remove_document(&params.text_document.uri);
                         let mut targets = state.clear_diagnostic_targets(&params.text_document.uri);
-                        if !targets.contains(&params.text_document.uri) {
-                            targets.push(params.text_document.uri.clone());
+                        let owner_uri = params.text_document.uri.as_str().to_string();
+                        if !targets.contains(&owner_uri) {
+                            targets.push(owner_uri);
                         }
-                        for target_uri in targets {
+                        for target_uri in targets
+                            .into_iter()
+                            .filter_map(|target| target.parse::<Uri>().ok())
+                        {
                             if let Err(err) =
                                 publish_diagnostics(&connection, target_uri, Vec::new())
                             {
@@ -459,16 +464,20 @@ fn validate_document(
         }
     }
 
-    let current_targets: HashSet<Uri> = diagnostics_by_uri
+    let current_targets: HashSet<String> = diagnostics_by_uri
         .iter()
-        .map(|(target_uri, _)| target_uri.clone())
+        .map(|(target_uri, _)| target_uri.as_str().to_string())
         .collect();
 
     for (target_uri, diagnostics) in diagnostics_by_uri {
         publish_diagnostics(connection, target_uri, diagnostics)?;
     }
 
-    for stale_uri in state.update_diagnostic_targets(&uri, current_targets) {
+    for stale_uri in state
+        .update_diagnostic_targets(&uri, current_targets)
+        .into_iter()
+        .filter_map(|target| target.parse::<Uri>().ok())
+    {
         publish_diagnostics(connection, stale_uri, Vec::new())?;
     }
 
