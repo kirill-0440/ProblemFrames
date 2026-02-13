@@ -274,13 +274,21 @@ while IFS='|' read -r requirement_id check_type target value note; do
       outcome_detail="file_exists:${target}"
       ;;
     command_passes)
-      if [[ -n "${target}" ]]; then
-        # Run in the current shell environment so CI-injected toolchain paths stay visible.
-        if (cd -- "${REPO_ROOT}" && bash -c "${target}" >/dev/null 2>&1); then
-          passed=1
-        fi
-      fi
       outcome_detail="command_passes:${target}"
+      if [[ -n "${target}" ]]; then
+        command_log="$(mktemp)"
+        # Run in the current shell environment so CI-injected toolchain paths stay visible.
+        if (cd -- "${REPO_ROOT}" && bash -c "${target}" >"${command_log}" 2>&1); then
+          passed=1
+        else
+          command_tail="$(tail -n 3 "${command_log}" 2>/dev/null | tr '\n' ';' || true)"
+          command_tail="${command_tail%;}"
+          if [[ -n "${command_tail}" ]]; then
+            outcome_detail="${outcome_detail} [tail: ${command_tail}]"
+          fi
+        fi
+        rm -f "${command_log}"
+      fi
       ;;
     manual_pending)
       passed=0
