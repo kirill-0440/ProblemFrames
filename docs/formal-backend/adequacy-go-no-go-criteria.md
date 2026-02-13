@@ -5,6 +5,8 @@
 - Baseline artifacts:
   - `adequacy-differential.md`
   - `adequacy-evidence.json`
+  - `adequacy-obligation-closure.tsv`
+  - `adequacy-obligation-closure.md`
   - `adequacy.status`
 
 ## Checkpoint Criteria for Blocking Promotion

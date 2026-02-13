@@ -18,7 +18,7 @@ roadmap alignment.
 - `implementation_trace.tsv`: requirement-to-implementation evidence map (`implemented/partial/planned`).
 - `implementation_trace_policy.env`: staged policy thresholds for implementation-trace gating.
 - `adequacy_selection.env`: selected M7 adequacy obligation class and pass/fail fixture bindings.
-- `adequacy_expectations.tsv`: command-level adequacy expectation manifest with required-rule coverage.
+- `adequacy_expectations.tsv`: command-level adequacy expectation manifest with required-rule coverage (generated from selected fixtures via `scripts/generate_adequacy_expectations.sh`).
 - `alloy_expectations.tsv`: SAT/UNSAT expectation contract for Alloy command verdicts.
 - `roadmap_alignment.md`: mapping from system-model requirement IDs to proposal/backlog items (`001` through `011`).
 
@@ -52,6 +52,7 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --trace-map-json
 cargo run -p pf_dsl -- models/system/tool_spec.pf --traceability-md --impact=requirement:R009-A4-OneCommandPFQualityGate --impact-hops=2
 cargo run -p pf_dsl -- models/system/tool_spec.pf --alloy > system_model.als
 bash ./scripts/run_alloy_solver_check.sh --model models/system/tool_spec.pf --alloy-file system_model.als --expectations models/system/alloy_expectations.tsv
+bash ./scripts/generate_adequacy_expectations.sh --selection models/system/adequacy_selection.env --output models/system/adequacy_expectations.tsv --check
 bash ./scripts/run_adequacy_evidence.sh
 bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 2
 bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf

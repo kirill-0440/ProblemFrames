@@ -54,7 +54,7 @@ This map links canonical system-model requirements to roadmap/proposal items in
 | `R010-M7-FormalGapReport` | `010-execution-backlog-m6-m7.md` | M7 formal gap report (`requirement -> frame -> subproblem`) in quality gate artifacts (`R010-M7-07`) |
 | `R010-M7-FormalTrackPolicySwitch` | `010-execution-backlog-m6-m7.md` | M7 formal-track policy switch (`non-blocking` default, explicit blocking mode) (`R010-M7-08`) |
 | `R011-H1-SolverBackedAdequacyEvidence` | `011-execution-hardening-contracts.md` | replace predicate-presence formal verdicts with solver-backed SAT/UNSAT expectation checks and enforce fail-closed adequacy in canonical gates |
-| `R011-H3-CommandLevelAdequacyCoverage` | `011-execution-hardening-contracts.md` | enforce command-level expectation manifests with required-rule coverage so missing obligation-command checks fail solver-backed gates |
+| `R011-H3-CommandLevelAdequacyCoverage` | `011-execution-hardening-contracts.md` | auto-generate command-level expectation manifests from selected adequacy fixtures, enforce required-rule coverage, and publish command→expected→actual closure matrices in gate artifacts |
 | `R011-H2-DiffBasedModelFirstGate` | `011-execution-hardening-contracts.md`, `009-pf-canonical-retro-addendum.md` | enforce model-first governance via git-diff check: implementation changes require canonical `models/system/*.pf` update in same change set |
 
 ## Usage
@@ -64,6 +64,7 @@ When implementing a roadmap task:
 1. Update matching requirement/subproblem entries in `models/system/*.pf`.
    - Keep `requirements.pf` grouped via explicit `@mda.layer("CIM"|"PIM"|"PSM")` marks.
 2. Run `bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf`.
-3. Run `bash ./scripts/run_adequacy_evidence.sh` to capture differential adequacy evidence for the selected obligation class.
-4. Run `bash ./scripts/check_model_implementation_trace.sh --policy models/system/implementation_trace_policy.env --enforce-policy models/system/tool_spec.pf` to capture implementation status and staged policy compliance.
-5. Include generated system-model artifacts in PR review.
+3. Run `bash ./scripts/generate_adequacy_expectations.sh --selection models/system/adequacy_selection.env --output models/system/adequacy_expectations.tsv --check` to verify fixture-driven adequacy expectations are synchronized.
+4. Run `bash ./scripts/run_adequacy_evidence.sh` to capture differential adequacy evidence for the selected obligation class.
+5. Run `bash ./scripts/check_model_implementation_trace.sh --policy models/system/implementation_trace_policy.env --enforce-policy models/system/tool_spec.pf` to capture implementation status and staged policy compliance.
+6. Include generated system-model artifacts in PR review.

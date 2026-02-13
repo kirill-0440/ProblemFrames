@@ -105,14 +105,10 @@ if [[ ! -f "${ADEQUACY_EXPECTATIONS_FILE}" ]]; then
   echo "Adequacy expectations manifest is missing: ${ADEQUACY_EXPECTATIONS_FILE}" >&2
   exit 1
 fi
-grep -q '^models/dogfooding/adequacy/pass.pf|Obl_A_exec|UNSAT|.*|required$' "${ADEQUACY_EXPECTATIONS_FILE}" || {
-  echo "Adequacy expectations manifest is missing required pass obligation rule" >&2
-  exit 1
-}
-grep -q '^models/dogfooding/adequacy/fail.pf|Obl_A_exec|UNSAT|.*|required$' "${ADEQUACY_EXPECTATIONS_FILE}" || {
-  echo "Adequacy expectations manifest is missing required fail coverage rule" >&2
-  exit 1
-}
+bash "${REPO_ROOT}/scripts/generate_adequacy_expectations.sh" \
+  --selection "${REPO_ROOT}/models/system/adequacy_selection.env" \
+  --output "${ADEQUACY_EXPECTATIONS_FILE}" \
+  --check
 
 # 2) Diff-based model-first contract: implementation changes must include canonical model updates.
 if git -C "${REPO_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then

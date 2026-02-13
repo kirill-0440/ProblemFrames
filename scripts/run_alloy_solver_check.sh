@@ -16,6 +16,10 @@ Options:
   --report <path>       Markdown report output path
   --json <path>         JSON summary output path
   --status-file <path>  Status output path (PASS/OPEN)
+  --closure-matrix-tsv <path>
+                        Command-level closure matrix output path (TSV)
+  --closure-matrix-md <path>
+                        Command-level closure matrix output path (Markdown)
   --jar-path <path>     Explicit Alloy CLI jar path
   --solver <name>       Alloy solver id for `exec` (default: sat4j)
   --command <pattern>   Optional command selector for Alloy `exec`
@@ -37,6 +41,8 @@ OUTPUT_DIR="${REPO_ROOT}/.ci-artifacts/alloy-solver"
 REPORT_FILE=""
 JSON_FILE=""
 STATUS_FILE=""
+CLOSURE_MATRIX_TSV=""
+CLOSURE_MATRIX_MD=""
 ALLOY_VERSION="${PF_ALLOY_VERSION:-6.2.0}"
 ALLOY_JAR_URL="${PF_ALLOY_JAR_URL:-https://github.com/AlloyTools/org.alloytools.alloy/releases/download/v${ALLOY_VERSION}/org.alloytools.alloy.dist.jar}"
 ALLOY_CACHE_DIR="${PF_ALLOY_CACHE_DIR:-${HOME}/.cache/problemframes/alloy}"
@@ -71,6 +77,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --status-file)
       STATUS_FILE="$2"
+      shift 2
+      ;;
+    --closure-matrix-tsv)
+      CLOSURE_MATRIX_TSV="$2"
+      shift 2
+      ;;
+    --closure-matrix-md)
+      CLOSURE_MATRIX_MD="$2"
       shift 2
       ;;
     --jar-path)
@@ -127,6 +141,12 @@ fi
 if [[ -n "${STATUS_FILE}" && "${STATUS_FILE}" != /* ]]; then
   STATUS_FILE="${REPO_ROOT}/${STATUS_FILE}"
 fi
+if [[ -n "${CLOSURE_MATRIX_TSV}" && "${CLOSURE_MATRIX_TSV}" != /* ]]; then
+  CLOSURE_MATRIX_TSV="${REPO_ROOT}/${CLOSURE_MATRIX_TSV}"
+fi
+if [[ -n "${CLOSURE_MATRIX_MD}" && "${CLOSURE_MATRIX_MD}" != /* ]]; then
+  CLOSURE_MATRIX_MD="${REPO_ROOT}/${CLOSURE_MATRIX_MD}"
+fi
 if [[ -n "${JAR_PATH}" && "${JAR_PATH}" != /* ]]; then
   JAR_PATH="${REPO_ROOT}/${JAR_PATH}"
 fi
@@ -150,10 +170,18 @@ fi
 if [[ -z "${STATUS_FILE}" ]]; then
   STATUS_FILE="${OUTPUT_DIR}/alloy-solver-check.status"
 fi
+if [[ -z "${CLOSURE_MATRIX_TSV}" ]]; then
+  CLOSURE_MATRIX_TSV="${OUTPUT_DIR}/alloy-solver-command-closure.tsv"
+fi
+if [[ -z "${CLOSURE_MATRIX_MD}" ]]; then
+  CLOSURE_MATRIX_MD="${OUTPUT_DIR}/alloy-solver-command-closure.md"
+fi
 
 mkdir -p "$(dirname -- "${REPORT_FILE}")"
 mkdir -p "$(dirname -- "${JSON_FILE}")"
 mkdir -p "$(dirname -- "${STATUS_FILE}")"
+mkdir -p "$(dirname -- "${CLOSURE_MATRIX_TSV}")"
+mkdir -p "$(dirname -- "${CLOSURE_MATRIX_MD}")"
 
 status="OPEN"
 reason=""
@@ -179,6 +207,7 @@ declare -a expectation_verdicts=()
 declare -a expectation_required=()
 declare -a expectation_notes=()
 declare -a expectation_matched=()
+declare -a command_matrix_rows=()
 
 exec_dir="${OUTPUT_DIR}/exec"
 exec_stdout="${OUTPUT_DIR}/alloy-exec.stdout.log"
@@ -293,6 +322,48 @@ resolve_expected_rule() {
   printf '%s' ""
 }
 
+sanitize_matrix_field() {
+  local value="$1"
+  value="${value//$'\n'/ }"
+  value="${value//$'\r'/ }"
+  value="${value//|//}"
+  printf '%s' "${value}"
+}
+
+write_command_matrix_outputs() {
+  {
+    echo "# model|command|expected|actual|status|rule|required|note"
+    for row in "${command_matrix_rows[@]}"; do
+      echo "${row}"
+    done
+  } > "${CLOSURE_MATRIX_TSV}"
+
+  {
+    echo "# Alloy Command Closure Matrix"
+    echo
+    echo "- Model source: \`${MODEL_FILE}\`"
+    echo "- Status: \`${status}\`"
+    echo
+    echo "| Command | Expected | Actual | Status | Rule | Required | Note |"
+    echo "| --- | --- | --- | --- | --- | --- | --- |"
+    if [[ "${#command_matrix_rows[@]}" -eq 0 ]]; then
+      echo "| - | - | - | no_commands | - | - | - |"
+    else
+      for row in "${command_matrix_rows[@]}"; do
+        IFS='|' read -r _model_entry command_name expected actual row_status rule_label required_flag row_note <<< "${row}"
+        required_text="optional"
+        if [[ "${required_flag}" == "1" ]]; then
+          required_text="required"
+        fi
+        if [[ -z "${row_note}" ]]; then
+          row_note="-"
+        fi
+        echo "| \`${command_name}\` | ${expected} | ${actual} | ${row_status} | \`${rule_label}\` | ${required_text} | ${row_note} |"
+      done
+    fi
+  } > "${CLOSURE_MATRIX_MD}"
+}
+
 write_outputs() {
   local generated_utc
   generated_utc="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -347,6 +418,8 @@ write_outputs() {
     echo "- \`${exec_dir}/receipt.json\`"
     echo "- \`${exec_stdout}\`"
     echo "- \`${exec_stderr}\`"
+    echo "- \`${CLOSURE_MATRIX_TSV}\`"
+    echo "- \`${CLOSURE_MATRIX_MD}\`"
   } > "${REPORT_FILE}"
 
   {
@@ -399,12 +472,19 @@ write_outputs() {
     else
       echo "  \"unsolved_commands\": \"\""
     fi
+    echo ","
+    echo "  \"closure_matrix_tsv\": \"${CLOSURE_MATRIX_TSV}\","
+    echo "  \"closure_matrix_md\": \"${CLOSURE_MATRIX_MD}\""
     echo "}"
   } > "${JSON_FILE}"
+
+  write_command_matrix_outputs
 
   echo "${status}" > "${STATUS_FILE}"
   echo "Generated ${REPORT_FILE}"
   echo "Generated ${JSON_FILE}"
+  echo "Generated ${CLOSURE_MATRIX_TSV}"
+  echo "Generated ${CLOSURE_MATRIX_MD}"
 }
 
 if [[ ! -f "${MODEL_FILE}" ]]; then
@@ -534,6 +614,9 @@ else
       actual_verdict="${command_result#*$'\t'}"
 
       expected_verdict="SAT"
+      matched_rule_id="<default>"
+      matched_rule_required="0"
+      matched_rule_note="default SAT expectation"
       if [[ -n "${EXPECTATIONS_FILE}" ]]; then
         resolved_rule="$(resolve_expected_rule "${command_name}")"
         if [[ -n "${resolved_rule}" ]]; then
@@ -542,6 +625,9 @@ else
           expected_verdict="${resolved_rule_verdict}"
           expectation_rules_used=$((expectation_rules_used + 1))
           expectation_matched[$resolved_rule_index]="1"
+          matched_rule_id="$(sanitize_matrix_field "${expectation_models[$resolved_rule_index]}::${expectation_commands[$resolved_rule_index]}")"
+          matched_rule_required="${expectation_required[$resolved_rule_index]}"
+          matched_rule_note="$(sanitize_matrix_field "${expectation_notes[$resolved_rule_index]}")"
         fi
       fi
 
@@ -565,6 +651,14 @@ else
           expectation_mismatch_commands="${expectation_mismatch_commands},${mismatch_label}"
         fi
       fi
+
+      command_row_status="MATCH"
+      if [[ "${actual_verdict}" != "${expected_verdict}" ]]; then
+        command_row_status="MISMATCH"
+      fi
+      command_matrix_rows+=(
+        "$(sanitize_matrix_field "${model_rel_path}")|$(sanitize_matrix_field "${command_name}")|${expected_verdict}|${actual_verdict}|${command_row_status}|${matched_rule_id}|${matched_rule_required}|${matched_rule_note}"
+      )
     done
 
     if [[ -n "${EXPECTATIONS_FILE}" ]]; then

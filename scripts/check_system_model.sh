@@ -39,6 +39,9 @@ TRACEABILITY_CSV_FILE="${OUTPUT_DIR}/tool_spec.traceability.csv"
 ADEQUACY_DIFFERENTIAL_FILE="${OUTPUT_DIR}/tool_spec.adequacy-differential.md"
 ADEQUACY_JSON_FILE="${OUTPUT_DIR}/tool_spec.adequacy-evidence.json"
 ADEQUACY_STATUS_FILE="${OUTPUT_DIR}/tool_spec.adequacy.status"
+ADEQUACY_EXPECTATIONS_FILE="${OUTPUT_DIR}/tool_spec.adequacy_expectations.generated.tsv"
+ADEQUACY_CLOSURE_MATRIX_TSV_FILE="${OUTPUT_DIR}/tool_spec.adequacy-closure.tsv"
+ADEQUACY_CLOSURE_MATRIX_MD_FILE="${OUTPUT_DIR}/tool_spec.adequacy-closure.md"
 IMPLEMENTATION_TRACE_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.md"
 IMPLEMENTATION_TRACE_STATUS_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.status"
 IMPLEMENTATION_TRACE_POLICY_STATUS_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.policy.status"
@@ -72,10 +75,16 @@ cargo run -p pf_dsl -- "${MODEL_FILE}" --dot > "${DOT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --alloy > "${ALLOY_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-md > "${TRACEABILITY_MD_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-csv > "${TRACEABILITY_CSV_FILE}"
+bash "${REPO_ROOT}/scripts/generate_adequacy_expectations.sh" \
+  --selection "${REPO_ROOT}/models/system/adequacy_selection.env" \
+  --output "${ADEQUACY_EXPECTATIONS_FILE}"
 bash "${REPO_ROOT}/scripts/run_adequacy_evidence.sh" \
+  --expectations "${ADEQUACY_EXPECTATIONS_FILE}" \
   --output "${ADEQUACY_DIFFERENTIAL_FILE}" \
   --json "${ADEQUACY_JSON_FILE}" \
   --status-file "${ADEQUACY_STATUS_FILE}" \
+  --closure-matrix-tsv "${ADEQUACY_CLOSURE_MATRIX_TSV_FILE}" \
+  --closure-matrix-md "${ADEQUACY_CLOSURE_MATRIX_MD_FILE}" \
   --enforce-pass
 cargo run -p pf_dsl -- "${MODEL_FILE}" --lean-model > "${LEAN_MODEL_FILE}"
 bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
@@ -211,6 +220,9 @@ alloy_solver_status="${alloy_solver_status:-UNKNOWN}"
   echo "- \`tool_spec.traceability.csv\`"
   echo "- \`tool_spec.adequacy-differential.md\`"
   echo "- \`tool_spec.adequacy-evidence.json\`"
+  echo "- \`tool_spec.adequacy_expectations.generated.tsv\`"
+  echo "- \`tool_spec.adequacy-closure.tsv\`"
+  echo "- \`tool_spec.adequacy-closure.md\`"
   echo "- \`tool_spec.implementation-trace.md\`"
   echo "- \`tool_spec.implementation-trace.policy.status\`"
   echo "- \`tool_spec.lean\`"

@@ -26,13 +26,14 @@ Current quality signals pass, but three checks are weaker than the requirement i
 
 ## Delivery
 
-1. Update `run_adequacy_evidence.sh` to use Alloy solver checks with command-level expectation manifests and required-rule coverage extraction.
-2. Extend `run_alloy_solver_check.sh` to validate required expectation-rule coverage (missing required command checks produce OPEN).
-3. Use counterexample-style adequacy expectations (`UNSAT` for selected `Obl_*` commands) so pass/fail fixtures differentiate closure vs counterexample.
-4. Enforce fail-closed adequacy in canonical gates (`check_system_model.sh`) and in formal-track blocking mode (`run_pf_quality_gate.sh --enforce-formal-track`).
-5. Extend Codex self-model contract with git diff analysis:
+1. Update `run_adequacy_evidence.sh` to use Alloy solver checks with command-level expectation manifests, required-rule coverage extraction, and explicit command closure matrix artifacts (`command -> expected -> actual -> status`).
+2. Extend `run_alloy_solver_check.sh` to validate required expectation-rule coverage (missing required command checks produce OPEN) and emit per-command closure matrices.
+3. Generate `models/system/adequacy_expectations.tsv` from selected fixture obligation commands (`Obl_*`) and enforce synchronization in self-model contracts.
+4. Use counterexample-style adequacy expectations (`UNSAT` for selected `Obl_*` commands) so pass/fail fixtures differentiate closure vs counterexample.
+5. Enforce fail-closed adequacy in canonical gates (`check_system_model.sh`) and in formal-track blocking mode (`run_pf_quality_gate.sh --enforce-formal-track`).
+6. Extend Codex self-model contract with git diff analysis:
    implementation changes under code/tooling paths require canonical model changes under `models/system/*.pf`.
-6. Wire evidence in `implementation_trace.tsv`.
+7. Wire evidence in `implementation_trace.tsv`.
 
 ## Exit Criteria
 

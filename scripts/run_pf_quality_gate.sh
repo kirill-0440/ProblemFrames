@@ -176,6 +176,9 @@ for model in "${models[@]}"; do
   adequacy_differential_file="${model_output_dir}/adequacy-differential.md"
   adequacy_json_file="${model_output_dir}/adequacy-evidence.json"
   adequacy_status_file="${model_output_dir}/adequacy.status"
+  adequacy_expectations_file="${model_output_dir}/adequacy_expectations.generated.tsv"
+  adequacy_closure_matrix_tsv_file="${model_output_dir}/adequacy-closure.tsv"
+  adequacy_closure_matrix_md_file="${model_output_dir}/adequacy-closure.md"
   implementation_trace_file="${model_output_dir}/implementation-trace.md"
   implementation_trace_status_file="${model_output_dir}/implementation-trace.status"
   implementation_trace_policy_status_file="${model_output_dir}/implementation-trace.policy.status"
@@ -208,9 +211,12 @@ for model in "${models[@]}"; do
     traceability_args+=("--impact-hops=${impact_hops}")
   fi
   adequacy_args=(
+    --expectations "${adequacy_expectations_file}"
     --output "${adequacy_differential_file}"
     --json "${adequacy_json_file}"
     --status-file "${adequacy_status_file}"
+    --closure-matrix-tsv "${adequacy_closure_matrix_tsv_file}"
+    --closure-matrix-md "${adequacy_closure_matrix_md_file}"
   )
   if [[ "${enforce_formal_track}" -eq 1 ]]; then
     adequacy_args+=(--enforce-pass)
@@ -227,6 +233,9 @@ for model in "${models[@]}"; do
   cargo run -p pf_dsl -- "${model}" --alloy > "${alloy_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-md "${traceability_args[@]}" > "${traceability_md_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-csv "${traceability_args[@]}" > "${traceability_csv_file}"
+  bash "${REPO_ROOT}/scripts/generate_adequacy_expectations.sh" \
+    --selection "${REPO_ROOT}/models/system/adequacy_selection.env" \
+    --output "${adequacy_expectations_file}"
   bash "${REPO_ROOT}/scripts/run_adequacy_evidence.sh" "${adequacy_args[@]}"
   cargo run -p pf_dsl -- "${model}" --lean-model > "${lean_model_file}"
   bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
@@ -371,6 +380,9 @@ for model in "${models[@]}"; do
     echo "- \`traceability.csv\`"
     echo "- \`adequacy-differential.md\`"
     echo "- \`adequacy-evidence.json\`"
+    echo "- \`adequacy_expectations.generated.tsv\`"
+    echo "- \`adequacy-closure.tsv\`"
+    echo "- \`adequacy-closure.md\`"
     echo "- \`implementation-trace.md\`"
     echo "- \`implementation-trace.policy.status\`"
     echo "- \`lean-model.lean\`"

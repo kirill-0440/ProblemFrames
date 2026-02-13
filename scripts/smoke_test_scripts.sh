@@ -14,6 +14,10 @@ trap 'rm -rf "${tmp_dir}"' EXIT
 bash "${REPO_ROOT}/scripts/generate_dogfooding_reports.sh" "${tmp_dir}"
 bash "${REPO_ROOT}/scripts/generate_dogfooding_triage_report.sh" "${tmp_dir}"
 bash "${REPO_ROOT}/scripts/generate_obligation_reports.sh" "${tmp_dir}"
+bash "${REPO_ROOT}/scripts/generate_adequacy_expectations.sh" \
+  --selection "${REPO_ROOT}/models/system/adequacy_selection.env" \
+  --output "${REPO_ROOT}/models/system/adequacy_expectations.tsv" \
+  --check
 bash "${REPO_ROOT}/scripts/run_adoption_demo.sh" "${tmp_dir}/adoption-demo" "${REPO_ROOT}/models/examples/sample.pf"
 bash "${REPO_ROOT}/scripts/generate_pilot_evidence_report.sh" "${REPO_ROOT}/docs/adoption/pilot-evidence.tsv" "${tmp_dir}/adoption-pilot"
 bash "${REPO_ROOT}/scripts/run_pf_quality_gate.sh" \

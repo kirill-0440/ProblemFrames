@@ -16,6 +16,10 @@ Options:
   --output <path>         Markdown report output path
   --json <path>           JSON output path
   --status-file <path>    Status file output path (PASS/OPEN)
+  --closure-matrix-tsv <path>
+                         Aggregated obligation closure matrix (TSV)
+  --closure-matrix-md <path>
+                         Aggregated obligation closure matrix (Markdown)
   --enforce-pass          Exit non-zero when adequacy status is OPEN
   -h, --help              Show this help
 USAGE
@@ -27,6 +31,8 @@ output_dir="${REPO_ROOT}/.ci-artifacts/adequacy-evidence"
 output_file=""
 json_file=""
 status_file=""
+closure_matrix_tsv=""
+closure_matrix_md=""
 enforce_pass=0
 
 while [[ $# -gt 0 ]]; do
@@ -53,6 +59,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --status-file)
       status_file="$2"
+      shift 2
+      ;;
+    --closure-matrix-tsv)
+      closure_matrix_tsv="$2"
+      shift 2
+      ;;
+    --closure-matrix-md)
+      closure_matrix_md="$2"
       shift 2
       ;;
     --enforce-pass)
@@ -111,8 +125,21 @@ mkdir -p "${output_dir}"
 output_file="${output_file:-${output_dir}/adequacy-differential.md}"
 json_file="${json_file:-${output_dir}/adequacy-evidence.json}"
 status_file="${status_file:-${output_dir}/adequacy.status}"
+closure_matrix_tsv="${closure_matrix_tsv:-${output_dir}/adequacy-obligation-closure.tsv}"
+closure_matrix_md="${closure_matrix_md:-${output_dir}/adequacy-obligation-closure.md}"
+
+if [[ "${closure_matrix_tsv}" != /* ]]; then
+  closure_matrix_tsv="${REPO_ROOT}/${closure_matrix_tsv}"
+fi
+if [[ "${closure_matrix_md}" != /* ]]; then
+  closure_matrix_md="${REPO_ROOT}/${closure_matrix_md}"
+fi
+
+mkdir -p "$(dirname -- "${closure_matrix_tsv}")"
+mkdir -p "$(dirname -- "${closure_matrix_md}")"
 
 declare -a records=()
+declare -a closure_rows=()
 
 json_number_field_or_default() {
   local json_path="$1"
@@ -167,6 +194,8 @@ evaluate_fixture() {
   local fixture_solver_status_file="${fixture_dir}/alloy-solver.status"
   local fixture_solver_report_file="${fixture_dir}/alloy-solver.md"
   local fixture_solver_json_file="${fixture_dir}/alloy-solver.json"
+  local fixture_solver_matrix_tsv_file="${fixture_dir}/alloy-solver-command-closure.tsv"
+  local fixture_solver_matrix_md_file="${fixture_dir}/alloy-solver-command-closure.md"
 
   local solver_required_total=0
   local solver_required_missing=0
@@ -190,6 +219,8 @@ evaluate_fixture() {
     --report "${fixture_solver_report_file}" \
     --json "${fixture_solver_json_file}" \
     --status-file "${fixture_solver_status_file}" \
+    --closure-matrix-tsv "${fixture_solver_matrix_tsv_file}" \
+    --closure-matrix-md "${fixture_solver_matrix_md_file}" \
     --expectations "${expectations_file}" >/dev/null 2>&1; then
     formal_solver_status="$(cat "${fixture_solver_status_file}" 2>/dev/null || true)"
     formal_solver_status="${formal_solver_status:-OPEN}"
@@ -210,6 +241,17 @@ evaluate_fixture() {
     formal_verdict="PASS"
   else
     formal_verdict="FAIL"
+  fi
+
+  if [[ -f "${fixture_solver_matrix_tsv_file}" ]]; then
+    while IFS='|' read -r _model_entry command_name expected_verdict actual_verdict command_status rule_id required_flag note; do
+      if [[ -z "${_model_entry}" || "${_model_entry}" == \#* ]]; then
+        continue
+      fi
+      closure_rows+=(
+        "${label}|${model_rel}|${command_name}|${expected_verdict}|${actual_verdict}|${command_status}|${rule_id}|${required_flag}|${note}"
+      )
+    done < "${fixture_solver_matrix_tsv_file}"
   fi
 
   if [[ "${rust_verdict}" == "${formal_verdict}" ]]; then
@@ -250,11 +292,45 @@ if [[ "${mismatch_count}" -ne 0 ]]; then
 fi
 
 {
+  echo "# fixture|model|command|expected|actual|status|rule|required|note"
+  for closure_row in "${closure_rows[@]}"; do
+    echo "${closure_row}"
+  done
+} > "${closure_matrix_tsv}"
+
+{
+  echo "# Adequacy Obligation Closure Matrix"
+  echo
+  echo "- Selected class ID: \`${ADEQUACY_CLASS_ID}\`"
+  echo "- Selected class name: \`${ADEQUACY_CLASS_NAME}\`"
+  echo "- Status: \`${overall_status}\`"
+  echo
+  echo "| Fixture | Model | Command | Expected | Actual | Status | Rule | Required | Note |"
+  echo "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"
+  if [[ "${#closure_rows[@]}" -eq 0 ]]; then
+    echo "| - | - | - | - | - | no_commands | - | - | - |"
+  else
+    for closure_row in "${closure_rows[@]}"; do
+      IFS='|' read -r fixture_label fixture_model command_name expected_verdict actual_verdict command_status rule_id required_flag note <<< "${closure_row}"
+      required_text="optional"
+      if [[ "${required_flag}" == "1" ]]; then
+        required_text="required"
+      fi
+      if [[ -z "${note}" ]]; then
+        note="-"
+      fi
+      echo "| ${fixture_label} | \`${fixture_model}\` | \`${command_name}\` | ${expected_verdict} | ${actual_verdict} | ${command_status} | \`${rule_id}\` | ${required_text} | ${note} |"
+    done
+  fi
+} > "${closure_matrix_md}"
+
+{
   echo "# Adequacy Differential Report"
   echo
   echo "- Selected class ID: \`${ADEQUACY_CLASS_ID}\`"
   echo "- Selected class name: \`${ADEQUACY_CLASS_NAME}\`"
   echo "- Expectations manifest: \`${expectations_file#${REPO_ROOT}/}\`"
+  echo "- Obligation closure matrix: \`${closure_matrix_tsv#${REPO_ROOT}/}\`"
   echo "- Status: \`${overall_status}\`"
   echo "- Mismatches: ${mismatch_count}"
   echo
@@ -276,6 +352,8 @@ fi
   echo "  \"class_id\": \"${ADEQUACY_CLASS_ID}\","
   echo "  \"class_name\": \"${ADEQUACY_CLASS_NAME}\","
   echo "  \"expectations_manifest\": \"${expectations_file#${REPO_ROOT}/}\","
+  echo "  \"obligation_closure_matrix_tsv\": \"${closure_matrix_tsv#${REPO_ROOT}/}\","
+  echo "  \"obligation_closure_matrix_md\": \"${closure_matrix_md#${REPO_ROOT}/}\","
   echo "  \"status\": \"${overall_status}\","
   echo "  \"mismatches\": ${mismatch_count},"
   echo "  \"fixtures\": ["
@@ -309,6 +387,8 @@ echo "${overall_status}" > "${status_file}"
 
 echo "Generated ${output_file} (status: ${overall_status})"
 echo "Generated ${json_file}"
+echo "Generated ${closure_matrix_tsv}"
+echo "Generated ${closure_matrix_md}"
 
 if [[ "${overall_status}" != "PASS" && "${enforce_pass}" -eq 1 ]]; then
   exit 1
