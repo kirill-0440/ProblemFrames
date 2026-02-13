@@ -113,18 +113,6 @@ correctnessArgument A1 {
         "decomposition closure should pass for covered model"
     );
 
-    let decomposition = run_pf_dsl(&root_path, "--decomposition-closure");
-    assert!(
-        decomposition.status.success(),
-        "decomposition mode should succeed: {}",
-        String::from_utf8_lossy(&decomposition.stderr)
-    );
-    let decomposition_stdout = String::from_utf8_lossy(&decomposition.stdout);
-    assert!(
-        decomposition_stdout.contains("Closure status: PASS"),
-        "decomposition closure should pass for covered model"
-    );
-
     let alloy = run_pf_dsl(&root_path, "--alloy");
     assert!(
         alloy.status.success(),
@@ -139,34 +127,6 @@ correctnessArgument A1 {
     assert!(
         alloy_stdout.contains("pred Obl_A1"),
         "alloy output should contain obligation predicate"
-    );
-
-    let wrspm = run_pf_dsl(&root_path, "--wrspm-report");
-    assert!(
-        wrspm.status.success(),
-        "wrspm report mode should succeed: {}",
-        String::from_utf8_lossy(&wrspm.stderr)
-    );
-    let wrspm_stdout = String::from_utf8_lossy(&wrspm.stdout);
-    assert!(
-        wrspm_stdout.contains("# WRSPM Report: Root"),
-        "wrspm output should contain report header"
-    );
-    assert!(
-        wrspm_stdout.contains("Artifact Projection"),
-        "wrspm output should contain artifact section"
-    );
-
-    let wrspm_json = run_pf_dsl(&root_path, "--wrspm-json");
-    assert!(
-        wrspm_json.status.success(),
-        "wrspm json mode should succeed: {}",
-        String::from_utf8_lossy(&wrspm_json.stderr)
-    );
-    let wrspm_json_stdout = String::from_utf8_lossy(&wrspm_json.stdout);
-    assert!(
-        wrspm_json_stdout.contains("\"problem\": \"Root\""),
-        "wrspm json output should contain problem field"
     );
 
     let wrspm = run_pf_dsl(&root_path, "--wrspm-report");
