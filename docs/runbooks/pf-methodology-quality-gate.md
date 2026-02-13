@@ -14,7 +14,8 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 4. Verify frame concern coverage (`requirement -> correctness argument`) with explicit uncovered/deferred entries.
 5. Generate correctness evidence (`obligations`, `alloy`) from the validated model.
 6. Generate traceability artifacts (relationship matrix + optional impact analysis).
-7. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
+7. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
+8. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
 
 ## One-command Gate
 
@@ -35,6 +36,7 @@ Generated artifacts per model:
 - `model.als`
 - `traceability.md`
 - `traceability.csv`
+- `implementation-trace.md`
 - `wrspm.md`
 - `wrspm.json`
 
@@ -61,11 +63,18 @@ If a PR intentionally carries open concern coverage items (for staged argumentat
 bash ./scripts/run_pf_quality_gate.sh --allow-open-concern-coverage <model.pf>
 ```
 
+If you want implementation trace to act as a blocking gate (instead of informative mode), run:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh --enforce-implementation-trace <model.pf>
+```
+
 Document the reason in PR "Why" and list closure/coverage debt explicitly.
 
 `--impact` and `--impact-hops` are forwarded to `pf_dsl --traceability-*`
 for impact-aware traceability artifacts. Decomposition closure and concern
-coverage verdict rules remain unchanged.
+coverage verdict rules remain unchanged. Implementation trace is informative by
+default and blocking only when explicitly enforced.
 
 ## CI Alignment
 
@@ -73,7 +82,7 @@ CI publishes equivalent evidence through dogfooding artifacts:
 
 - `dogfooding-reports`
 - `dogfooding-obligations`
-- `system-model` (includes decomposition closure, concern coverage, and WRSPM outputs)
+- `system-model` (includes decomposition closure, concern coverage, implementation trace, and WRSPM outputs)
 - `formal-backend`
 
 For agent-assisted model execution, run:

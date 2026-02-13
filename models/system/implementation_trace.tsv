@@ -1,0 +1,53 @@
+# requirement_id|check_type|target|value|note
+# check_type: file_contains | file_exists | command_passes | manual_pending
+
+R005-G1-ReleaseReliabilityContract|file_contains|scripts/run_pf_quality_gate.sh|--alloy|quality gate executes formal artifact generation
+R005-G1-ReleaseReliabilityContract|file_contains|scripts/smoke_test_scripts.sh|run_pf_quality_gate.sh|quality gate is exercised in smoke tests
+
+R005-G2-DogfoodingPlanningLoop|file_contains|scripts/generate_dogfooding_reports.sh|dogfooding|dogfooding report generation script exists
+R005-G2-DogfoodingPlanningLoop|file_contains|scripts/generate_dogfooding_triage_report.sh|dogfooding|dogfooding triage generation script exists
+
+R005-G3-EditorFeedbackQuality|file_contains|crates/pf_lsp/src/main.rs|publish_diagnostics|LSP diagnostics publishing path exists
+R005-G3-EditorFeedbackQuality|file_contains|crates/pf_lsp/tests/lsp_integration.rs|diagnostics_follow_did_change_buffer_state|LSP diagnostics behavior is covered by integration tests
+
+R007-M1-MetamodelContract|file_exists|metamodel/invariant-catalog.json||metamodel invariant catalog is versioned
+R007-M1-MetamodelContract|file_exists|metamodel/rule-test-matrix.tsv||rule-test matrix is versioned
+R007-M1-MetamodelContract|file_contains|crates/pf_dsl/src/metamodel_contract_tests.rs|test_metamodel_catalog_is_complete_and_well_formed|contract consistency tests exist
+
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/main.rs|--traceability-md|traceability markdown mode is exposed in CLI
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/main.rs|--traceability-csv|traceability CSV mode is exposed in CLI
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/traceability.rs|generate_traceability_markdown|traceability report generation exists
+
+R007-M3-ExecutableObligationCheck|file_contains|scripts/run_formal_backend_check.sh|--alloy|formal backend check script exists
+R007-M3-ExecutableObligationCheck|file_contains|crates/pf_dsl/src/formal_alloy.rs|generate_alloy|alloy backend generator exists
+
+R008-M4A-MarkValidationContract|file_contains|models/system/requirements.pf|R008-M4A-MarkValidationContract|requirement is modeled
+R008-M4A-MarkValidationContract|manual_pending|||mark parsing/validation contract hardening is partially implemented and remains open
+
+R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/traceability.rs|generate_traceability_csv|traceability export engine exists
+R008-M4C-TraceCoverageContract|manual_pending|||source-to-target trace coverage thresholding remains open
+
+R009-A1-ExplicitPFViews|file_contains|crates/pf_dsl/src/main.rs|--dot-context|context view export mode exists
+R009-A1-ExplicitPFViews|file_contains|crates/pf_dsl/src/main.rs|--dot-problem|problem view export mode exists
+R009-A1-ExplicitPFViews|file_contains|crates/pf_dsl/src/main.rs|--dot-decomposition|decomposition view export mode exists
+
+R009-A2-DecompositionClosureArtifact|file_contains|crates/pf_dsl/src/main.rs|--decomposition-closure|decomposition closure report mode exists
+R009-A2-DecompositionClosureArtifact|file_contains|crates/pf_dsl/src/decomposition_closure.rs|Decomposition Closure Report|closure report generator exists
+
+R009-A3-FrameConcernCoverageGate|file_contains|crates/pf_dsl/src/main.rs|--concern-coverage|concern coverage mode exists
+R009-A3-FrameConcernCoverageGate|file_contains|scripts/run_pf_quality_gate.sh|concern-coverage.md|quality gate emits concern coverage artifact
+
+R009-A4-OneCommandPFQualityGate|file_exists|scripts/run_pf_quality_gate.sh||one-command quality gate script exists
+R009-A4-OneCommandPFQualityGate|file_contains|scripts/run_pf_quality_gate.sh|PF Quality Gate Summary|quality gate emits deterministic summary artifact
+
+R009-A5-AgentAssistedModelExecution|file_exists|scripts/check_codex_self_model_contract.sh||agent-assisted model execution contract script exists
+R009-A5-AgentAssistedModelExecution|file_contains|models/system/requirements.pf|R009-A5-AgentAssistedModelExecution|agent-assisted requirement is modeled
+
+R010-M6-WRSPMBridgeCoverage|file_contains|crates/pf_dsl/src/wrspm.rs|pub struct WrspmProjection|WRSPM projection model exists
+R010-M6-WRSPMBridgeCoverage|file_contains|crates/pf_dsl/src/wrspm.rs|eh partition is deferred|WRSPM unresolved/deferred entries are explicit
+
+R010-M6-SVocabularyDiscipline|file_contains|crates/pf_dsl/src/validator.rs|InvalidSpecificationVocabulary|S vocabulary validator rule exists
+R010-M6-SVocabularyDiscipline|file_contains|metamodel/invariant-catalog.json|PF-VAL-025|S vocabulary validator rule is tracked in metamodel contract
+
+R010-M6-WRSPMReportModes|file_contains|crates/pf_dsl/src/main.rs|--wrspm-report|WRSPM markdown mode exists
+R010-M6-WRSPMReportModes|file_contains|crates/pf_dsl/src/main.rs|--wrspm-json|WRSPM JSON mode exists

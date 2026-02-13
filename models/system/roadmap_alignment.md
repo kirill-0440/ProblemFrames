@@ -33,4 +33,5 @@ When implementing a roadmap task:
 
 1. Update matching requirement/subproblem entries in `models/system/*.pf`.
 2. Run `bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf`.
-3. Include generated system-model artifacts in PR review.
+3. Run `bash ./scripts/check_model_implementation_trace.sh models/system/tool_spec.pf` to capture implementation status (`implemented/partial/planned`).
+4. Include generated system-model artifacts in PR review.

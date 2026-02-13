@@ -23,6 +23,8 @@ DOT_FILE="${OUTPUT_DIR}/tool_spec.dot"
 ALLOY_FILE="${OUTPUT_DIR}/tool_spec.als"
 TRACEABILITY_MD_FILE="${OUTPUT_DIR}/tool_spec.traceability.md"
 TRACEABILITY_CSV_FILE="${OUTPUT_DIR}/tool_spec.traceability.csv"
+IMPLEMENTATION_TRACE_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.md"
+IMPLEMENTATION_TRACE_STATUS_FILE="${OUTPUT_DIR}/tool_spec.implementation-trace.status"
 WRSPM_REPORT_FILE="${OUTPUT_DIR}/tool_spec.wrspm.md"
 WRSPM_JSON_FILE="${OUTPUT_DIR}/tool_spec.wrspm.json"
 
@@ -34,6 +36,11 @@ cargo run -p pf_dsl -- "${MODEL_FILE}" --dot > "${DOT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --alloy > "${ALLOY_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-md > "${TRACEABILITY_MD_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-csv > "${TRACEABILITY_CSV_FILE}"
+bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
+  --traceability-csv "${TRACEABILITY_CSV_FILE}" \
+  --output "${IMPLEMENTATION_TRACE_FILE}" \
+  --status-file "${IMPLEMENTATION_TRACE_STATUS_FILE}" \
+  "${MODEL_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-report > "${WRSPM_REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-json > "${WRSPM_JSON_FILE}"
 bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
@@ -48,6 +55,8 @@ concern_coverage_status="$(
     | sed -e 's/^- Concern coverage status: //'
 )"
 concern_coverage_status="${concern_coverage_status:-UNKNOWN}"
+implementation_trace_status="$(cat "${IMPLEMENTATION_TRACE_STATUS_FILE}" 2>/dev/null || true)"
+implementation_trace_status="${implementation_trace_status:-UNKNOWN}"
 
 {
   echo "# System Model Quality Gate"
@@ -56,6 +65,7 @@ concern_coverage_status="${concern_coverage_status:-UNKNOWN}"
   echo "- Model: \`models/system/tool_spec.pf\`"
   echo "- Decomposition closure status: \`${closure_status}\`"
   echo "- Concern coverage status: \`${concern_coverage_status}\`"
+  echo "- Implementation trace status: \`${implementation_trace_status}\`"
   echo
   echo "## Artifacts"
   echo
@@ -67,6 +77,7 @@ concern_coverage_status="${concern_coverage_status:-UNKNOWN}"
   echo "- \`tool_spec.als\`"
   echo "- \`tool_spec.traceability.md\`"
   echo "- \`tool_spec.traceability.csv\`"
+  echo "- \`tool_spec.implementation-trace.md\`"
   echo "- \`tool_spec.wrspm.md\`"
   echo "- \`tool_spec.wrspm.json\`"
 } > "${SUMMARY_FILE}"

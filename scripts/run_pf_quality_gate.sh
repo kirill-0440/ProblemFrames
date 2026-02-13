@@ -13,6 +13,8 @@ Options:
   --allow-open-closure        Do not fail if decomposition closure status is FAIL.
   --allow-open-concern-coverage
                               Do not fail if concern coverage status is FAIL.
+  --enforce-implementation-trace
+                              Fail if implementation trace status is not PASS.
   --impact <selectors>        Impact seeds for traceability export (e.g. requirement:R1,domain:D1).
   --impact-hops <n>           Max hops for impact traversal in traceability export.
   -h, --help                  Show this help.
@@ -24,6 +26,7 @@ USAGE
 
 allow_open_closure=0
 allow_open_concern_coverage=0
+enforce_implementation_trace=0
 impact_selectors=""
 impact_hops=""
 models=()
@@ -36,6 +39,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --allow-open-concern-coverage)
       allow_open_concern_coverage=1
+      shift
+      ;;
+    --enforce-implementation-trace)
+      enforce_implementation_trace=1
       shift
       ;;
     --impact)
@@ -105,6 +112,8 @@ for model in "${models[@]}"; do
   alloy_file="${model_output_dir}/model.als"
   traceability_md_file="${model_output_dir}/traceability.md"
   traceability_csv_file="${model_output_dir}/traceability.csv"
+  implementation_trace_file="${model_output_dir}/implementation-trace.md"
+  implementation_trace_status_file="${model_output_dir}/implementation-trace.status"
   wrspm_file="${model_output_dir}/wrspm.md"
   wrspm_json_file="${model_output_dir}/wrspm.json"
   summary_file="${model_output_dir}/summary.md"
@@ -124,6 +133,11 @@ for model in "${models[@]}"; do
   cargo run -p pf_dsl -- "${model}" --alloy > "${alloy_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-md "${traceability_args[@]}" > "${traceability_md_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-csv "${traceability_args[@]}" > "${traceability_csv_file}"
+  bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
+    --traceability-csv "${traceability_csv_file}" \
+    --output "${implementation_trace_file}" \
+    --status-file "${implementation_trace_status_file}" \
+    "${model}"
   cargo run -p pf_dsl -- "${model}" --wrspm-report > "${wrspm_file}"
   cargo run -p pf_dsl -- "${model}" --wrspm-json > "${wrspm_json_file}"
 
@@ -137,6 +151,8 @@ for model in "${models[@]}"; do
       | sed -e 's/^- Concern coverage status: //'
   )"
   concern_coverage_status="${concern_coverage_status:-UNKNOWN}"
+  implementation_trace_status="$(cat "${implementation_trace_status_file}" 2>/dev/null || true)"
+  implementation_trace_status="${implementation_trace_status:-UNKNOWN}"
 
   {
     echo "# PF Quality Gate Summary"
@@ -145,6 +161,7 @@ for model in "${models[@]}"; do
     echo "- Model: \`${model}\`"
     echo "- Decomposition closure status: \`${closure_status}\`"
     echo "- Concern coverage status: \`${concern_coverage_status}\`"
+    echo "- Implementation trace status: \`${implementation_trace_status}\`"
     echo
     echo "## Artifacts"
     echo
@@ -155,6 +172,7 @@ for model in "${models[@]}"; do
     echo "- \`model.als\`"
     echo "- \`traceability.md\`"
     echo "- \`traceability.csv\`"
+    echo "- \`implementation-trace.md\`"
     echo "- \`wrspm.md\`"
     echo "- \`wrspm.json\`"
   } > "${summary_file}"
@@ -167,6 +185,10 @@ for model in "${models[@]}"; do
   fi
   if [[ "${concern_coverage_status}" != "PASS" && "${allow_open_concern_coverage}" -eq 0 ]]; then
     echo "Concern coverage failed for ${model}; re-run with --allow-open-concern-coverage to override." >&2
+    failure_count=$((failure_count + 1))
+  fi
+  if [[ "${implementation_trace_status}" != "PASS" && "${enforce_implementation_trace}" -eq 1 ]]; then
+    echo "Implementation trace is ${implementation_trace_status} for ${model}; re-run without --enforce-implementation-trace to treat as non-blocking." >&2
     failure_count=$((failure_count + 1))
   fi
 done
