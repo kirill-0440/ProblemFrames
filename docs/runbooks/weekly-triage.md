@@ -7,7 +7,7 @@ This runbook establishes a weekly triage cadence for engineering health signals.
 - Frequency: weekly (Monday, 09:00 UTC)
 - Trigger: `.github/workflows/weekly-engineering-triage.yml`
 - Output:
-  - artifact `engineering-metrics` (`engineering-metrics.md`, `engineering-metrics.json`)
+  - artifact `engineering-metrics` (`engineering-metrics.md`, `engineering-metrics.json`, `dogfooding-triage.md`)
   - scheduled issue `Weekly engineering triage YYYY-MM-DD`
 
 ## Inputs
@@ -19,6 +19,7 @@ This runbook establishes a weekly triage cadence for engineering health signals.
    - CodeQL
    - dependency-review
    - security audit
+5. Dogfooding triage backlog (`dogfooding-triage.md`).
 
 ## Triage Agenda
 
@@ -34,6 +35,7 @@ This runbook establishes a weekly triage cadence for engineering health signals.
    - owner
    - due date
    - success signal
+6. Confirm the top dogfooding actions are either accepted (owner/date assigned) or explicitly deferred.
 
 ## Exit Criteria (for each weekly session)
 

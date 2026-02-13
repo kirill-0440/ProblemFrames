@@ -27,6 +27,9 @@ jobs:
           METRICS_WINDOW_DAYS: "7"
         run: bash ./scripts/generate_engineering_metrics_report.sh .ci-artifacts/metrics
 
+      - name: Generate dogfooding triage backlog
+        run: bash ./scripts/generate_dogfooding_triage_report.sh .ci-artifacts/metrics
+
       - name: Upload metrics report artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
@@ -82,6 +85,12 @@ jobs:
               metrics = fs.readFileSync(reportPath, "utf8");
             }
 
+            let dogfooding = "_Dogfooding triage report artifact is missing._";
+            const dogfoodingPath = "metrics-report/dogfooding-triage.md";
+            if (fs.existsSync(dogfoodingPath)) {
+              dogfooding = fs.readFileSync(dogfoodingPath, "utf8");
+            }
+
             const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             const body = [
               `Weekly triage for engineering health baseline (${weekStart}).`,
@@ -90,13 +99,17 @@ jobs:
               "- [ ] Review dependency backlog (Dependabot PRs + blocked updates).",
               "- [ ] Review CI regressions and flaky-test candidates.",
               "- [ ] Review security signals (CodeQL, dependency review, audits).",
+              "- [ ] Review dogfooding backlog and assign owner/due date for top actions.",
               "- [ ] Confirm recovery actions for incidents and failed changes.",
               "- [ ] Assign owners and due dates for follow-up actions.",
               "",
               `Workflow run: ${runUrl}`,
               "",
               "## Metrics Snapshot",
-              metrics
+              metrics,
+              "",
+              "## Dogfooding Priorities",
+              dogfooding
             ].join("\n");
 
             await github.rest.issues.create({

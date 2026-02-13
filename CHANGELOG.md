@@ -25,6 +25,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Dependabot policy workflow to enforce expected metadata on Dependabot PRs.
 - Dogfooding roadmap model (`crates/pf_dsl/dogfooding/roadmap_q1.pf`) for planning system evolution in PF DSL.
 - Script to generate Markdown reports from dogfooding PF models (`scripts/generate_dogfooding_reports.sh`).
+- Dogfooding triage backlog generator (`scripts/generate_dogfooding_triage_report.sh`) for weekly owner/due-date planning.
 - Platform support matrix document (`docs/support-matrix.md`).
 - Release rollback runbook (`docs/runbooks/release-rollback.md`).
 - `v0.2.0` scope proposal with explicit exit criteria (`docs/proposals/005-v0.2.0-scope-and-exit-criteria.md`).
@@ -48,6 +49,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - GitHub workflows now use `actions/checkout@v6` and `actions/setup-node@v6`.
 - Release workflow now uses `actions/upload-artifact@v6` and `actions/download-artifact@v7`.
 - CI script smoke checks now verify release workflow SBOM guardrails (`publish-release` checkout, Syft config wiring, and checksum validation step).
+- Weekly engineering triage now includes dogfooding priority backlog in the generated issue body.
 - Dependabot now uses explicit auto-rebase policy and grouped editor dependency updates.
 - CodeQL now runs language-specific jobs only when matching source areas changed on push/PR.
 - CI now enforces a Rust line-coverage gate via `cargo llvm-cov` (`--fail-under-lines 54`).
