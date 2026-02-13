@@ -659,3 +659,82 @@ fn diagnostics_are_attributed_to_imported_file_uri() {
 
     let _ = fs::remove_dir_all(dir);
 }
+
+#[test]
+fn imported_diagnostics_are_cleared_after_import_removed() {
+    let dir = make_temp_dir("pf-lsp-import-clear");
+    let import_path = dir.join("imp.pf");
+    let root_path = dir.join("root.pf");
+    let import_uri = file_uri(&import_path);
+    let root_uri = file_uri(&root_path);
+
+    let imported_text = "problem: Imported\ndomain M kind causal role machine\nrequirement \"Broken\" {\n  frame: RequiredBehavior\n  constrains: Missing\n}\n";
+    fs::write(&import_path, imported_text).expect("failed to write imported file");
+
+    let root_text =
+        "problem: Root\nimport \"imp.pf\"\ndomain RootMachine kind causal role machine\n";
+    let root_without_import = "problem: Root\ndomain RootMachine kind causal role machine\n";
+
+    let mut client = TestLspClient::spawn();
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": root_uri,
+                "languageId": "pf",
+                "version": 1,
+                "text": root_text
+            }
+        }
+    }));
+
+    let imported_diag = client
+        .wait_for(|msg| {
+            msg.get("method") == Some(&json!("textDocument/publishDiagnostics"))
+                && msg["params"]["uri"] == json!(import_uri)
+        })
+        .expect("did not receive diagnostics for imported file");
+    let diagnostics = imported_diag["params"]["diagnostics"]
+        .as_array()
+        .expect("diagnostics must be array");
+    assert!(
+        !diagnostics.is_empty(),
+        "expected imported diagnostics before removing import"
+    );
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didChange",
+        "params": {
+            "textDocument": {
+                "uri": root_uri,
+                "version": 2
+            },
+            "contentChanges": [
+                { "text": root_without_import }
+            ]
+        }
+    }));
+
+    let cleared_diag = client
+        .wait_for(|msg| {
+            msg.get("method") == Some(&json!("textDocument/publishDiagnostics"))
+                && msg["params"]["uri"] == json!(import_uri)
+                && msg["params"]["diagnostics"]
+                    .as_array()
+                    .map(|arr| arr.is_empty())
+                    .unwrap_or(false)
+        })
+        .expect("did not receive clearing diagnostics for imported file");
+
+    let diagnostics = cleared_diag["params"]["diagnostics"]
+        .as_array()
+        .expect("diagnostics must be array");
+    assert!(
+        diagnostics.is_empty(),
+        "expected imported diagnostics to be cleared after removing import"
+    );
+
+    let _ = fs::remove_dir_all(dir);
+}
