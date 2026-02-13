@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 const FORMAL_ARGUMENT_MARK: &str = "formal.argument";
+const MDA_LAYER_MARK: &str = "mda.layer";
 
 #[derive(Error, Debug)]
 pub enum ValidationError {
@@ -224,6 +225,7 @@ fn validate_requirement_marks(requirement: &Requirement, errors: &mut Vec<Valida
         "sysml.requirement",
         "ddd.application_service",
         FORMAL_ARGUMENT_MARK,
+        MDA_LAYER_MARK,
     ];
     let mut seen_marks = HashSet::new();
 
@@ -284,6 +286,22 @@ fn validate_requirement_marks(requirement: &Requirement, errors: &mut Vec<Valida
                             "mark '{}' requires non-empty string value",
                             FORMAL_ARGUMENT_MARK
                         ),
+                        mark.span,
+                    ));
+                }
+            }
+            MDA_LAYER_MARK => {
+                let value = mark.value.as_ref().map(|value| value.trim()).unwrap_or("");
+                if value.is_empty() {
+                    errors.push(ValidationError::InvalidRequirementMark(
+                        requirement.name.clone(),
+                        format!("mark '{}' requires non-empty string value", MDA_LAYER_MARK),
+                        mark.span,
+                    ));
+                } else if value != "CIM" && value != "PIM" && value != "PSM" {
+                    errors.push(ValidationError::InvalidRequirementMark(
+                        requirement.name.clone(),
+                        format!("mark '{}' must be one of: CIM, PIM, PSM", MDA_LAYER_MARK),
                         mark.span,
                     ));
                 }

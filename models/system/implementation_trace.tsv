@@ -105,7 +105,11 @@ R007-M3-ExecutableObligationCheck|command_passes|tmp_dir="$(mktemp -d)" && bash 
 R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/ast.rs|pub struct Mark|mark metadata is represented in AST
 R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/problem_frames.pest|marks_block|mark syntax is supported in grammar
 R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/validator.rs|InvalidDomainMark|domain mark contract validator rules exist
+R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/validator.rs|mda.layer|requirement mark contract validates explicit MDA layer marks
+R008-M4A-MarkValidationContract|file_contains|models/system/requirements.pf|@mda.layer("CIM")|canonical system requirements include explicit MDA layer grouping marks
+R008-M4A-MarkValidationContract|file_contains|scripts/check_codex_self_model_contract.sh|--requirements-tsv|codex self-model contract enforces valid requirement-layer inventory rows
 R008-M4A-MarkValidationContract|file_contains|metamodel/invariant-catalog.json|PF-VAL-026|mark validation rules are versioned in metamodel contract
+R008-M4A-MarkValidationContract|file_contains|metamodel/invariant-catalog.json|PF-VAL-027|requirement mark contract (including MDA layer values) is versioned in metamodel contract
 
 R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/main.rs|--ddd-pim|DDD PIM mode is exposed in CLI
 R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/main.rs|--sysml2-text|SysML text mode is exposed in CLI

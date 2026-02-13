@@ -341,7 +341,7 @@
       "error_variant": "InvalidRequirementMark",
       "severity": "error",
       "title": "Requirement mark contract is structurally consistent",
-      "rationale": "Requirement-level marks must use supported names and satisfy value arity constraints.",
+      "rationale": "Requirement-level marks must use supported names, satisfy value arity constraints, and keep explicit MDA layer classification (CIM/PIM/PSM) valid.",
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate_requirement_marks (requirement mark contract checks)"
       ],
@@ -349,7 +349,9 @@
         "test_mark_contract_accepts_valid_domain_and_requirement_marks"
       ],
       "invalid_tests": [
-        "test_mark_contract_rejects_requirement_mark_with_missing_value"
+        "test_mark_contract_rejects_requirement_mark_with_missing_value",
+        "test_mark_contract_rejects_mda_layer_with_missing_value",
+        "test_mark_contract_rejects_mda_layer_with_unsupported_value"
       ]
     }
   ]

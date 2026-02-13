@@ -122,12 +122,16 @@ awk -F',' '
 ' "${traceability_csv}" | LC_ALL=C sort > "${tmp_subproblems_tsv}"
 
 declare -A requirement_frame=()
-while IFS='|' read -r requirement frame extra; do
+while IFS='|' read -r requirement frame layer extra; do
   if [[ -z "${requirement}" || "${requirement}" == \#* ]]; then
     continue
   fi
   if [[ -n "${extra:-}" ]]; then
-    echo "Invalid requirements TSV row: ${requirement}|${frame}|${extra}" >&2
+    echo "Invalid requirements TSV row: ${requirement}|${frame}|${layer}|${extra}" >&2
+    exit 1
+  fi
+  if [[ -n "${layer:-}" && "${layer}" != "CIM" && "${layer}" != "PIM" && "${layer}" != "PSM" && "${layer}" != "UNSPECIFIED" ]]; then
+    echo "Invalid requirements TSV layer value for ${requirement}: ${layer}" >&2
     exit 1
   fi
   requirement_frame["${requirement}"]="${frame}"

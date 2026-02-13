@@ -42,6 +42,7 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
     cargo run -p pf_dsl -- models/examples/sample.pf --requirements-tsv
     cargo run -p pf_dsl -- models/examples/sample.pf --correctness-arguments-tsv
     ```
+    `--requirements-tsv` exports `requirement|frame|layer` where `layer` is `CIM`, `PIM`, `PSM`, or `UNSPECIFIED`.
 11.  **Generate PIM outputs**:
     ```bash
     cargo run -p pf_dsl -- models/examples/sample.pf --ddd-pim

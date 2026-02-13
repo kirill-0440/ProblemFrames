@@ -2259,6 +2259,7 @@ mod tests {
                     @sysml.requirement
                     @ddd.application_service("RenderPaymentState")
                     @formal.argument("A1")
+                    @mda.layer("PIM")
                 }
             }
             worldProperties W1 {
@@ -2429,6 +2430,72 @@ mod tests {
                 ValidationError::InvalidRequirementMark(name, message, _)
                     if name == "R1"
                         && message.contains("references undefined correctness argument 'A_missing'")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_mda_layer_with_missing_value() {
+        let input = r#"
+            problem: MarkContractMdaLayerMissingValue
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                constrains: Store
+                marks: {
+                    @mda.layer
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1" && message.contains("mark 'mda.layer' requires non-empty string value")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_mda_layer_with_unsupported_value() {
+        let input = r#"
+            problem: MarkContractMdaLayerUnsupportedValue
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                constrains: Store
+                marks: {
+                    @mda.layer("M3")
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1" && message.contains("must be one of: CIM, PIM, PSM")
             )
         }));
     }

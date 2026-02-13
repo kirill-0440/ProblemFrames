@@ -12,6 +12,7 @@ roadmap alignment.
 - `interfaces.pf`: shared phenomena and control boundaries.
 - `requirements.pf`: requirement set and frame typing.
   - includes `@formal.argument("...")` marks for requirement-to-correctness-argument closure mapping with referential integrity checks.
+  - includes `@mda.layer("CIM"|"PIM"|"PSM")` marks for explicit MDA-layer grouping of requirements.
 - `subproblems.pf`: decomposition into delivery-sized concerns.
 - `arguments.pf`: W/S/R assertion sets and correctness argument.
 - `implementation_trace.tsv`: requirement-to-implementation evidence map (`implemented/partial/planned`).
@@ -40,6 +41,8 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-model
 cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-coverage-json
 cargo run -p pf_dsl -- models/system/tool_spec.pf --formal-closure-map-tsv
 cargo run -p pf_dsl -- models/system/tool_spec.pf --requirements-tsv
+# optional: view grouped by MDA layer
+cargo run -q -p pf_dsl -- models/system/tool_spec.pf --requirements-tsv | awk -F'|' '$1 !~ /^#/ {print $3 \"|\" $1 \"|\" $2}' | LC_ALL=C sort
 cargo run -p pf_dsl -- models/system/tool_spec.pf --correctness-arguments-tsv
 cargo run -p pf_dsl -- models/system/tool_spec.pf --ddd-pim
 cargo run -p pf_dsl -- models/system/tool_spec.pf --sysml2-text

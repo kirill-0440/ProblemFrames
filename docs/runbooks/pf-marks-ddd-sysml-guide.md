@@ -22,6 +22,7 @@ requirement "R1" {
     @sysml.requirement
     @ddd.application_service("ShowDashboard")
     @formal.argument("A_roadmap_alignment")
+    @mda.layer("PIM")
   }
 }
 ```
@@ -41,6 +42,7 @@ requirement "R1" {
 - `@sysml.requirement`
 - `@ddd.application_service("...")` (value required)
 - `@formal.argument("...")` (value required; must reference a declared `correctnessArgument` and binds requirement to formal closure reports)
+- `@mda.layer("CIM"|"PIM"|"PSM")` (value required; used to classify requirements by MDA layer)
 
 ## Validation Rules
 
@@ -49,11 +51,13 @@ requirement "R1" {
 - Unsupported mark names are rejected.
 - Duplicate marks on the same element are rejected.
 - `formal.argument` references to undefined correctness arguments are rejected.
+- `mda.layer` accepts only `CIM`, `PIM`, or `PSM`.
 - Unmarked models keep existing strict PF behavior.
 
 ## Anti-patterns
 
 - Adding values where mark arity forbids it, e.g. `@sysml.requirement("x")`.
 - Omitting values where required, e.g. `@formal.argument`.
+- Using unsupported `mda.layer` values, e.g. `@mda.layer("M3")`.
 - Using requirement marks on domains or domain-only marks on requirements.
 - Assuming marks replace PF constraints; they only refine generation targets.

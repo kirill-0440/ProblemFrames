@@ -1,12 +1,24 @@
 use crate::ast::{FrameType, Problem, Requirement};
 
 pub const FORMAL_ARGUMENT_MARK: &str = "formal.argument";
+pub const MDA_LAYER_MARK: &str = "mda.layer";
 
 fn requirement_formal_argument(requirement: &Requirement) -> Option<String> {
     requirement
         .marks
         .iter()
         .find(|mark| mark.name == FORMAL_ARGUMENT_MARK)
+        .and_then(|mark| mark.value.as_ref())
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+        .map(|value| value.to_string())
+}
+
+fn requirement_mda_layer(requirement: &Requirement) -> Option<String> {
+    requirement
+        .marks
+        .iter()
+        .find(|mark| mark.name == MDA_LAYER_MARK)
         .and_then(|mark| mark.value.as_ref())
         .map(|value| value.trim())
         .filter(|value| !value.is_empty())
@@ -50,13 +62,19 @@ pub fn generate_requirements_tsv(problem: &Problem) -> String {
     let mut rows = problem
         .requirements
         .iter()
-        .map(|requirement| (requirement.name.clone(), frame_name(&requirement.frame)))
+        .map(|requirement| {
+            (
+                requirement.name.clone(),
+                frame_name(&requirement.frame),
+                requirement_mda_layer(requirement).unwrap_or_else(|| "UNSPECIFIED".to_string()),
+            )
+        })
         .collect::<Vec<_>>();
     rows.sort_by(|left, right| left.0.cmp(&right.0));
 
-    let mut output = String::from("# requirement|frame\n");
-    for (requirement, frame) in rows {
-        output.push_str(&format!("{}|{}\n", requirement, frame));
+    let mut output = String::from("# requirement|frame|layer\n");
+    for (requirement, frame, layer) in rows {
+        output.push_str(&format!("{}|{}|{}\n", requirement, frame, layer));
     }
     output
 }
@@ -247,9 +265,9 @@ mod tests {
         };
 
         let requirements_tsv = generate_requirements_tsv(&problem);
-        assert!(requirements_tsv.contains("# requirement|frame"));
-        assert!(requirements_tsv.contains("R1|Transformation"));
-        assert!(requirements_tsv.contains("R2|SimpleWorkpieces"));
+        assert!(requirements_tsv.contains("# requirement|frame|layer"));
+        assert!(requirements_tsv.contains("R1|Transformation|UNSPECIFIED"));
+        assert!(requirements_tsv.contains("R2|SimpleWorkpieces|UNSPECIFIED"));
 
         let arguments_tsv = generate_correctness_arguments_tsv(&problem);
         assert!(arguments_tsv.contains("# correctness_argument"));

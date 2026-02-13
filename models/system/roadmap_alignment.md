@@ -59,6 +59,7 @@ This map links canonical system-model requirements to roadmap/proposal items in
 When implementing a roadmap task:
 
 1. Update matching requirement/subproblem entries in `models/system/*.pf`.
+   - Keep `requirements.pf` grouped via explicit `@mda.layer("CIM"|"PIM"|"PSM")` marks.
 2. Run `bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf`.
 3. Run `bash ./scripts/run_adequacy_evidence.sh` to capture differential adequacy evidence for the selected obligation class.
 4. Run `bash ./scripts/check_model_implementation_trace.sh --policy models/system/implementation_trace_policy.env --enforce-policy models/system/tool_spec.pf` to capture implementation status and staged policy compliance.

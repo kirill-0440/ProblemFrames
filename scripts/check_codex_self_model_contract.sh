@@ -35,6 +35,21 @@ grep -q '^requirement "R009-A7-ModelDirectoryPFContainment"' "${REQUIREMENTS_FIL
   exit 1
 }
 
+grep -q '@mda.layer("CIM")' "${REQUIREMENTS_FILE}" || {
+  echo "CIM requirement layer marks are missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
+grep -q '@mda.layer("PIM")' "${REQUIREMENTS_FILE}" || {
+  echo "PIM requirement layer marks are missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
+grep -q '@mda.layer("PSM")' "${REQUIREMENTS_FILE}" || {
+  echo "PSM requirement layer marks are missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
 grep -q 'participants: .*\bCodex\b' "${SUBPROBLEMS_FILE}" || {
   echo "No subproblem participants include Codex in ${SUBPROBLEMS_FILE}" >&2
   exit 1
@@ -63,9 +78,25 @@ if [[ -n "${pf_outside_models}" ]]; then
   exit 1
 fi
 
-# 3) Executable contract: impact path for R009-A5/R009-A6 must resolve through traceability mode.
+# 3) Requirement layer contract: each requirement has an explicit CIM/PIM/PSM layer.
+requirements_tsv_file="$(mktemp)"
 traceability_file="$(mktemp)"
-trap 'rm -f "${traceability_file}"' EXIT
+trap 'rm -f "${requirements_tsv_file}" "${traceability_file}"' EXIT
+
+cargo run -p pf_dsl -- "${MODEL_FILE}" --requirements-tsv > "${requirements_tsv_file}"
+
+invalid_requirements_layer_rows="$(awk -F'|' '
+  $0 ~ /^#/ || NF == 0 { next }
+  NF != 3 { print $0; next }
+  $3 != "CIM" && $3 != "PIM" && $3 != "PSM" { print $0 }
+' "${requirements_tsv_file}")"
+if [[ -n "${invalid_requirements_layer_rows}" ]]; then
+  echo "Requirements TSV contains invalid layer rows:"
+  echo "${invalid_requirements_layer_rows}"
+  exit 1
+fi
+
+# 4) Executable contract: impact path for R009-A5/R009-A6 must resolve through traceability mode.
 
 cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-md \
   --impact=requirement:R009-A5-AgentAssistedModelExecution \
