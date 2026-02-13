@@ -26,6 +26,10 @@ Quick checks:
 ```bash
 cargo run -p pf_dsl -- models/system/tool_spec.pf --report
 cargo run -p pf_dsl -- models/system/tool_spec.pf --obligations
+cargo run -p pf_dsl -- models/system/tool_spec.pf --decomposition-closure
+cargo run -p pf_dsl -- models/system/tool_spec.pf --wrspm-report
+cargo run -p pf_dsl -- models/system/tool_spec.pf --traceability-md --impact=requirement:R009-A4-OneCommandPFQualityGate --impact-hops=2
 cargo run -p pf_dsl -- models/system/tool_spec.pf --alloy > system_model.als
+bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh
 ```

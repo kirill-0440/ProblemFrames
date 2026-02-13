@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod codegen;
+pub mod decomposition_closure;
 pub mod dot_export;
 pub mod formal_alloy;
 pub mod language;
@@ -10,5 +11,7 @@ mod parser_tests;
 pub mod report_gen;
 pub mod resolver;
 mod resolver_tests;
+pub mod traceability;
 pub mod validator;
 mod validator_tests;
+pub mod wrspm;

@@ -46,15 +46,19 @@ Guides:
 Available modes:
 
 ```bash
-pf_dsl <file.pf> [--dot | --report | --gen-rust | --obligations | --alloy]
+pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv | --decomposition-closure | --wrspm-report | --wrspm-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]
 ```
 
 Artifact generation currently includes:
 
-- DOT diagram export (`--dot`)
+- DOT diagram exports (`--dot`, `--dot-context`, `--dot-problem`, `--dot-decomposition`)
 - structured model report (`--report`)
+- decomposition closure report (`--decomposition-closure`)
 - proof-obligation markdown (`--obligations`)
 - Alloy model export (`--alloy`)
+- traceability markdown/CSV exports (`--traceability-md`, `--traceability-csv`)
+- WRSPM bridge report (`--wrspm-report`)
+- WRSPM bridge JSON (`--wrspm-json`)
 - Rust code skeleton generation (`--gen-rust`)
 
 ### LSP and VS Code
@@ -85,6 +89,9 @@ cargo build --release
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
+cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --decomposition-closure
+cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --wrspm-report
+cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --traceability-md --impact=domain:Controller --impact-hops=2
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > model.dot
 cargo run -p pf_dsl -- models/system/tool_spec.pf --report
 cargo run -p pf_dsl -- models/system/tool_spec.pf --obligations
@@ -189,6 +196,7 @@ Canonical model of this toolchain:
 
 ```bash
 cargo run -p pf_dsl -- models/system/tool_spec.pf --report
+bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh
 ```
 

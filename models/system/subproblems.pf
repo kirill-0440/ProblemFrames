@@ -36,14 +36,14 @@ subproblem ControlledApiBridgeSpike {
 
 subproblem CanonicalPFAlignmentAddendumLoop {
     machine: Tool
-    participants: Tool, Developer, GeneratedCode, TraceabilityStore, CI
-    requirements: "R009-A1-ExplicitPFViews", "R009-A2-DecompositionClosureArtifact", "R009-A3-FrameConcernCoverageGate"
+    participants: Tool, Developer, GeneratedCode, TraceabilityStore, SourceFile, CI
+    requirements: "R009-A1-ExplicitPFViews", "R009-A2-DecompositionClosureArtifact", "R009-A3-FrameConcernCoverageGate", "R009-A4-OneCommandPFQualityGate"
 }
 
 subproblem WRSPMBridgeCoverageLoop {
     machine: Tool
     participants: Tool, WRSPMContract, CI
-    requirements: "R010-M6-WRSPMBridgeCoverage", "R010-M6-SVocabularyDiscipline"
+    requirements: "R010-M6-WRSPMBridgeCoverage", "R010-M6-SVocabularyDiscipline", "R010-M6-WRSPMReportModes"
 }
 
 subproblem AdequacyEvidenceLoop {

@@ -12,6 +12,7 @@ interface "Dev-Tool" connects Developer, Tool {
     shared: {
         phenomenon RunValidation : command [Developer -> Tool] controlledBy Developer
         phenomenon RunGeneration : command [Developer -> Tool] controlledBy Developer
+        phenomenon RunPFQualityGate : command [Developer -> Tool] controlledBy Developer
         phenomenon TriggerApiBridgeSpike : command [Developer -> Tool] controlledBy Developer
     }
 }

@@ -8,5 +8,6 @@ artifacts.
 Model gates can be executed with:
 
 ```bash
+bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh
 ```

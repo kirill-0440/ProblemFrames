@@ -12,7 +12,8 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 2. Enforce frame fit and strict semantic validation through `pf_dsl`.
 3. Verify decomposition closure (no uncovered requirements, no orphan subproblems, no boundary mismatches).
 4. Generate correctness evidence (`obligations`, `alloy`) from the validated model.
-5. Generate traceability artifacts for impact analysis.
+5. Generate traceability artifacts (relationship matrix + optional impact analysis).
+6. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
 
 ## One-command Gate
 
@@ -32,6 +33,8 @@ Generated artifacts per model:
 - `model.als`
 - `traceability.md`
 - `traceability.csv`
+- `wrspm.md`
+- `wrspm.json`
 
 ## Impact-aware Gate (Optional)
 
@@ -52,11 +55,15 @@ bash ./scripts/run_pf_quality_gate.sh --allow-open-closure <model.pf>
 
 Document the reason in PR "Why" and list closure debt explicitly.
 
+`--impact` and `--impact-hops` are forwarded to `pf_dsl --traceability-*`
+for impact-aware traceability artifacts. The decomposition closure verdict rule
+remains unchanged.
+
 ## CI Alignment
 
 CI publishes equivalent evidence through dogfooding artifacts:
 
 - `dogfooding-reports`
-- `dogfooding-decomposition`
 - `dogfooding-obligations`
+- `system-model` (includes decomposition closure and WRSPM outputs)
 - `formal-backend`

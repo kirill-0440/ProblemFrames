@@ -87,6 +87,13 @@ requirement "R009-A3-FrameConcernCoverageGate" {
     constrains: CI
 }
 
+requirement "R009-A4-OneCommandPFQualityGate" {
+    frame: SimpleWorkpieces
+    constraint: "A one-command PF quality gate script runs and emits deterministic review artifacts"
+    constrains: SourceFile
+    reference: Developer
+}
+
 // Proposal 010: WRSPM contract bridge (M6-M7).
 requirement "R010-M6-WRSPMBridgeCoverage" {
     frame: Transformation
@@ -98,6 +105,12 @@ requirement "R010-M6-SVocabularyDiscipline" {
     frame: RequiredBehavior
     constraint: "Specification-level checks enforce shared-interface vocabulary discipline for WRSPM S"
     constrains: CI
+}
+
+requirement "R010-M6-WRSPMReportModes" {
+    frame: Transformation
+    constraint: "CLI supports deterministic WRSPM Markdown and JSON report modes"
+    constrains: WRSPMContract
 }
 
 requirement "R010-M7-ObligationSelectionControl" {
