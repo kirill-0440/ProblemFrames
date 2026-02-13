@@ -272,15 +272,36 @@ pub fn generate_lean_model(problem: &Problem) -> String {
     emit_assertion_sets(problem, &mut output);
     emit_correctness_arguments(&problem.correctness_arguments, &mut output);
 
-    output.push_str("/-- Placeholder theorem for the Lean research track. -/\n");
-    output.push_str("theorem machineBoundaryCaptured : True := by\n");
-    output.push_str("  trivial\n\n");
-    output.push_str("/-- Placeholder theorem for interface/controller consistency proof. -/\n");
-    output.push_str("theorem interfaceControllersDeclared : True := by\n");
-    output.push_str("  trivial\n\n");
-    output.push_str("/-- Placeholder theorem for W/S/R argument closure proof. -/\n");
-    output.push_str("theorem correctnessArgumentsStructured : True := by\n");
-    output.push_str("  trivial\n\n");
+    output.push_str("def machineDomainCount : Nat :=\n");
+    output.push_str("  (domains.filter fun d => d.role = DomainRole.machine).length\n\n");
+    output.push_str("def interfaceControllersDeclaredBool : Bool :=\n");
+    output.push_str("  interfaces.all fun iface =>\n");
+    output.push_str("    iface.phenomena.all fun p => p.controlledBy ∈ iface.connects\n\n");
+    output
+        .push_str("def assertionSetHasScope (name : String) (scope : AssertionScope) : Bool :=\n");
+    output.push_str("  assertionSets.any fun set => set.name = name && set.scope = scope\n\n");
+    output.push_str("def correctnessArgumentsStructuredBool : Bool :=\n");
+    output.push_str("  correctnessArguments.all fun arg =>\n");
+    output.push_str(
+        "    assertionSetHasScope arg.specificationSet AssertionScope.specification &&\n",
+    );
+    output.push_str("    assertionSetHasScope arg.worldSet AssertionScope.worldProperties &&\n");
+    output.push_str(
+        "    assertionSetHasScope arg.requirementSet AssertionScope.requirementAssertions\n\n",
+    );
+    output.push_str("/-- Model contains exactly one machine domain. -/\n");
+    output.push_str("theorem machineBoundaryCaptured : machineDomainCount = 1 := by\n");
+    output.push_str("  decide\n\n");
+    output.push_str("/-- Every interface phenomenon is controlled by a connected domain. -/\n");
+    output.push_str(
+        "theorem interfaceControllersDeclared : interfaceControllersDeclaredBool = true := by\n",
+    );
+    output.push_str("  decide\n\n");
+    output.push_str(
+        "/-- Every correctness argument references assertion sets with valid W/S/R scopes. -/\n",
+    );
+    output.push_str("theorem correctnessArgumentsStructured : correctnessArgumentsStructuredBool = true := by\n");
+    output.push_str("  decide\n\n");
     output.push_str("end ProblemFramesGenerated\n");
 
     output
