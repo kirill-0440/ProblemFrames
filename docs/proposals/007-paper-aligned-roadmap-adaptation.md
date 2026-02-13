@@ -165,6 +165,7 @@ Exit criteria:
 - `005-v0.2.0-scope-and-exit-criteria.md` remains the release gate for near-term scope.
 - `006-pf-dsl-machine-checkable-semantics-plan.md` remains the semantic execution backbone.
 - `007-execution-backlog-m1-m3.md` is the execution-ready backlog for near-term milestone delivery.
+- `008-pf-ddd-sysmlv2-integration.md` defines the follow-on integration track for DDD/SysML v2 after M1-M3 foundation.
 - this proposal defines the paper-aligned prioritization order on top of `005/006`:
   - near-term: M1, M2, M3
   - medium-term: M4, M5
