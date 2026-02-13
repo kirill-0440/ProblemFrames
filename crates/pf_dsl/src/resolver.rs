@@ -158,7 +158,12 @@ pub fn find_definition(
     source_file: &Path,
     offset: usize,
 ) -> Option<(Option<PathBuf>, Span)> {
-    let _ = source_file;
+    let source_matches = |entity_source: Option<&PathBuf>| -> bool {
+        entity_source
+            .map(|path| path.as_path() == source_file)
+            .unwrap_or(true)
+    };
+
     // Helper to find domain definition
     let find_domain = |name: &str| -> Option<(Option<PathBuf>, Span)> {
         problem
@@ -191,7 +196,11 @@ pub fn find_definition(
         |reference: &Reference| offset >= reference.span.start && offset < reference.span.end;
 
     // 1. Check Interfaces (Phenomena)
-    for interface in &problem.interfaces {
+    for interface in problem
+        .interfaces
+        .iter()
+        .filter(|interface| source_matches(interface.source_path.as_ref()))
+    {
         for domain_ref in &interface.connects {
             if offset >= domain_ref.span.start && offset < domain_ref.span.end {
                 return find_domain(&domain_ref.name);
@@ -211,7 +220,11 @@ pub fn find_definition(
     }
 
     // 2. Check Requirements
-    for req in &problem.requirements {
+    for req in problem
+        .requirements
+        .iter()
+        .filter(|req| source_matches(req.source_path.as_ref()))
+    {
         if let Some(ref c) = req.constrains {
             if offset >= c.span.start && offset < c.span.end {
                 return find_domain(&c.name);
@@ -225,7 +238,11 @@ pub fn find_definition(
     }
 
     // 3. Check Subproblems
-    for subproblem in &problem.subproblems {
+    for subproblem in problem
+        .subproblems
+        .iter()
+        .filter(|subproblem| source_matches(subproblem.source_path.as_ref()))
+    {
         if let Some(machine_ref) = &subproblem.machine {
             if is_offset_in_ref(machine_ref) {
                 return find_domain(&machine_ref.name);
@@ -246,7 +263,11 @@ pub fn find_definition(
     }
 
     // 4. Check Correctness Arguments
-    for argument in &problem.correctness_arguments {
+    for argument in problem
+        .correctness_arguments
+        .iter()
+        .filter(|argument| source_matches(argument.source_path.as_ref()))
+    {
         if is_offset_in_ref(&argument.specification_ref) {
             return find_assertion_set(
                 &argument.specification_ref.name,
@@ -431,8 +452,14 @@ mod tests {
             correctness_arguments: vec![],
         };
 
-        let result = find_definition(&problem, Path::new("/tmp/root.pf"), 52)
-            .expect("definition should be resolved from imported source file");
+        let root_result = find_definition(&problem, Path::new("/tmp/root.pf"), 52);
+        assert!(
+            root_result.is_none(),
+            "references from imported files must not match offsets in a different source file"
+        );
+
+        let result = find_definition(&problem, Path::new("/tmp/imported.pf"), 52)
+            .expect("definition should be resolved in imported file context");
         let (source_path, span) = result;
         assert_eq!(source_path.as_deref(), Some(Path::new("/tmp/imported.pf")));
         assert_eq!(span, mock_span(10, 20));
