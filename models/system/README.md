@@ -24,8 +24,9 @@ roadmap alignment.
 
 1. Start with model-first changes in `requirements.pf`, `subproblems.pf`, and related alignment assets.
 2. Update implementation artifacts only after the self-model change is explicit.
-3. Run the quality gate script.
-4. Use generated artifacts in PR review to confirm model consistency and implementation status (`implemented/partial/planned`).
+3. Keep all `*.pf` files under `models/` (contract `R009-A7-ModelDirectoryPFContainment`).
+4. Run the quality gate script.
+5. Use generated artifacts in PR review to confirm model consistency and implementation status (`implemented/partial/planned`).
 
 Quick checks:
 

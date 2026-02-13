@@ -1,5 +1,5 @@
 problem: PF_DSL_Tool
 
 // Backward-compatible entrypoint for scripts that still read from
-// crates/pf_dsl/dogfooding.
-import "../../../models/system/tool_spec.pf"
+// models/dogfooding.
+import "../system/tool_spec.pf"

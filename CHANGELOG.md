@@ -24,7 +24,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 - Scheduled/manual security audit workflow for Rust and npm dependencies.
 - CodeQL static analysis workflow for Rust and TypeScript code.
 - Dependabot policy workflow to enforce expected metadata on Dependabot PRs.
-- Dogfooding roadmap model (`crates/pf_dsl/dogfooding/roadmap_q1.pf`) for planning system evolution in PF DSL.
+- Dogfooding roadmap model (`models/dogfooding/roadmap_q1.pf`) for planning system evolution in PF DSL.
 - Script to generate Markdown reports from dogfooding PF models (`scripts/generate_dogfooding_reports.sh`).
 - Dogfooding triage backlog generator (`scripts/generate_dogfooding_triage_report.sh`) for weekly owner/due-date planning.
 - Dogfooding owner-routing rules (`.github/dogfooding-triage-owners.tsv`) for auto-assigned triage owner and due date.

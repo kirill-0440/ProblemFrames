@@ -30,6 +30,11 @@ grep -q '^requirement "R009-A6-ModelFirstChangeControl"' "${REQUIREMENTS_FILE}" 
   exit 1
 }
 
+grep -q '^requirement "R009-A7-ModelDirectoryPFContainment"' "${REQUIREMENTS_FILE}" || {
+  echo "R009-A7 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
 grep -q 'participants: .*\bCodex\b' "${SUBPROBLEMS_FILE}" || {
   echo "No subproblem participants include Codex in ${SUBPROBLEMS_FILE}" >&2
   exit 1
@@ -45,7 +50,20 @@ grep -q 'requirements: .*"R009-A6-ModelFirstChangeControl"' "${SUBPROBLEMS_FILE}
   exit 1
 }
 
-# 2) Executable contract: impact path for R009-A5 must resolve through traceability mode.
+grep -q 'requirements: .*"R009-A7-ModelDirectoryPFContainment"' "${SUBPROBLEMS_FILE}" || {
+  echo "R009-A7 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+# 2) Repository layout contract: all PF models and fixtures must live under models/.
+pf_outside_models="$(rg --files -g '**/*.pf' | rg -v '^models/' || true)"
+if [[ -n "${pf_outside_models}" ]]; then
+  echo "Found .pf files outside models/:"
+  echo "${pf_outside_models}"
+  exit 1
+fi
+
+# 3) Executable contract: impact path for R009-A5/R009-A6 must resolve through traceability mode.
 traceability_file="$(mktemp)"
 trap 'rm -f "${traceability_file}"' EXIT
 

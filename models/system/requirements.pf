@@ -352,6 +352,16 @@ requirement "R009-A6-ModelFirstChangeControl" {
     reference: Codex
 }
 
+requirement "R009-A7-ModelDirectoryPFContainment" {
+    frame: SimpleWorkpieces
+    constraint: "All repository PF models, fixtures, and standard templates are stored under models/"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+    }
+    constrains: SourceFile
+    reference: Codex
+}
+
 // Proposal 010: WRSPM contract bridge (M6-M7).
 requirement "R010-M6-WRSPMBridgeCoverage" {
     frame: Transformation

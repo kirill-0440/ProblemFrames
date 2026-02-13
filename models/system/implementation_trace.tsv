@@ -116,7 +116,7 @@ R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/main.rs|--trace-m
 R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/trace_map.rs|TraceMapCoverage|trace-map coverage model is implemented
 R008-M4C-TraceCoverageContract|file_contains|scripts/run_pf_quality_gate.sh|Trace-map coverage status|quality gate evaluates trace-map coverage status
 R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/traceability.rs|generated targets|impact report includes generated DDD/SysML targets
-R008-M4C-TraceCoverageContract|file_exists|crates/pf_dsl/dogfooding/traceability_cross_model/main.pf||cross-model impact fixture exists
+R008-M4C-TraceCoverageContract|file_exists|models/dogfooding/traceability_cross_model/main.pf||cross-model impact fixture exists
 R008-M4C-TraceCoverageContract|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --trace-map-json||trace-map generation command executes successfully
 
 R008-M5A-ControlledAPIBridgeSpike|file_exists|crates/pf_sysml_api/Cargo.toml||pf_sysml_api crate scaffold exists
@@ -150,6 +150,11 @@ R009-A6-ModelFirstChangeControl|file_contains|scripts/check_codex_self_model_con
 R009-A6-ModelFirstChangeControl|file_contains|models/system/subproblems.pf|R009-A6-ModelFirstChangeControl|model-first requirement is mapped in canonical PF decomposition
 R009-A6-ModelFirstChangeControl|command_passes|bash ./scripts/check_codex_self_model_contract.sh||Codex self-model contract check enforces model-first requirement
 
+R009-A7-ModelDirectoryPFContainment|file_contains|models/system/requirements.pf|R009-A7-ModelDirectoryPFContainment|PF model directory-containment requirement is modeled
+R009-A7-ModelDirectoryPFContainment|file_contains|models/system/subproblems.pf|R009-A7-ModelDirectoryPFContainment|directory-containment requirement is mapped in canonical PF decomposition
+R009-A7-ModelDirectoryPFContainment|file_contains|scripts/check_codex_self_model_contract.sh|pf_outside_models="$(rg --files -g '**/*.pf'|codex self-model contract enforces that all PF files live under models/
+R009-A7-ModelDirectoryPFContainment|command_passes|bash ./scripts/check_codex_self_model_contract.sh||directory-containment contract check executes successfully
+
 R010-M6-WRSPMBridgeCoverage|file_contains|crates/pf_dsl/src/wrspm.rs|pub struct WrspmProjection|WRSPM projection model exists
 R010-M6-WRSPMBridgeCoverage|file_contains|crates/pf_dsl/src/wrspm.rs|eh partition is deferred|WRSPM unresolved/deferred entries are explicit
 
@@ -162,8 +167,8 @@ R010-M6-WRSPMReportModes|file_contains|crates/pf_dsl/src/main.rs|--wrspm-json|WR
 R010-M7-ObligationSelectionControl|file_exists|docs/formal-backend/adequacy-obligation-selection.md||obligation-class selection memo is documented
 R010-M7-ObligationSelectionControl|file_contains|models/system/adequacy_selection.env|ADEQUACY_CLASS_ID|selected adequacy obligation class is explicitly configured
 
-R010-M7-ExecutableAdequacyEvidence|file_exists|crates/pf_dsl/dogfooding/adequacy/pass.pf||expected-pass adequacy fixture exists
-R010-M7-ExecutableAdequacyEvidence|file_exists|crates/pf_dsl/dogfooding/adequacy/fail.pf||expected-fail adequacy fixture exists
+R010-M7-ExecutableAdequacyEvidence|file_exists|models/dogfooding/adequacy/pass.pf||expected-pass adequacy fixture exists
+R010-M7-ExecutableAdequacyEvidence|file_exists|models/dogfooding/adequacy/fail.pf||expected-fail adequacy fixture exists
 R010-M7-ExecutableAdequacyEvidence|command_passes|bash ./scripts/run_adequacy_evidence.sh||executable adequacy evidence generation runs end-to-end
 
 R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/run_adequacy_evidence.sh|adequacy-differential.md|differential verdict artifact generation is implemented

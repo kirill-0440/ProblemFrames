@@ -91,15 +91,15 @@ cargo build --release
 ### Run the CLI on sample model
 
 ```bash
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --lean-model > model.lean
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --lean-coverage-json
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --decomposition-closure
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --wrspm-report
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --traceability-md --impact=domain:Controller --impact-hops=2
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > model.dot
+cargo run -p pf_dsl -- models/examples/sample.pf --report
+cargo run -p pf_dsl -- models/examples/sample.pf --obligations
+cargo run -p pf_dsl -- models/examples/sample.pf --alloy > model.als
+cargo run -p pf_dsl -- models/examples/sample.pf --lean-model > model.lean
+cargo run -p pf_dsl -- models/examples/sample.pf --lean-coverage-json
+cargo run -p pf_dsl -- models/examples/sample.pf --decomposition-closure
+cargo run -p pf_dsl -- models/examples/sample.pf --wrspm-report
+cargo run -p pf_dsl -- models/examples/sample.pf --traceability-md --impact=domain:Controller --impact-hops=2
+cargo run -p pf_dsl -- models/examples/sample.pf --dot > model.dot
 cargo run -p pf_dsl -- models/system/tool_spec.pf --report
 cargo run -p pf_dsl -- models/system/tool_spec.pf --obligations
 ```

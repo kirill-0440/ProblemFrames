@@ -11,7 +11,7 @@ Usage:
 
 Defaults:
   output_dir = .ci-artifacts/adoption-demo
-  model.pf   = crates/pf_dsl/sample.pf
+  model.pf   = models/examples/sample.pf
 USAGE
 }
 
@@ -21,7 +21,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 fi
 
 OUTPUT_DIR="${1:-${REPO_ROOT}/.ci-artifacts/adoption-demo}"
-MODEL_FILE="${2:-${REPO_ROOT}/crates/pf_dsl/sample.pf}"
+MODEL_FILE="${2:-${REPO_ROOT}/models/examples/sample.pf}"
 
 if [[ ! -f "${MODEL_FILE}" ]]; then
   echo "Model not found: ${MODEL_FILE}" >&2

@@ -11,23 +11,23 @@ cargo build --release
 ## 5-10 min: Open sample model and inspect report
 
 ```bash
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
+cargo run -p pf_dsl -- models/examples/sample.pf --report
 ```
 
 ## 10-15 min: Generate PF evidence
 
 ```bash
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --decomposition-closure
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --concern-coverage
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
+cargo run -p pf_dsl -- models/examples/sample.pf --decomposition-closure
+cargo run -p pf_dsl -- models/examples/sample.pf --concern-coverage
+cargo run -p pf_dsl -- models/examples/sample.pf --obligations
 ```
 
 ## 15-20 min: Generate downstream and trace artifacts
 
 ```bash
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --ddd-pim
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --sysml2-text
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --traceability-md
+cargo run -p pf_dsl -- models/examples/sample.pf --ddd-pim
+cargo run -p pf_dsl -- models/examples/sample.pf --sysml2-text
+cargo run -p pf_dsl -- models/examples/sample.pf --traceability-md
 ```
 
 ## 20-25 min: Run one-command gate on canonical system model

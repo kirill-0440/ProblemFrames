@@ -16,8 +16,8 @@ This preserves alignment with existing PF quality artifacts while keeping the ex
 
 ## Fixture Templates
 
-- Expected pass fixture: `crates/pf_dsl/dogfooding/adequacy/pass.pf`
-- Expected fail fixture: `crates/pf_dsl/dogfooding/adequacy/fail.pf`
+- Expected pass fixture: `models/dogfooding/adequacy/pass.pf`
+- Expected fail fixture: `models/dogfooding/adequacy/fail.pf`
 
 ## Differential Contract
 

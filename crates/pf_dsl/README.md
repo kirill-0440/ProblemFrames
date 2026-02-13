@@ -4,50 +4,50 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
 
 ## Usage
 
-1.  **Define your problem** in a `.pf` file (e.g., `crates/pf_dsl/sample.pf`).
+1.  **Define your problem** in a `.pf` file (e.g., `models/examples/sample.pf`).
 2.  **Run the tool** to generate a DOT file:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > output.dot
+    cargo run -p pf_dsl -- models/examples/sample.pf --dot > output.dot
     ```
 3.  **Generate a planning report**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
+    cargo run -p pf_dsl -- models/examples/sample.pf --report
     ```
 4.  **Generate proof obligations**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
+    cargo run -p pf_dsl -- models/examples/sample.pf --obligations
     ```
 5.  **Generate concern coverage report**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --concern-coverage
+    cargo run -p pf_dsl -- models/examples/sample.pf --concern-coverage
     ```
 6.  **Generate Alloy backend artifact**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
+    cargo run -p pf_dsl -- models/examples/sample.pf --alloy > model.als
     ```
 7.  **Generate Lean research-track model**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --lean-model > model.lean
+    cargo run -p pf_dsl -- models/examples/sample.pf --lean-model > model.lean
     ```
 8.  **Generate Lean formal coverage summary**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --lean-coverage-json
+    cargo run -p pf_dsl -- models/examples/sample.pf --lean-coverage-json
     ```
 9.  **Generate requirement formal-closure map (from requirement marks)**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --formal-closure-map-tsv
+    cargo run -p pf_dsl -- models/examples/sample.pf --formal-closure-map-tsv
     ```
 10.  **Generate model inventories (requirements and correctness arguments)**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --requirements-tsv
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --correctness-arguments-tsv
+    cargo run -p pf_dsl -- models/examples/sample.pf --requirements-tsv
+    cargo run -p pf_dsl -- models/examples/sample.pf --correctness-arguments-tsv
     ```
 11.  **Generate PIM outputs**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --ddd-pim
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --sysml2-text
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --sysml2-json
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --trace-map-json
+    cargo run -p pf_dsl -- models/examples/sample.pf --ddd-pim
+    cargo run -p pf_dsl -- models/examples/sample.pf --sysml2-text
+    cargo run -p pf_dsl -- models/examples/sample.pf --sysml2-json
+    cargo run -p pf_dsl -- models/examples/sample.pf --trace-map-json
     ```
 12.  **Generate an image** (requires Graphviz):
     ```bash

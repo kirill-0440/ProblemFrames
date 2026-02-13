@@ -70,7 +70,7 @@ Generated artifacts per model:
 bash ./scripts/run_pf_quality_gate.sh \
   --impact requirement:SafeOperation,domain:Controller \
   --impact-hops 2 \
-  crates/pf_dsl/sample.pf
+  models/examples/sample.pf
 ```
 
 ## Controlled Exceptions

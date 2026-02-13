@@ -292,7 +292,7 @@ subproblem Display {
 #[test]
 fn dogfooding_fixture_cross_model_traceability_includes_generated_targets() {
     let fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("dogfooding/traceability_cross_model/main.pf");
+        .join("../../models/dogfooding/traceability_cross_model/main.pf");
 
     let markdown = run_pf_dsl_with_args(
         &fixture,

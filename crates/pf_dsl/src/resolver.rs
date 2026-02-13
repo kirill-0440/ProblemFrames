@@ -55,16 +55,18 @@ fn set_problem_source_path(problem: &mut Problem, source_path: &Path) {
 
 fn load_standard_import(import_path_str: &str) -> Option<(&'static str, PathBuf)> {
     let content = match import_path_str {
-        "std/RequiredBehavior.pf" => include_str!("std/RequiredBehavior.pf"),
-        "std/CommandedBehavior.pf" => include_str!("std/CommandedBehavior.pf"),
-        "std/InformationDisplay.pf" => include_str!("std/InformationDisplay.pf"),
-        "std/SimpleWorkpieces.pf" => include_str!("std/SimpleWorkpieces.pf"),
-        "std/Transformation.pf" => include_str!("std/Transformation.pf"),
+        "std/RequiredBehavior.pf" => include_str!("../../../models/std/RequiredBehavior.pf"),
+        "std/CommandedBehavior.pf" => include_str!("../../../models/std/CommandedBehavior.pf"),
+        "std/InformationDisplay.pf" => include_str!("../../../models/std/InformationDisplay.pf"),
+        "std/SimpleWorkpieces.pf" => include_str!("../../../models/std/SimpleWorkpieces.pf"),
+        "std/Transformation.pf" => include_str!("../../../models/std/Transformation.pf"),
         _ => return None,
     };
 
     let source_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
+        .join("..")
+        .join("..")
+        .join("models")
         .join(import_path_str);
 
     Some((content, source_path))
