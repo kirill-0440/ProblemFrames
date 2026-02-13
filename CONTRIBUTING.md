@@ -26,6 +26,29 @@ cargo llvm-cov --workspace --all-features --fail-under-lines 54
 npm run compile --prefix editors/code
 ```
 
+## PF Methodology Gate (for `.pf` changes)
+
+If your PR changes PF models or PF semantics, run the methodology gate:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh <model.pf> [more models...]
+```
+
+This enforces the current PF-first workflow in executable form:
+
+- structural report generation;
+- decomposition closure check (uncovered/orphan/boundary);
+- obligations and formal backend artifact generation;
+- traceability/impact artifacts.
+
+For intentional exploratory work with open decomposition items, use:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh --allow-open-closure <model.pf>
+```
+
+Document any such exception in the PR.
+
 Optional but recommended security checks:
 
 ```bash
@@ -98,6 +121,9 @@ bash ./scripts/generate_dogfooding_reports.sh
 - Keep PR scope focused.
 - Add or update tests for behavior changes.
 - Update docs when changing UX, commands, or workflows.
+- Include PF quality-gate evidence for PF model/semantics changes.
+
+PF methodology runbook: `docs/runbooks/pf-methodology-quality-gate.md`.
 
 ## Language Token Source of Truth
 

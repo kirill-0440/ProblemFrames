@@ -40,6 +40,7 @@ Guides:
 
 - `docs/pf-mode-guide.md`
 - `docs/migration-v2.md`
+- `docs/runbooks/pf-methodology-quality-gate.md`
 - `metamodel/README.md`
 
 ### CLI Outputs

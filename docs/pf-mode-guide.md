@@ -27,9 +27,12 @@ When teams need to model implementation details without breaking strict semantic
 
 Before opening a PR for a PF model:
 
+- `bash ./scripts/run_pf_quality_gate.sh <model.pf>`
 - `cargo run -p pf_dsl -- <model.pf> --report`
 - `cargo run -p pf_dsl -- <model.pf> --decomposition-closure`
 - `cargo run -p pf_dsl -- <model.pf> --obligations`
 - `cargo run -p pf_dsl -- <model.pf> --alloy`
 
 If all four commands succeed, the model is structurally valid, decomposition coverage is explicit, obligations are generated, and formal backend artifacts are produced.
+
+Operational runbook: `docs/runbooks/pf-methodology-quality-gate.md`.
