@@ -1,0 +1,102 @@
+problem: PaperAlignedRoadmapM1M3
+
+// Core participants for roadmap steering and delivery.
+domain Maintainer kind biddable role given
+domain EngineeringTeam kind biddable role given
+domain RoadmapEngine kind causal role machine
+domain ValidatorSpec kind lexical role given
+domain TraceabilityStore kind lexical role given
+domain CI kind causal role given
+
+// Maintainer intent drives execution priorities.
+interface "Maintainer-RoadmapEngine" connects Maintainer, RoadmapEngine {
+    shared: {
+        phenomenon PrioritizeM1M3 : command [Maintainer -> RoadmapEngine] controlledBy Maintainer
+        phenomenon PublishExecutionPlan : event [RoadmapEngine -> Maintainer] controlledBy RoadmapEngine
+    }
+}
+
+// Team curates fixtures and receives planning updates.
+interface "Team-RoadmapEngine" connects EngineeringTeam, RoadmapEngine {
+    shared: {
+        phenomenon ProposeFixtureGap : event [EngineeringTeam -> RoadmapEngine] controlledBy EngineeringTeam
+        phenomenon ShareCoverageStatus : event [RoadmapEngine -> EngineeringTeam] controlledBy RoadmapEngine
+    }
+}
+
+// M1 artifacts for explicit invariant catalog and trace matrix.
+interface "RoadmapEngine-ValidatorSpec" connects RoadmapEngine, ValidatorSpec {
+    shared: {
+        phenomenon ExportInvariantCatalog : value [RoadmapEngine -> ValidatorSpec] controlledBy RoadmapEngine
+        phenomenon ImportCoverageMatrix : value [ValidatorSpec -> RoadmapEngine] controlledBy ValidatorSpec
+    }
+}
+
+// M2 artifacts for relationship matrix and impact analysis.
+interface "RoadmapEngine-TraceabilityStore" connects RoadmapEngine, TraceabilityStore {
+    shared: {
+        phenomenon PersistRelationshipMatrix : value [RoadmapEngine -> TraceabilityStore] controlledBy RoadmapEngine
+        phenomenon LoadImpactView : value [TraceabilityStore -> RoadmapEngine] controlledBy TraceabilityStore
+    }
+}
+
+// M3 execution path for non-blocking formal checks.
+interface "RoadmapEngine-CI" connects RoadmapEngine, CI {
+    shared: {
+        phenomenon TriggerFormalCheck : event [RoadmapEngine -> CI] controlledBy RoadmapEngine
+        phenomenon PublishFormalVerdict : event [CI -> RoadmapEngine] controlledBy CI
+    }
+}
+
+requirement "M1InvariantCatalogContract" {
+    frame: SimpleWorkpieces
+    constraint: "Rule catalog and fixture matrix stay synchronized with validator behavior"
+    constrains: ValidatorSpec
+    reference: EngineeringTeam
+}
+
+requirement "M2TraceabilityImpactLoop" {
+    frame: Transformation
+    constraint: "Relationship graph updates produce deterministic impact ranking outputs"
+    constrains: TraceabilityStore
+}
+
+requirement "M3ExecutableObligationCheck" {
+    frame: RequiredBehavior
+    constraint: "At least one obligation class is executed in CI with reproducible pass and fail evidence"
+    constrains: CI
+}
+
+subproblem MetamodelContract {
+    machine: RoadmapEngine
+    participants: RoadmapEngine, EngineeringTeam, ValidatorSpec
+    requirements: "M1InvariantCatalogContract"
+}
+
+subproblem TraceabilityImpact {
+    machine: RoadmapEngine
+    participants: RoadmapEngine, TraceabilityStore
+    requirements: "M2TraceabilityImpactLoop"
+}
+
+subproblem FormalCheckPath {
+    machine: RoadmapEngine
+    participants: RoadmapEngine, CI
+    requirements: "M3ExecutableObligationCheck"
+}
+
+worldProperties W_execution {
+    assert "ValidatorSpec and TraceabilityStore reflect repository state for the active planning cycle" @LTL
+}
+
+specification S_execution {
+    assert "PrioritizeM1M3 eventually triggers artifacts for M1, M2, and M3 workflows" @LTL
+}
+
+requirementAssertions R_execution {
+    assert "Execution backlog outcomes remain evidence-backed and reviewable each triage cycle" @LTL
+}
+
+correctnessArgument A_execution {
+    prove S_execution and W_execution entail R_execution
+}
