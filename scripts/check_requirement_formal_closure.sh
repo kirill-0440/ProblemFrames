@@ -10,27 +10,29 @@ Usage:
   bash ./scripts/check_requirement_formal_closure.sh [options]
 
 Options:
-  --model <path>              PF model path used for generated mapping (default: models/system/tool_spec.pf)
-  --requirements-file <path>  requirements source file (default: models/system/requirements.pf)
-  --arguments-file <path>     correctness-arguments source file (default: models/system/arguments.pf)
+  --model <path>              PF model path (default: models/system/tool_spec.pf)
+  --requirements-file <path>  optional explicit requirements source file
+  --arguments-file <path>     optional explicit correctness-arguments source file
   --map-file <path>           optional explicit requirement->argument map TSV (default: generated from model)
   --lean-coverage-json <path> Lean coverage JSON (default: .ci-artifacts/system-model/tool_spec.lean-coverage.json)
   --output <path>             markdown report output (default: .ci-artifacts/system-model/tool_spec.formal-closure.md)
   --json <path>               JSON summary output (default: .ci-artifacts/system-model/tool_spec.formal-closure.json)
   --status-file <path>        status file output (default: .ci-artifacts/system-model/tool_spec.formal-closure.status)
+  --rows-tsv <path>           per-requirement rows TSV output (default: .ci-artifacts/system-model/tool_spec.formal-closure.rows.tsv)
   --enforce-pass              exit non-zero when status is not PASS
   -h, --help                  show this help
 USAGE
 }
 
 model_file="${REPO_ROOT}/models/system/tool_spec.pf"
-requirements_file="${REPO_ROOT}/models/system/requirements.pf"
-arguments_file="${REPO_ROOT}/models/system/arguments.pf"
+requirements_file=""
+arguments_file=""
 map_file=""
 lean_coverage_json="${REPO_ROOT}/.ci-artifacts/system-model/tool_spec.lean-coverage.json"
 output_file="${REPO_ROOT}/.ci-artifacts/system-model/tool_spec.formal-closure.md"
 json_file="${REPO_ROOT}/.ci-artifacts/system-model/tool_spec.formal-closure.json"
 status_file="${REPO_ROOT}/.ci-artifacts/system-model/tool_spec.formal-closure.status"
+rows_tsv_file="${REPO_ROOT}/.ci-artifacts/system-model/tool_spec.formal-closure.rows.tsv"
 enforce_pass=0
 
 while [[ $# -gt 0 ]]; do
@@ -67,6 +69,10 @@ while [[ $# -gt 0 ]]; do
       status_file="$2"
       shift 2
       ;;
+    --rows-tsv)
+      rows_tsv_file="$2"
+      shift 2
+      ;;
     --enforce-pass)
       enforce_pass=1
       shift
@@ -83,17 +89,24 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for path_var in model_file requirements_file arguments_file lean_coverage_json output_file json_file status_file; do
+for path_var in model_file lean_coverage_json output_file json_file status_file rows_tsv_file; do
   current_path="${!path_var}"
   if [[ "${current_path}" != /* ]]; then
     printf -v "${path_var}" '%s/%s' "${REPO_ROOT}" "${current_path}"
   fi
 done
+
+if [[ -n "${requirements_file}" && "${requirements_file}" != /* ]]; then
+  requirements_file="${REPO_ROOT}/${requirements_file}"
+fi
+if [[ -n "${arguments_file}" && "${arguments_file}" != /* ]]; then
+  arguments_file="${REPO_ROOT}/${arguments_file}"
+fi
 if [[ -n "${map_file}" && "${map_file}" != /* ]]; then
   map_file="${REPO_ROOT}/${map_file}"
 fi
 
-for input in "${model_file}" "${requirements_file}" "${arguments_file}" "${lean_coverage_json}"; do
+for input in "${model_file}" "${lean_coverage_json}"; do
   if [[ ! -f "${input}" ]]; then
     echo "Required file not found: ${input}" >&2
     exit 1
@@ -103,10 +116,26 @@ done
 mkdir -p "$(dirname -- "${output_file}")"
 mkdir -p "$(dirname -- "${json_file}")"
 mkdir -p "$(dirname -- "${status_file}")"
+mkdir -p "$(dirname -- "${rows_tsv_file}")"
+
+tmp_map_file=""
+tmp_requirements_file=""
+tmp_arguments_file=""
+cleanup() {
+  if [[ -n "${tmp_map_file}" && -f "${tmp_map_file}" ]]; then
+    rm -f "${tmp_map_file}"
+  fi
+  if [[ -n "${tmp_requirements_file}" && -f "${tmp_requirements_file}" ]]; then
+    rm -f "${tmp_requirements_file}"
+  fi
+  if [[ -n "${tmp_arguments_file}" && -f "${tmp_arguments_file}" ]]; then
+    rm -f "${tmp_arguments_file}"
+  fi
+}
+trap cleanup EXIT
 
 resolved_map_file=""
 map_source_label=""
-
 if [[ -n "${map_file}" ]]; then
   if [[ ! -f "${map_file}" ]]; then
     echo "Explicit map file not found: ${map_file}" >&2
@@ -116,21 +145,73 @@ if [[ -n "${map_file}" ]]; then
   map_source_label="${map_file#${REPO_ROOT}/}"
 else
   tmp_map_file="$(mktemp)"
-  trap 'rm -f "${tmp_map_file}"' EXIT
   cargo run -p pf_dsl -- "${model_file}" --formal-closure-map-tsv > "${tmp_map_file}"
   resolved_map_file="${tmp_map_file}"
   map_source_label="generated:${model_file#${REPO_ROOT}/}"
 fi
 
-mapfile -t requirements < <(
-  grep '^requirement "' "${requirements_file}" \
-    | sed -E 's/^requirement "([^"]+)".*/\1/'
-)
+resolved_requirements_file=""
+requirements_source_label=""
+if [[ -n "${requirements_file}" ]]; then
+  if [[ ! -f "${requirements_file}" ]]; then
+    echo "Requirements file not found: ${requirements_file}" >&2
+    exit 1
+  fi
+  resolved_requirements_file="${requirements_file}"
+  requirements_source_label="${requirements_file#${REPO_ROOT}/}"
+else
+  tmp_requirements_file="$(mktemp)"
+  cargo run -p pf_dsl -- "${model_file}" --requirements-tsv > "${tmp_requirements_file}"
+  resolved_requirements_file="${tmp_requirements_file}"
+  requirements_source_label="generated:${model_file#${REPO_ROOT}/}"
+fi
 
-mapfile -t arguments < <(
-  grep '^correctnessArgument ' "${arguments_file}" \
-    | sed -E 's/^correctnessArgument ([^ ]+) .*/\1/'
-)
+resolved_arguments_file=""
+arguments_source_label=""
+if [[ -n "${arguments_file}" ]]; then
+  if [[ ! -f "${arguments_file}" ]]; then
+    echo "Arguments file not found: ${arguments_file}" >&2
+    exit 1
+  fi
+  resolved_arguments_file="${arguments_file}"
+  arguments_source_label="${arguments_file#${REPO_ROOT}/}"
+else
+  tmp_arguments_file="$(mktemp)"
+  cargo run -p pf_dsl -- "${model_file}" --correctness-arguments-tsv > "${tmp_arguments_file}"
+  resolved_arguments_file="${tmp_arguments_file}"
+  arguments_source_label="generated:${model_file#${REPO_ROOT}/}"
+fi
+
+if [[ -n "${requirements_file}" ]]; then
+  mapfile -t requirements < <(
+    grep '^[[:space:]]*requirement "' "${resolved_requirements_file}" \
+      | sed -E 's/^[[:space:]]*requirement "([^"]+)".*/\1/'
+  )
+else
+  mapfile -t requirements < <(
+    awk -F'|' '
+      $0 ~ /^#/ { next }
+      NF < 1 { next }
+      $1 == "" { next }
+      { print $1 }
+    ' "${resolved_requirements_file}"
+  )
+fi
+
+if [[ -n "${arguments_file}" ]]; then
+  mapfile -t arguments < <(
+    grep '^[[:space:]]*correctnessArgument ' "${resolved_arguments_file}" \
+      | sed -E 's/^[[:space:]]*correctnessArgument ([^ ]+) .*/\1/'
+  )
+else
+  mapfile -t arguments < <(
+    awk '
+      $0 ~ /^#/ { next }
+      $0 ~ /^[[:space:]]*$/ { next }
+      { gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0); if ($0 != "") print $0 }
+    ' "${resolved_arguments_file}"
+  )
+fi
 
 mapfile -t formalized_arguments < <(
   awk '
@@ -191,46 +272,54 @@ declare -a closed_requirements=()
 declare -a open_requirements=()
 declare -a missing_requirements=()
 declare -a invalid_argument_requirements=()
+declare -a closure_rows=()
 
 {
   echo "# Requirement Formal Closure Report"
   echo
   echo "- Generated (UTC): \`$(date -u +"%Y-%m-%dT%H:%M:%SZ")\`"
   echo "- Model source: \`${model_file#${REPO_ROOT}/}\`"
-  echo "- Requirements source: \`${requirements_file#${REPO_ROOT}/}\`"
-  echo "- Arguments source: \`${arguments_file#${REPO_ROOT}/}\`"
+  echo "- Requirements source: \`${requirements_source_label}\`"
+  echo "- Arguments source: \`${arguments_source_label}\`"
   echo "- Mapping source: \`${map_source_label}\`"
   echo "- Lean coverage source: \`${lean_coverage_json#${REPO_ROOT}/}\`"
   echo
-  echo "| Requirement | Correctness argument | Status |"
-  echo "| --- | --- | --- |"
+  echo "| Requirement | Correctness argument | Status | Reason |"
+  echo "| --- | --- | --- | --- |"
+
+  printf '# requirement|correctness_argument|status|reason\n' > "${rows_tsv_file}"
 
   for requirement in "${requirements[@]}"; do
     mapped_argument="${requirement_to_argument[${requirement}]:-}"
+    status=""
+    reason=""
 
     if [[ -z "${mapped_argument}" ]]; then
-      echo "| ${requirement} | (unmapped) | MISSING_MAP |"
+      status="MISSING_MAP"
+      reason="missing_formal_argument_mapping"
       missing_requirements+=("${requirement}")
       missing_count=$((missing_count + 1))
-      continue
-    fi
-
-    if [[ -z "${argument_exists[${mapped_argument}]:-}" ]]; then
-      echo "| ${requirement} | ${mapped_argument} | INVALID_ARGUMENT |"
+      mapped_argument="(unmapped)"
+    elif [[ -z "${argument_exists[${mapped_argument}]:-}" ]]; then
+      status="INVALID_ARGUMENT"
+      reason="mapped_argument_not_declared"
       invalid_argument_requirements+=("${requirement}")
       invalid_argument_count=$((invalid_argument_count + 1))
-      continue
-    fi
-
-    if [[ -n "${formalized_lookup[${mapped_argument}]:-}" ]]; then
-      echo "| ${requirement} | ${mapped_argument} | CLOSED |"
+    elif [[ -n "${formalized_lookup[${mapped_argument}]:-}" ]]; then
+      status="CLOSED"
+      reason="formalized"
       closed_requirements+=("${requirement}")
       closed_count=$((closed_count + 1))
     else
-      echo "| ${requirement} | ${mapped_argument} | OPEN |"
+      status="OPEN"
+      reason="correctness_argument_not_formalized"
       open_requirements+=("${requirement}")
       open_count=$((open_count + 1))
     fi
+
+    echo "| ${requirement} | ${mapped_argument} | ${status} | ${reason} |"
+    printf '%s|%s|%s|%s\n' "${requirement}" "${mapped_argument}" "${status}" "${reason}" >> "${rows_tsv_file}"
+    closure_rows+=("${requirement}|${mapped_argument}|${status}|${reason}")
   done
 
   echo
@@ -261,6 +350,22 @@ json_array_from_list() {
   printf ']'
 }
 
+json_rows_from_records() {
+  local -n rows_ref="$1"
+  local first=1
+  printf '['
+  for row in "${rows_ref[@]}"; do
+    IFS='|' read -r requirement argument row_status reason <<< "${row}"
+    if [[ "${first}" -eq 0 ]]; then
+      printf ', '
+    fi
+    first=0
+    printf '{"requirement":"%s","correctness_argument":"%s","status":"%s","reason":"%s"}' \
+      "${requirement}" "${argument}" "${row_status}" "${reason}"
+  done
+  printf ']'
+}
+
 {
   echo "{"
   echo "  \"status\": \"${status}\","
@@ -270,6 +375,10 @@ json_array_from_list() {
   echo "  \"missing_map_count\": ${missing_count},"
   echo "  \"invalid_argument_count\": ${invalid_argument_count},"
   echo "  \"duplicate_map_count\": ${duplicate_mapping_count},"
+  echo "  \"requirements_source\": \"${requirements_source_label}\","
+  echo "  \"arguments_source\": \"${arguments_source_label}\","
+  echo "  \"mapping_source\": \"${map_source_label}\","
+  echo "  \"rows\": $(json_rows_from_records closure_rows),"
   echo "  \"closed_requirements\": $(json_array_from_list closed_requirements),"
   echo "  \"open_requirements\": $(json_array_from_list open_requirements),"
   echo "  \"missing_requirements\": $(json_array_from_list missing_requirements),"
@@ -281,6 +390,7 @@ echo "${status}" > "${status_file}"
 
 echo "Generated ${output_file}"
 echo "Generated ${json_file}"
+echo "Generated ${rows_tsv_file}"
 
 if [[ "${enforce_pass}" -eq 1 && "${status}" != "PASS" ]]; then
   echo "Requirement formal closure status is ${status}; expected PASS." >&2

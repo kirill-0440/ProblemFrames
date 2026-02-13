@@ -124,6 +124,26 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - [x] Emit closed-coverage and entailment theorems for subset-covered requirement projections.
 - [x] Publish mode in coverage JSON and cover with deterministic tests.
 
+#### R010-M7-07 - Formal Gap Report in PF Quality Gate
+
+- Proposed issue title: `R010 M7: Publish requirement->subproblem->frame formal gap report in quality gate artifacts`
+- Owner: `Tooling Maintainer`
+- Priority: `P1`
+- Definition of Done:
+- [x] Add deterministic formal gap report artifact for each model in `run_pf_quality_gate.sh`.
+- [x] Include requirement frame and subproblem mapping with explicit closure status/reason.
+- [x] Surface report status in gate summary and canonical system-model artifacts.
+
+#### R010-M7-08 - Formal Track Policy Switch
+
+- Proposed issue title: `R010 M7: Add non-blocking-by-default formal-track policy switch for quality gate/CI`
+- Owner: `Platform Maintainer`
+- Priority: `P1`
+- Definition of Done:
+- [x] Add formal-track policy switch (`non-blocking` default, explicit blocking mode).
+- [x] Wire policy switch to gate verdict for Lean coverage and requirement formal closure.
+- [x] Document CI policy variable and CLI override.
+
 ## Sequencing and Dependencies
 
 - `R010-M6-04` depends on closure of `R007-M3-04` concern coverage baseline.

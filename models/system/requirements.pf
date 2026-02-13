@@ -434,3 +434,22 @@ requirement "R010-M7-RequirementFormalClosureTrace" {
     }
     constrains: AdequacyEvidence
 }
+
+requirement "R010-M7-FormalGapReport" {
+    frame: Transformation
+    constraint: "PF quality gate exports requirement-to-subproblem-to-frame formal gap reports with explicit closure reasons"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+    }
+    constrains: AdequacyEvidence
+}
+
+requirement "R010-M7-FormalTrackPolicySwitch" {
+    frame: CommandedBehavior
+    constraint: "Formal-track checks remain non-blocking by default and can be promoted to blocking through explicit gate policy switch"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+    }
+    constrains: CI
+    reference: Developer
+}

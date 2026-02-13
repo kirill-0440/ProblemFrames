@@ -21,6 +21,7 @@ Options:
                               Fail if implementation-trace policy status is not PASS.
   --min-lean-formalized-args <n>
                               Minimum number of formalized Lean correctness arguments (default: 0).
+  --enforce-formal-track      Fail on formal-track statuses (Lean coverage and formal closure).
   --impact <selectors>        Impact seeds for traceability export (e.g. requirement:R1,domain:D1).
   --impact-hops <n>           Max hops for impact traversal in traceability export.
   -h, --help                  Show this help.
@@ -35,6 +36,7 @@ allow_open_concern_coverage=0
 enforce_implementation_trace=0
 implementation_policy_path=""
 enforce_implementation_policy=0
+enforce_formal_track="${PF_FORMAL_TRACK_BLOCKING:-0}"
 min_lean_formalized_args=0
 impact_selectors=""
 impact_hops=""
@@ -74,6 +76,10 @@ while [[ $# -gt 0 ]]; do
       min_lean_formalized_args="$2"
       shift 2
       ;;
+    --enforce-formal-track)
+      enforce_formal_track=1
+      shift
+      ;;
     --impact)
       if [[ $# -lt 2 ]]; then
         echo "Missing value for --impact" >&2
@@ -107,6 +113,10 @@ done
 
 if ! [[ "${min_lean_formalized_args}" =~ ^[0-9]+$ ]]; then
   echo "Invalid value for --min-lean-formalized-args: ${min_lean_formalized_args}" >&2
+  exit 1
+fi
+if ! [[ "${enforce_formal_track}" =~ ^[01]$ ]]; then
+  echo "Invalid PF_FORMAL_TRACK_BLOCKING value: ${enforce_formal_track} (expected 0 or 1)" >&2
   exit 1
 fi
 
@@ -169,6 +179,13 @@ for model in "${models[@]}"; do
   lean_differential_md_file="${model_output_dir}/lean-differential.md"
   lean_differential_json_file="${model_output_dir}/lean-differential.json"
   lean_differential_status_file="${model_output_dir}/lean-differential.status"
+  formal_closure_report_file="${model_output_dir}/formal-closure.md"
+  formal_closure_json_file="${model_output_dir}/formal-closure.json"
+  formal_closure_status_file="${model_output_dir}/formal-closure.status"
+  formal_closure_rows_tsv_file="${model_output_dir}/formal-closure.rows.tsv"
+  formal_gap_report_file="${model_output_dir}/formal-gap.md"
+  formal_gap_json_file="${model_output_dir}/formal-gap.json"
+  formal_gap_status_file="${model_output_dir}/formal-gap.status"
   summary_file="${model_output_dir}/summary.md"
 
   traceability_args=()
@@ -220,6 +237,20 @@ for model in "${models[@]}"; do
     --json "${lean_differential_json_file}" \
     --status-file "${lean_differential_status_file}" \
     --output-dir "${model_output_dir}"
+  bash "${REPO_ROOT}/scripts/check_requirement_formal_closure.sh" \
+    --model "${model}" \
+    --lean-coverage-json "${model_output_dir}/lean-coverage.json" \
+    --output "${formal_closure_report_file}" \
+    --json "${formal_closure_json_file}" \
+    --status-file "${formal_closure_status_file}" \
+    --rows-tsv "${formal_closure_rows_tsv_file}"
+  bash "${REPO_ROOT}/scripts/generate_formal_gap_report.sh" \
+    --model "${model}" \
+    --closure-rows-tsv "${formal_closure_rows_tsv_file}" \
+    --traceability-csv "${traceability_csv_file}" \
+    --output "${formal_gap_report_file}" \
+    --json "${formal_gap_json_file}" \
+    --status-file "${formal_gap_status_file}"
   cargo run -p pf_dsl -- "${model}" --wrspm-report > "${wrspm_file}"
   cargo run -p pf_dsl -- "${model}" --wrspm-json > "${wrspm_json_file}"
 
@@ -270,6 +301,14 @@ for model in "${models[@]}"; do
   lean_total_arguments="${lean_total_arguments:-0}"
   lean_differential_status="$(cat "${lean_differential_status_file}" 2>/dev/null || true)"
   lean_differential_status="${lean_differential_status:-UNKNOWN}"
+  formal_closure_status="$(cat "${formal_closure_status_file}" 2>/dev/null || true)"
+  formal_closure_status="${formal_closure_status:-UNKNOWN}"
+  formal_gap_status="$(cat "${formal_gap_status_file}" 2>/dev/null || true)"
+  formal_gap_status="${formal_gap_status:-UNKNOWN}"
+  formal_track_policy_mode="non_blocking"
+  if [[ "${enforce_formal_track}" -eq 1 ]]; then
+    formal_track_policy_mode="blocking"
+  fi
 
   {
     echo "# PF Quality Gate Summary"
@@ -285,6 +324,9 @@ for model in "${models[@]}"; do
     echo "- Lean formal check status: \`${lean_check_status}\`"
     echo "- Lean formal coverage status: \`${lean_coverage_status}\` (${lean_formalized_count}/${lean_total_arguments} formalized)"
     echo "- Lean differential status: \`${lean_differential_status}\`"
+    echo "- Requirement formal closure status: \`${formal_closure_status}\`"
+    echo "- Formal gap status: \`${formal_gap_status}\`"
+    echo "- Formal track policy mode: \`${formal_track_policy_mode}\`"
     echo
     echo "## Artifacts"
     echo
@@ -308,6 +350,11 @@ for model in "${models[@]}"; do
     echo "- \`lean-check.json\`"
     echo "- \`lean-differential.md\`"
     echo "- \`lean-differential.json\`"
+    echo "- \`formal-closure.md\`"
+    echo "- \`formal-closure.json\`"
+    echo "- \`formal-closure.rows.tsv\`"
+    echo "- \`formal-gap.md\`"
+    echo "- \`formal-gap.json\`"
     echo "- \`wrspm.md\`"
     echo "- \`wrspm.json\`"
   } > "${summary_file}"
@@ -333,6 +380,20 @@ for model in "${models[@]}"; do
   if [[ "${implementation_trace_policy_status}" != "PASS" && "${enforce_implementation_policy}" -eq 1 ]]; then
     echo "Implementation trace policy is ${implementation_trace_policy_status} for ${model}; fix policy violations or relax policy thresholds." >&2
     failure_count=$((failure_count + 1))
+  fi
+  if [[ "${enforce_formal_track}" -eq 1 ]]; then
+    if [[ "${lean_coverage_status}" != "PASS" ]]; then
+      echo "Formal-track policy blocking: Lean coverage is ${lean_coverage_status} for ${model}." >&2
+      failure_count=$((failure_count + 1))
+    fi
+    if [[ "${formal_closure_status}" != "PASS" ]]; then
+      echo "Formal-track policy blocking: requirement formal closure is ${formal_closure_status} for ${model}." >&2
+      failure_count=$((failure_count + 1))
+    fi
+    if [[ "${formal_gap_status}" != "PASS" ]]; then
+      echo "Formal-track policy blocking: formal gap status is ${formal_gap_status} for ${model}." >&2
+      failure_count=$((failure_count + 1))
+    fi
   fi
 done
 

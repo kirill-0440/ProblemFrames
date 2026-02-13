@@ -37,6 +37,8 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --wrspm-report
 cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-model
 cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-coverage-json
 cargo run -p pf_dsl -- models/system/tool_spec.pf --formal-closure-map-tsv
+cargo run -p pf_dsl -- models/system/tool_spec.pf --requirements-tsv
+cargo run -p pf_dsl -- models/system/tool_spec.pf --correctness-arguments-tsv
 cargo run -p pf_dsl -- models/system/tool_spec.pf --ddd-pim
 cargo run -p pf_dsl -- models/system/tool_spec.pf --sysml2-text
 cargo run -p pf_dsl -- models/system/tool_spec.pf --sysml2-json
@@ -46,7 +48,8 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --alloy > system_model.als
 bash ./scripts/run_adequacy_evidence.sh
 bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 2
 bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf
-bash ./scripts/check_requirement_formal_closure.sh --model models/system/tool_spec.pf --requirements-file models/system/requirements.pf --arguments-file models/system/arguments.pf --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json
+bash ./scripts/check_requirement_formal_closure.sh --model models/system/tool_spec.pf --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json
+bash ./scripts/generate_formal_gap_report.sh --model models/system/tool_spec.pf --closure-rows-tsv .ci-artifacts/system-model/tool_spec.formal-closure.rows.tsv --traceability-csv .ci-artifacts/system-model/tool_spec.traceability.csv
 bash ./scripts/run_sysml_api_smoke.sh
 bash ./scripts/check_model_implementation_trace.sh models/system/tool_spec.pf
 bash ./scripts/check_model_implementation_trace.sh --policy models/system/implementation_trace_policy.env --enforce-policy models/system/tool_spec.pf

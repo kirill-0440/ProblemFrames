@@ -22,6 +22,7 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 12. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
 13. Generate Lean research-track artifacts (`--lean-model`, `--lean-coverage-json`, non-blocking Lean smoke, differential report).
 14. For the canonical system model, run `check_system_model.sh` to generate per-requirement formal closure report (mapping derived from requirement `@formal.argument(...)` marks, constrained to declared correctness arguments, plus formalized status/mode).
+15. Generate formal gap report (`requirement -> frame -> subproblem`) to prioritize closure debt by model structure.
 
 ## One-command Gate
 
@@ -57,6 +58,11 @@ Generated artifacts per model:
 - `lean-differential.json`
 - `wrspm.md`
 - `wrspm.json`
+- `formal-closure.md`
+- `formal-closure.json`
+- `formal-closure.rows.tsv`
+- `formal-gap.md`
+- `formal-gap.json`
 
 ## Impact-aware Gate (Optional)
 
@@ -110,6 +116,14 @@ bash ./scripts/run_pf_quality_gate.sh \
   --min-lean-formalized-args 2 \
   <model.pf>
 ```
+
+To promote formal checks to blocking policy (default is non-blocking):
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh --enforce-formal-track <model.pf>
+```
+
+CI can use `PF_FORMAL_TRACK_BLOCKING=1` to switch formal-track jobs from non-blocking to blocking.
 
 ## CI Alignment
 

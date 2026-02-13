@@ -50,6 +50,8 @@ This map links canonical system-model requirements to roadmap/proposal items in
 | `R010-M7-FormalClosureCoverageReport` | `010-pf-wrspm-contract-bridge.md`, `010-execution-backlog-m6-m7.md`, `004-lean-integration-proposal.md` | M7 Lean closure coverage projection (`formalized/skipped` with reasons plus mirror/subset entailment mode per correctness argument, `R010-M7-06`) |
 | `R010-M7-MinFormalClosureFloor` | `010-execution-backlog-m6-m7.md`, `004-lean-integration-proposal.md` | M7 canonical floor for full formalized Lean correctness arguments in system gate |
 | `R010-M7-RequirementFormalClosureTrace` | `010-execution-backlog-m6-m7.md`, `004-lean-integration-proposal.md` | M7 per-requirement formal closure report mapped to declared correctness arguments from requirement marks with gate enforcement (`R010-M7-05`) |
+| `R010-M7-FormalGapReport` | `010-execution-backlog-m6-m7.md` | M7 formal gap report (`requirement -> frame -> subproblem`) in quality gate artifacts (`R010-M7-07`) |
+| `R010-M7-FormalTrackPolicySwitch` | `010-execution-backlog-m6-m7.md` | M7 formal-track policy switch (`non-blocking` default, explicit blocking mode) (`R010-M7-08`) |
 
 ## Usage
 

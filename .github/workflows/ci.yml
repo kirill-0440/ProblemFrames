@@ -15,6 +15,8 @@ concurrency:
 jobs:
   scripts-smoke:
     runs-on: ubuntu-latest
+    env:
+      PF_FORMAL_TRACK_BLOCKING: ${{ vars.PF_FORMAL_TRACK_BLOCKING }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -53,9 +55,10 @@ jobs:
 
   lean-formal-smoke:
     runs-on: ubuntu-latest
-    continue-on-error: true
+    continue-on-error: ${{ vars.PF_FORMAL_TRACK_BLOCKING != '1' }}
     env:
       PF_LEAN_FORMAL_ENABLED: ${{ vars.PF_LEAN_FORMAL_ENABLED }}
+      PF_FORMAL_TRACK_BLOCKING: ${{ vars.PF_FORMAL_TRACK_BLOCKING }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -136,7 +139,7 @@ jobs:
           if-no-files-found: error
 
       - name: Run formal backend check (non-blocking)
-        continue-on-error: true
+        continue-on-error: ${{ vars.PF_FORMAL_TRACK_BLOCKING != '1' }}
         run: bash ./scripts/run_formal_backend_check.sh .ci-artifacts/formal-backend
 
       - name: Upload formal backend artifacts

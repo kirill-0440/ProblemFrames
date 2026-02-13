@@ -37,14 +37,19 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --formal-closure-map-tsv
     ```
-10.  **Generate PIM outputs**:
+10.  **Generate model inventories (requirements and correctness arguments)**:
+    ```bash
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --requirements-tsv
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --correctness-arguments-tsv
+    ```
+11.  **Generate PIM outputs**:
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --ddd-pim
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --sysml2-text
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --sysml2-json
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --trace-map-json
     ```
-11.  **Generate an image** (requires Graphviz):
+12.  **Generate an image** (requires Graphviz):
     ```bash
     dot -Tpng output.dot -o output.png
     ```

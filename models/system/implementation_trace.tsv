@@ -179,7 +179,23 @@ R010-M7-MinFormalClosureFloor|command_passes|bash ./scripts/run_lean_formal_chec
 R010-M7-RequirementFormalClosureTrace|file_exists|scripts/check_requirement_formal_closure.sh||per-requirement formal closure check script exists
 R010-M7-RequirementFormalClosureTrace|file_contains|scripts/check_system_model.sh|tool_spec.formal-closure.md|system-model gate publishes per-requirement formal closure report
 R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/main.rs|--formal-closure-map-tsv|CLI exposes model-derived requirement formal-closure map mode
+R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/main.rs|--requirements-tsv|CLI exposes requirement inventory export for model-derived formal closure checks
+R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/main.rs|--correctness-arguments-tsv|CLI exposes correctness-argument inventory export for model-derived formal closure checks
+R010-M7-RequirementFormalClosureTrace|file_contains|scripts/check_requirement_formal_closure.sh|--rows-tsv|formal closure checker emits per-requirement status rows for downstream gap analysis
 R010-M7-RequirementFormalClosureTrace|file_contains|models/system/requirements.pf|@formal.argument("A_roadmap_alignment_formal")|formal closure mapping is declared in requirement marks inside canonical model
 R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/validator.rs|references undefined correctness argument|validator enforces requirement mark -> declared correctness argument referential integrity
 R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/validator_tests.rs|test_mark_contract_rejects_formal_argument_unknown_correctness_argument|formal.argument referential-integrity validation is covered by deterministic unit test
-R010-M7-RequirementFormalClosureTrace|command_passes|bash ./scripts/check_requirement_formal_closure.sh --model models/system/tool_spec.pf --requirements-file models/system/requirements.pf --arguments-file models/system/arguments.pf --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json --output .ci-artifacts/system-model/formal-closure-local.md --json .ci-artifacts/system-model/formal-closure-local.json --status-file .ci-artifacts/system-model/formal-closure-local.status||per-requirement formal closure check executes for canonical model
+R010-M7-RequirementFormalClosureTrace|command_passes|bash ./scripts/check_requirement_formal_closure.sh --model models/system/tool_spec.pf --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json --output .ci-artifacts/system-model/formal-closure-local.md --json .ci-artifacts/system-model/formal-closure-local.json --status-file .ci-artifacts/system-model/formal-closure-local.status --rows-tsv .ci-artifacts/system-model/formal-closure-local.rows.tsv||per-requirement formal closure check executes for canonical model with model-derived inventories
+
+R010-M7-FormalGapReport|file_exists|scripts/generate_formal_gap_report.sh||formal gap report generator script exists
+R010-M7-FormalGapReport|file_contains|scripts/run_pf_quality_gate.sh|formal-gap.md|quality gate emits formal gap report artifact
+R010-M7-FormalGapReport|file_contains|scripts/check_system_model.sh|tool_spec.formal-gap.md|system-model gate publishes formal gap report artifact
+R010-M7-FormalGapReport|file_contains|models/system/subproblems.pf|R010-M7-FormalGapReport|formal gap report requirement is mapped in canonical PF decomposition
+R010-M7-FormalGapReport|command_passes|bash ./scripts/generate_formal_gap_report.sh --help||formal gap report generator exposes deterministic CLI contract
+
+R010-M7-FormalTrackPolicySwitch|file_contains|scripts/run_pf_quality_gate.sh|--enforce-formal-track|quality gate exposes explicit formal-track blocking switch
+R010-M7-FormalTrackPolicySwitch|file_contains|scripts/run_pf_quality_gate.sh|PF_FORMAL_TRACK_BLOCKING|quality gate supports env-driven formal-track blocking policy
+R010-M7-FormalTrackPolicySwitch|file_contains|.github/workflows/ci.yml|PF_FORMAL_TRACK_BLOCKING|CI wiring surfaces formal-track policy variable
+R010-M7-FormalTrackPolicySwitch|file_contains|.github/workflows/ci.yml|continue-on-error: ${{ vars.PF_FORMAL_TRACK_BLOCKING != '1' }}|CI jobs switch between non-blocking and blocking formal-track mode
+R010-M7-FormalTrackPolicySwitch|file_contains|models/system/subproblems.pf|R010-M7-FormalTrackPolicySwitch|formal-track policy-switch requirement is mapped in canonical PF decomposition
+R010-M7-FormalTrackPolicySwitch|command_passes|PF_FORMAL_TRACK_BLOCKING=1 bash ./scripts/run_pf_quality_gate.sh --help||formal-track policy switch is accepted through environment without changing CLI contract
