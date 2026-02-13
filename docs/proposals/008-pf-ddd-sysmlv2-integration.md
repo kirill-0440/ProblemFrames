@@ -202,6 +202,7 @@ Execution note:
 
 - Proposal `007` (traceability and design bridge foundation)
 - Proposal `006` (validator semantics baseline)
+- `docs/proposals/007-008-implementation-task-breakdown.md` (integrated task/sprint decomposition)
 
 ## Decision Needed
 
