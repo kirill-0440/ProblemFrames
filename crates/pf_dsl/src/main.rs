@@ -5,7 +5,9 @@ use std::env;
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        println!("Usage: pf_dsl <file.pf> [--dot | --report | --gen-rust | --obligations]");
+        println!(
+            "Usage: pf_dsl <file.pf> [--dot | --report | --gen-rust | --obligations | --alloy]"
+        );
         return Ok(());
     }
 
@@ -19,6 +21,8 @@ fn main() -> Result<()> {
             Ok(_) => {
                 if mode == "--report" {
                     println!("{}", pf_dsl::report_gen::generate_report(&problem));
+                } else if mode == "--alloy" {
+                    println!("{}", pf_dsl::formal_alloy::generate_alloy(&problem));
                 } else if mode == "--obligations" {
                     println!(
                         "{}",
