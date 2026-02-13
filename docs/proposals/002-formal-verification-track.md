@@ -14,14 +14,14 @@ We need formal verification without destabilizing editor latency or delivery spe
 
 - Keep Rust validator as production source of truth in the near term.
 - Add formal methods as a separate research/verification track.
-- Use Lean 4 as the primary formal target first.
+- Keep Alloy-first executable checks for near-term roadmap milestones (`007`/`010`), while Lean remains an active research/proof track.
 - Keep K Framework optional for specific operational-semantics experiments.
 
-## Why Lean-First
+## Why Lean as Research Track
 
 - Strong environment for theorem proving and machine-checked proofs.
 - Better fit for long-lived proof artifacts than ad hoc symbolic checks.
-- Existing proposal in `docs/proposals/004-lean-integration-proposal.md` can be refined and executed incrementally.
+- Existing proposal in `docs/proposals/004-lean-integration-proposal.md` remains executable incrementally without blocking Alloy-first roadmap obligations.
 
 ## Why Not Replace Rust Validator Now
 

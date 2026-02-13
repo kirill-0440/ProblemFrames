@@ -1,0 +1,358 @@
+{
+  "catalog_version": "1.0.0",
+  "scope": "pf_dsl.validator",
+  "rules": [
+    {
+      "rule_id": "PF-VAL-001",
+      "error_variant": "UndefinedDomainInInterface",
+      "severity": "error",
+      "title": "Interface references only defined domains",
+      "rationale": "Every interface endpoint and shared phenomenon reference must resolve to a declared domain.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (interface connects and shared phenomena domain checks)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": [
+        "test_undefined_domain_in_interface_uses_matching_source_path"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-002",
+      "error_variant": "UndefinedDomainInRequirement",
+      "severity": "error",
+      "title": "Requirement references only defined domains",
+      "rationale": "Requirement `constrains` and `reference` fields must resolve to existing domains.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (requirement reference/constrains existence checks)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": [
+        "test_undefined_domain_in_requirement_uses_matching_source_path"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-003",
+      "error_variant": "InvalidFrameDomain",
+      "severity": "error",
+      "title": "Frame domain fit constraints",
+      "rationale": "Each frame enforces domain kind/role compatibility constraints.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (frame-specific domain checks)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_information_display_reference_must_be_biddable"]
+    },
+    {
+      "rule_id": "PF-VAL-004",
+      "error_variant": "DuplicateDomain",
+      "severity": "error",
+      "title": "Domain names are unique",
+      "rationale": "Duplicate domain declarations create ambiguous semantic targets.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (domain uniqueness pass)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_duplicate_domain_detection"]
+    },
+    {
+      "rule_id": "PF-VAL-005",
+      "error_variant": "DuplicateInterface",
+      "severity": "error",
+      "title": "Interface names are unique",
+      "rationale": "Interface identity is global in a PF model and must be deterministic.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (interface uniqueness pass)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_duplicate_interface_uses_duplicate_source_path"]
+    },
+    {
+      "rule_id": "PF-VAL-006",
+      "error_variant": "DuplicateRequirement",
+      "severity": "error",
+      "title": "Requirement names are unique",
+      "rationale": "Requirement identifiers anchor traceability and must be unique.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (requirement uniqueness pass)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_duplicate_requirement_detection"]
+    },
+    {
+      "rule_id": "PF-VAL-007",
+      "error_variant": "MissingConnection",
+      "severity": "error",
+      "title": "Frame-required machine connectivity",
+      "rationale": "Domains participating in frame concerns must be connected to machine where required.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (connected_to_machine checks per frame)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_missing_connection_required"]
+    },
+    {
+      "rule_id": "PF-VAL-008",
+      "error_variant": "InvalidCausality",
+      "severity": "error",
+      "title": "Phenomenon causality constraints",
+      "rationale": "Event/command origins must comply with domain kind/role semantics.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (phenomenon type/origin causality checks)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_invalid_causality"]
+    },
+    {
+      "rule_id": "PF-VAL-009",
+      "error_variant": "MissingRequiredField",
+      "severity": "error",
+      "title": "Frame-required fields must be present",
+      "rationale": "Each frame requires mandatory references to encode a complete concern.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (missing frame/reference/constrains checks)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_missing_reference_for_commanded_behavior"]
+    },
+    {
+      "rule_id": "PF-VAL-010",
+      "error_variant": "UnsupportedFrame",
+      "severity": "error",
+      "title": "Only supported frame types are allowed",
+      "rationale": "Unknown/custom frames are rejected in strict validation mode.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (custom frame handling)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_unsupported_frame"]
+    },
+    {
+      "rule_id": "PF-VAL-011",
+      "error_variant": "InvalidDomainRole",
+      "severity": "error",
+      "title": "Domain role/kind and machine cardinality consistency",
+      "rationale": "Machine-role constraints and role/kind combinations must preserve PF semantics.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (machine_count and lexical-machine checks)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": [
+        "test_invalid_domain_role_lexical_machine_uses_domain_source_path"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-012",
+      "error_variant": "InterfaceInsufficientConnections",
+      "severity": "error",
+      "title": "Interface must connect at least two domains",
+      "rationale": "A PF interface without two endpoints cannot express shared phenomena between domains.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (interface minimum connections check)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_interface_requires_at_least_two_connections"]
+    },
+    {
+      "rule_id": "PF-VAL-013",
+      "error_variant": "InterfaceWithoutPhenomena",
+      "severity": "error",
+      "title": "Interface must declare shared phenomena",
+      "rationale": "Interfaces without phenomena are structurally incomplete in PF notation.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (interface non-empty shared_phenomena check)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_interface_requires_at_least_one_phenomenon"]
+    },
+    {
+      "rule_id": "PF-VAL-014",
+      "error_variant": "InterfaceControllerMismatch",
+      "severity": "error",
+      "title": "Phenomenon controller consistency",
+      "rationale": "A phenomenon controller must be in interface connections and match the origin domain.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (controlledBy checks)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": [
+        "test_interface_controller_mismatch_uses_matching_source_path"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-015",
+      "error_variant": "RequirementReferencesMachine",
+      "severity": "error",
+      "title": "Requirements cannot constrain/reference machine domain",
+      "rationale": "Strict PF mode forbids directly referencing machine in requirement relation fields.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (machine reference prohibition in requirements)"
+      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_requirement_cannot_reference_machine"]
+    },
+    {
+      "rule_id": "PF-VAL-016",
+      "error_variant": "MissingSubproblemField",
+      "severity": "error",
+      "title": "Subproblem mandatory fields",
+      "rationale": "Subproblems require machine, participants, and requirements to be meaningful decomposition units.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (subproblem required-field checks)"
+      ],
+      "valid_tests": ["test_subproblem_valid_decomposition"],
+      "invalid_tests": ["test_subproblem_missing_machine_is_invalid"]
+    },
+    {
+      "rule_id": "PF-VAL-017",
+      "error_variant": "UndefinedDomainInSubproblem",
+      "severity": "error",
+      "title": "Subproblem participants and machine must resolve to defined domains",
+      "rationale": "Subproblem decomposition cannot refer to unknown domain entities.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (subproblem machine/participant existence checks)"
+      ],
+      "valid_tests": ["test_subproblem_valid_decomposition"],
+      "invalid_tests": [
+        "test_undefined_domain_in_subproblem_uses_matching_source_path"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-018",
+      "error_variant": "UndefinedRequirementInSubproblem",
+      "severity": "error",
+      "title": "Subproblem requirement references must resolve",
+      "rationale": "Requirement partitioning in decomposition must point to existing requirement declarations.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (subproblem requirement existence checks)"
+      ],
+      "valid_tests": ["test_subproblem_valid_decomposition"],
+      "invalid_tests": [
+        "test_undefined_requirement_in_subproblem_uses_matching_source_path"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-019",
+      "error_variant": "DuplicateSubproblem",
+      "severity": "error",
+      "title": "Subproblem names are unique",
+      "rationale": "Decomposition nodes require unique identities for traceability and reporting.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (subproblem uniqueness pass)"
+      ],
+      "valid_tests": ["test_subproblem_valid_decomposition"],
+      "invalid_tests": ["test_duplicate_subproblem_uses_duplicate_source_path"]
+    },
+    {
+      "rule_id": "PF-VAL-020",
+      "error_variant": "InvalidSubproblem",
+      "severity": "error",
+      "title": "Subproblem decomposition consistency",
+      "rationale": "Subproblem machine and participant boundaries must stay consistent with requirement scope.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (subproblem machine-role and boundary checks)"
+      ],
+      "valid_tests": ["test_subproblem_valid_decomposition"],
+      "invalid_tests": [
+        "test_subproblem_rejects_requirement_outside_participants"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-021",
+      "error_variant": "DuplicateAssertionSet",
+      "severity": "error",
+      "title": "Assertion set names are unique",
+      "rationale": "W/S/R set references rely on unique assertion-set identifiers.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (assertion set uniqueness pass)"
+      ],
+      "valid_tests": ["test_correctness_argument_valid_contract"],
+      "invalid_tests": ["test_duplicate_assertion_set_detection"]
+    },
+    {
+      "rule_id": "PF-VAL-022",
+      "error_variant": "EmptyAssertionSet",
+      "severity": "error",
+      "title": "Assertion sets must contain at least one assertion",
+      "rationale": "Empty W/S/R sets cannot support meaningful obligations or arguments.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (assertion set non-empty check)"
+      ],
+      "valid_tests": ["test_correctness_argument_valid_contract"],
+      "invalid_tests": ["test_empty_assertion_set_is_invalid"]
+    },
+    {
+      "rule_id": "PF-VAL-023",
+      "error_variant": "InvalidCorrectnessArgument",
+      "severity": "error",
+      "title": "Correctness argument references and scopes must be valid",
+      "rationale": "Correctness arguments must point to existing assertion sets with matching W/S/R scopes.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (correctness argument existence and scope checks)"
+      ],
+      "valid_tests": ["test_correctness_argument_valid_contract"],
+      "invalid_tests": ["test_correctness_argument_references_must_exist"]
+    },
+    {
+      "rule_id": "PF-VAL-024",
+      "error_variant": "DuplicateCorrectnessArgument",
+      "severity": "error",
+      "title": "Correctness argument names are unique",
+      "rationale": "Argument identifiers must be unique for deterministic obligation tracing.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (correctness argument uniqueness pass)"
+      ],
+      "valid_tests": ["test_correctness_argument_valid_contract"],
+      "invalid_tests": [
+        "test_duplicate_correctness_argument_uses_duplicate_source_path"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-025",
+      "error_variant": "InvalidSpecificationVocabulary",
+      "severity": "error",
+      "title": "Specification assertions reference only shared interface vocabulary",
+      "rationale": "WRSPM S vocabulary must stay anchored to shared interface phenomena using [[Interface.Phenomenon]] references.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (specification assertion interface vocabulary checks)"
+      ],
+      "valid_tests": [
+        "test_specification_vocabulary_accepts_shared_interface_refs"
+      ],
+      "invalid_tests": [
+        "test_specification_vocabulary_rejects_non_interface_ref_uses_assertion_set_source_path"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-026",
+      "error_variant": "InvalidDomainMark",
+      "severity": "error",
+      "title": "Domain mark contract is structurally consistent",
+      "rationale": "DDD/SysML domain marks must use supported names, satisfy prerequisites, and avoid conflicting combinations.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate_domain_marks (domain mark contract checks)"
+      ],
+      "valid_tests": [
+        "test_mark_contract_accepts_valid_domain_and_requirement_marks"
+      ],
+      "invalid_tests": ["test_mark_contract_rejects_conflicting_domain_marks"]
+    },
+    {
+      "rule_id": "PF-VAL-027",
+      "error_variant": "InvalidRequirementMark",
+      "severity": "error",
+      "title": "Requirement mark contract is structurally consistent",
+      "rationale": "Requirement-level marks must use supported names, satisfy value arity constraints, and keep explicit MDA layer classification (CIM/PIM/PSM) valid.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate_requirement_marks (requirement mark contract checks)"
+      ],
+      "valid_tests": [
+        "test_mark_contract_accepts_valid_domain_and_requirement_marks"
+      ],
+      "invalid_tests": [
+        "test_mark_contract_rejects_requirement_mark_with_missing_value",
+        "test_mark_contract_rejects_mda_layer_with_missing_value",
+        "test_mark_contract_rejects_mda_layer_with_unsupported_value"
+      ]
+    }
+  ]
+}

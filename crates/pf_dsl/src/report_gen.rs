@@ -1,4 +1,5 @@
 use crate::ast::*;
+use crate::decomposition_closure;
 
 pub fn generate_report(problem: &Problem) -> String {
     let mut report = String::new();
@@ -11,7 +12,7 @@ pub fn generate_report(problem: &Problem) -> String {
     }
     report.push('\n');
 
-    report.push_str("## 2. Intefaces\n");
+    report.push_str("## 2. Interfaces\n");
     for i in &problem.interfaces {
         report.push_str(&format!("- **Interface**: {}\n", i.name));
         for p in &i.shared_phenomena {
@@ -71,6 +72,33 @@ pub fn generate_report(problem: &Problem) -> String {
             report.push('\n');
         }
     }
+
+    let closure_summary = decomposition_closure::summarize(problem);
+    report.push_str("## 5. Decomposition Closure\n");
+    report.push_str(&format!(
+        "- **Mapped requirements**: {}/{}\n",
+        closure_summary.mapped_requirements, closure_summary.total_requirements
+    ));
+    report.push_str(&format!(
+        "- **Uncovered requirements**: {}\n",
+        closure_summary.uncovered_requirements.len()
+    ));
+    report.push_str(&format!(
+        "- **Subproblems without requirements**: {}\n",
+        closure_summary.subproblems_without_requirements.len()
+    ));
+    report.push_str(&format!(
+        "- **Subproblems without machine**: {}\n",
+        closure_summary.subproblems_without_machine.len()
+    ));
+    report.push_str(&format!(
+        "- **Closure status**: {}\n\n",
+        if closure_summary.closure_passes() {
+            "PASS"
+        } else {
+            "FAIL"
+        }
+    ));
 
     report
 }

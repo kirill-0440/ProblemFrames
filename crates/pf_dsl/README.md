@@ -4,24 +4,53 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
 
 ## Usage
 
-1.  **Define your problem** in a `.pf` file (e.g., `crates/pf_dsl/sample.pf`).
+1.  **Define your problem** in a `.pf` file (e.g., `models/examples/sample.pf`).
 2.  **Run the tool** to generate a DOT file:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > output.dot
+    cargo run -p pf_dsl -- models/examples/sample.pf --dot > output.dot
     ```
 3.  **Generate a planning report**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
+    cargo run -p pf_dsl -- models/examples/sample.pf --report
     ```
 4.  **Generate proof obligations**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
+    cargo run -p pf_dsl -- models/examples/sample.pf --obligations
     ```
-5.  **Generate Alloy backend artifact**:
+5.  **Generate concern coverage report**:
     ```bash
-    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
+    cargo run -p pf_dsl -- models/examples/sample.pf --concern-coverage
     ```
-6.  **Generate an image** (requires Graphviz):
+6.  **Generate Alloy backend artifact**:
+    ```bash
+    cargo run -p pf_dsl -- models/examples/sample.pf --alloy > model.als
+    ```
+7.  **Generate Lean research-track model**:
+    ```bash
+    cargo run -p pf_dsl -- models/examples/sample.pf --lean-model > model.lean
+    ```
+8.  **Generate Lean formal coverage summary**:
+    ```bash
+    cargo run -p pf_dsl -- models/examples/sample.pf --lean-coverage-json
+    ```
+9.  **Generate requirement formal-closure map (from requirement marks)**:
+    ```bash
+    cargo run -p pf_dsl -- models/examples/sample.pf --formal-closure-map-tsv
+    ```
+10.  **Generate model inventories (requirements and correctness arguments)**:
+    ```bash
+    cargo run -p pf_dsl -- models/examples/sample.pf --requirements-tsv
+    cargo run -p pf_dsl -- models/examples/sample.pf --correctness-arguments-tsv
+    ```
+    `--requirements-tsv` exports `requirement|frame|layer` where `layer` is `CIM`, `PIM`, `PSM`, or `UNSPECIFIED`.
+11.  **Generate PIM outputs**:
+    ```bash
+    cargo run -p pf_dsl -- models/examples/sample.pf --ddd-pim
+    cargo run -p pf_dsl -- models/examples/sample.pf --sysml2-text
+    cargo run -p pf_dsl -- models/examples/sample.pf --sysml2-json
+    cargo run -p pf_dsl -- models/examples/sample.pf --trace-map-json
+    ```
+12.  **Generate an image** (requires Graphviz):
     ```bash
     dot -Tpng output.dot -o output.png
     ```
@@ -53,7 +82,7 @@ worldProperties W_base {
 }
 
 specification S_controller {
-    assert "operator command eventually triggers control output" @LTL
+    assert "operator command [[Operator-Controller.OpenCommand]] eventually triggers control output" @LTL
 }
 
 requirementAssertions R_safe {
@@ -65,10 +94,15 @@ correctnessArgument A1 {
 }
 ```
 
+For WRSPM-oriented specification discipline, interface vocabulary references in
+`specification` assertions can be marked as `[[Interface.Phenomenon]]`. The
+validator rejects unknown references.
+
 ## Related Guides
 
 - `docs/pf-mode-guide.md`
 - `docs/migration-v2.md`
+- `docs/runbooks/pf-marks-ddd-sysml-guide.md`
 
 ## Import Collision Policy
 

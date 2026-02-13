@@ -1,0 +1,19 @@
+problem: TraceabilityCrossModel
+
+import "domain_catalog.pf"
+
+requirement "R_display_sensor" {
+  frame: InformationDisplay
+  reference: Operator
+  constrains: Sensor
+  marks: {
+    @sysml.requirement
+    @ddd.application_service("DisplaySensor")
+  }
+}
+
+subproblem DisplayFlow {
+  machine: Machine
+  participants: Machine, Operator, Sensor
+  requirements: "R_display_sensor"
+}

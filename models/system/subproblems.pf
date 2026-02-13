@@ -1,0 +1,77 @@
+subproblem ProductMaturityOperations {
+    machine: Tool
+    participants: Tool, Developer, CI, ReleaseWorkflow, SecurityEvidence, OpsMetrics, ProposalBacklog
+    requirements: "R001-A1-DeterministicMergeGateSet", "R001-A2-ReleaseSmokeRollbackReadiness", "R001-A3-SupplyChainEvidenceBundle", "R001-A4-WeeklyOpsMetricsCadence"
+}
+
+subproblem FormalTrackGovernance {
+    machine: Tool
+    participants: Tool, Developer, CI, AdequacyEvidence, LeanTheory, LeanToolchain, ProposalBacklog
+    requirements: "R002-F1-ProductionValidatorPrimaryPath", "R002-F2-AlloyFirstExecutableBaseline", "R002-F3-FormalDifferentialTriaging", "R004-L1-LeanTrackSeparation", "R004-L2-LeanEmitterDeterminism", "R004-L3-LeanBuildFeedbackLoop", "R004-L4-LeanDifferentialContract"
+}
+
+subproblem AdoptionAndPilotLoop {
+    machine: Tool
+    participants: Tool, Developer, PilotTeam, AdoptionAssets, ProposalBacklog
+    requirements: "R003-G1-ICPUseCasePackaging", "R003-G2-TimeToFirstValueWorkflow", "R003-G3-PilotFeedbackOperationalLoop"
+}
+
+subproblem MachineCheckableSemanticsFoundation {
+    machine: Tool
+    participants: Tool, Developer, Editor, CI, MetamodelContract, ObligationArtifacts
+    requirements: "R006-S1-MetamodelV2AsContract", "R006-S2-StrictSemanticInvariantSet", "R006-S3-ImportAwareDiagnosticPrecision", "R006-S4-FrameFitDecompositionDiscipline", "R006-S5-WSRObligationArtifactPipeline", "R006-S6-NonBlockingFormalBackendStage"
+}
+
+subproblem ReleaseReliabilityAndFeedback {
+    machine: Tool
+    participants: Tool, Developer, Editor, SourceFile, CI
+    requirements: "R005-G1-ReleaseReliabilityContract", "R005-G2-DogfoodingPlanningLoop", "R005-G3-EditorFeedbackQuality"
+}
+
+subproblem MetamodelContractLoop {
+    machine: Tool
+    participants: Tool, Developer, MetamodelContract
+    requirements: "R007-M1-MetamodelContract"
+}
+
+subproblem TraceabilityAndImpactLoop {
+    machine: Tool
+    participants: Tool, TraceabilityStore
+    requirements: "R007-M2-TraceabilityImpactExports", "R008-M4C-TraceCoverageContract"
+}
+
+subproblem ExecutableObligationLoop {
+    machine: Tool
+    participants: Tool, CI
+    requirements: "R007-M3-ExecutableObligationCheck"
+}
+
+subproblem MarkValidationAndPIMGeneration {
+    machine: Tool
+    participants: Tool, CI, PIMArtifacts
+    requirements: "R008-M4A-MarkValidationContract", "R008-M4B-FileBasedPIMGeneration"
+}
+
+subproblem ControlledApiBridgeSpike {
+    machine: Tool
+    participants: Tool, Developer, SysMLApi
+    requirements: "R008-M5A-ControlledAPIBridgeSpike"
+}
+
+subproblem CanonicalPFAlignmentAddendumLoop {
+    machine: Tool
+    participants: Tool, Developer, Codex, GeneratedCode, TraceabilityStore, SourceFile, CI
+    requirements: "R009-A1-ExplicitPFViews", "R009-A2-DecompositionClosureArtifact", "R009-A3-FrameConcernCoverageGate", "R009-A4-OneCommandPFQualityGate", "R009-A5-AgentAssistedModelExecution", "R009-A6-ModelFirstChangeControl", "R009-A7-ModelDirectoryPFContainment", "R011-H2-DiffBasedModelFirstGate"
+}
+
+subproblem WRSPMBridgeCoverageLoop {
+    machine: Tool
+    participants: Tool, WRSPMContract, CI
+    requirements: "R010-M6-WRSPMBridgeCoverage", "R010-M6-SVocabularyDiscipline", "R010-M6-WRSPMReportModes"
+}
+
+subproblem AdequacyEvidenceLoop {
+    machine: Tool
+    participants: Tool, Developer, CI, AdequacyEvidence, LeanTheory
+    requirements: "R010-M7-ObligationSelectionControl", "R010-M7-ExecutableAdequacyEvidence", "R010-M7-DifferentialVerdictArtifacts", "R010-M7-FormalClosureCoverageReport", "R010-M7-MinFormalClosureFloor", "R010-M7-RequirementFormalClosureTrace", "R010-M7-FormalGapReport", "R010-M7-FormalTrackPolicySwitch", "R011-H1-SolverBackedAdequacyEvidence", "R011-H3-CommandLevelAdequacyCoverage"
+}

@@ -55,16 +55,18 @@ fn set_problem_source_path(problem: &mut Problem, source_path: &Path) {
 
 fn load_standard_import(import_path_str: &str) -> Option<(&'static str, PathBuf)> {
     let content = match import_path_str {
-        "std/RequiredBehavior.pf" => include_str!("std/RequiredBehavior.pf"),
-        "std/CommandedBehavior.pf" => include_str!("std/CommandedBehavior.pf"),
-        "std/InformationDisplay.pf" => include_str!("std/InformationDisplay.pf"),
-        "std/SimpleWorkpieces.pf" => include_str!("std/SimpleWorkpieces.pf"),
-        "std/Transformation.pf" => include_str!("std/Transformation.pf"),
+        "std/RequiredBehavior.pf" => include_str!("../../../models/std/RequiredBehavior.pf"),
+        "std/CommandedBehavior.pf" => include_str!("../../../models/std/CommandedBehavior.pf"),
+        "std/InformationDisplay.pf" => include_str!("../../../models/std/InformationDisplay.pf"),
+        "std/SimpleWorkpieces.pf" => include_str!("../../../models/std/SimpleWorkpieces.pf"),
+        "std/Transformation.pf" => include_str!("../../../models/std/Transformation.pf"),
         _ => return None,
     };
 
     let source_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
+        .join("..")
+        .join("..")
+        .join("models")
         .join(import_path_str);
 
     Some((content, source_path))
@@ -385,6 +387,7 @@ mod tests {
                 name: "D".to_string(),
                 kind: DomainKind::Causal,
                 role: DomainRole::Machine,
+                marks: vec![],
                 span: mock_span(10, 20),
                 source_path: None,
             }],
@@ -434,6 +437,7 @@ mod tests {
                 name: "C".to_string(),
                 kind: DomainKind::Causal,
                 role: DomainRole::Given,
+                marks: vec![],
                 span: mock_span(10, 20),
                 source_path: None,
             }],
@@ -442,6 +446,7 @@ mod tests {
                 name: "R".to_string(),
                 frame: FrameType::RequiredBehavior,
                 phenomena: vec![],
+                marks: vec![],
                 constraint: "".to_string(),
                 constrains: Some(mock_ref("C", 80, 85)),
                 reference: None,
@@ -472,6 +477,7 @@ mod tests {
                     name: "A".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Machine,
+                    marks: vec![],
                     span: mock_span(10, 20),
                     source_path: Some(imported_path.clone()),
                 },
@@ -479,6 +485,7 @@ mod tests {
                     name: "B".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
+                    marks: vec![],
                     span: mock_span(21, 30),
                     source_path: Some(imported_path.clone()),
                 },
@@ -527,6 +534,7 @@ mod tests {
                     name: "M".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Machine,
+                    marks: vec![],
                     span: mock_span(10, 20),
                     source_path: None,
                 },
@@ -534,6 +542,7 @@ mod tests {
                     name: "A".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
+                    marks: vec![],
                     span: mock_span(21, 30),
                     source_path: None,
                 },
@@ -543,6 +552,7 @@ mod tests {
                 name: "R1".to_string(),
                 frame: FrameType::RequiredBehavior,
                 phenomena: vec![],
+                marks: vec![],
                 constraint: String::new(),
                 constrains: Some(mock_ref("A", 50, 51)),
                 reference: None,
@@ -581,6 +591,7 @@ mod tests {
                 name: "M".to_string(),
                 kind: DomainKind::Causal,
                 role: DomainRole::Machine,
+                marks: vec![],
                 span: mock_span(10, 20),
                 source_path: None,
             }],
@@ -628,6 +639,7 @@ mod tests {
                     name: "A".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Machine,
+                    marks: vec![],
                     span: mock_span(10, 20),
                     source_path: Some(root_path.clone()),
                 },
@@ -635,6 +647,7 @@ mod tests {
                     name: "A".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
+                    marks: vec![],
                     span: mock_span(40, 50),
                     source_path: Some(imported_path.clone()),
                 },
@@ -642,6 +655,7 @@ mod tests {
                     name: "B".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
+                    marks: vec![],
                     span: mock_span(51, 60),
                     source_path: Some(imported_path.clone()),
                 },

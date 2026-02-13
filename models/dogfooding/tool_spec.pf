@@ -1,0 +1,5 @@
+problem: PF_DSL_Tool
+
+// Backward-compatible entrypoint for scripts that still read from
+// models/dogfooding.
+import "../system/tool_spec.pf"

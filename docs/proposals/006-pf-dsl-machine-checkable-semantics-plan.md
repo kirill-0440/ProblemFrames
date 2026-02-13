@@ -54,7 +54,7 @@ This plan uses a controlled breaking change for DSL syntax and semantics.
 ### Interface and Phenomena
 
 - `interface` connects two or more domains.
-- `phenomenon` is typed (`event | state | symbolic | causal`) and has mandatory `controlledBy`.
+- `phenomenon` is typed (`event | command | state | value`) and has mandatory `controlledBy`.
 - `controlledBy` must reference a domain connected by the same interface.
 
 ### Requirements and References
@@ -97,7 +97,7 @@ This plan uses a controlled breaking change for DSL syntax and semantics.
   - interface multiplicities
   - phenomenon controller consistency
   - strict-mode requirement-to-machine constraints
-- Add rule severity levels: `error`, `warning`, `info`.
+- Add rule severity levels: `error`, `warning`, `info` (phased after current strict-default baseline).
 
 ### WS3: Multi-File Source Mapping and LSP Accuracy
 
@@ -130,7 +130,7 @@ This plan uses a controlled breaking change for DSL syntax and semantics.
 ### WS7: Tooling, Docs, and Adoption
 
 - Update diagrams export to include controller semantics and frame instances.
-- Publish user guide for strict PF mode vs engineering mode.
+- Publish user guide for strict PF mode and engineering-friendly modeling tactics (strict remains default).
 - Add migration guide from current DSL to extended DSL.
 
 ## Milestones and Exit Criteria
@@ -152,7 +152,7 @@ Exit criteria:
 Deliverables:
 
 - Core PF invariant checks implemented with clear diagnostics.
-- Strict-mode toggle and rule severities.
+- Rule severities and strict-mode policy documentation (strict default, no runtime toggle in this phase).
 
 Exit criteria:
 

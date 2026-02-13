@@ -1,0 +1,53 @@
+worldProperties W_roadmap_context {
+    assert "Proposal artifacts in docs/proposals remain the planning authority for 001 through 010 tracks" @LTL
+    assert "CI can execute reproducible jobs for release, security, validator, obligation, and generation checks" @LTL
+    assert "Canonical PF alignment requires explicit views, decomposition closure, concern coverage, and WRSPM bridge evidence" @LTL
+    assert "ProposalsAuthorityStable" @LeanAtom
+    assert "CIReproducibleChecks" @LeanAtom
+    assert "CanonicalAlignmentEvidenceAvailable" @LeanAtom
+}
+
+specification S_roadmap_execution {
+    assert "Tool consumes the canonical system model and produces deterministic quality-gate artifacts across roadmap tracks" @LTL
+    assert "RunPFQualityGate triggers report, decomposition closure, obligations, trace-map, WRSPM, and adequacy outputs" @LTL
+    assert "Codex executes delegated model updates and toolchain commands under the same quality gate contract as Developer" @LTL
+    assert "RunGeneration eventually emits PIM artifacts, trace outputs, and roadmap-alignment artifacts for modeled requirements" @LTL
+    assert "WRSPM bridge and adequacy evidence artifacts are generated and published in CI while formal stages remain non-blocking by policy" @LTL
+    assert "QualityGateDeterministic" @LeanAtom
+    assert "QualityGateRunsCoreArtifacts" @LeanAtom
+    assert "DelegatedExecutionSharesContract" @LeanAtom
+    assert "GenerationEmitsRoadmapArtifacts" @LeanAtom
+    assert "WrspmAdequacyEvidencePublished" @LeanAtom
+}
+
+requirementAssertions R_roadmap_outcomes {
+    assert "Milestone commitments from proposals 001 through 010 remain testable through the self-model" @LTL
+    assert "Planning decisions stay linked to executable or explicitly pending evidence in CI artifacts and trace manifests" @LTL
+    assert "Coverage gates prevent PF-complete claims without concern, WRSPM contract, and implementation-trace evidence" @LTL
+    assert "QualityGateDeterministic" @LeanAtom
+    assert "QualityGateRunsCoreArtifacts" @LeanAtom
+    assert "DelegatedExecutionSharesContract" @LeanAtom
+    assert "GenerationEmitsRoadmapArtifacts" @LeanAtom
+    assert "WrspmAdequacyEvidencePublished" @LeanAtom
+}
+
+correctnessArgument A_roadmap_alignment {
+    prove S_roadmap_execution and W_roadmap_context entail R_roadmap_outcomes
+}
+
+worldProperties W_roadmap_formal {
+    assert "CIStable" @LeanAtom
+    assert "TracePolicyPass" @LeanAtom
+}
+
+specification S_roadmap_formal {
+    assert "PFQualityGateExecuted" @LeanAtom
+}
+
+requirementAssertions R_roadmap_formal {
+    assert "PFQualityGateExecuted" @LeanAtom
+}
+
+correctnessArgument A_roadmap_alignment_formal {
+    prove S_roadmap_formal and W_roadmap_formal entail R_roadmap_formal
+}

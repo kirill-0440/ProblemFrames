@@ -15,12 +15,75 @@ concurrency:
 jobs:
   scripts-smoke:
     runs-on: ubuntu-latest
+    env:
+      PF_FORMAL_TRACK_BLOCKING: ${{ vars.PF_FORMAL_TRACK_BLOCKING }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Smoke test scripts
         run: bash ./scripts/smoke_test_scripts.sh
+
+  sysml-api-smoke:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      PF_SYSML_API_SMOKE_ENABLED: ${{ vars.PF_SYSML_API_SMOKE_ENABLED }}
+      PF_SYSML_API_ENDPOINT: ${{ secrets.PF_SYSML_API_ENDPOINT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+
+      - name: Run SysML API smoke (gated)
+        run: bash ./scripts/run_sysml_api_smoke.sh .ci-artifacts/sysml-api --gated
+
+      - name: Upload SysML API smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: sysml-api-smoke
+          path: .ci-artifacts/sysml-api
+          if-no-files-found: error
+
+  lean-formal-smoke:
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ vars.PF_FORMAL_TRACK_BLOCKING != '1' }}
+    env:
+      PF_LEAN_FORMAL_ENABLED: ${{ vars.PF_LEAN_FORMAL_ENABLED }}
+      PF_FORMAL_TRACK_BLOCKING: ${{ vars.PF_FORMAL_TRACK_BLOCKING }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          toolchain: stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+
+      - name: Run Lean formal smoke (gated)
+        run: bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/lean-formal --min-formalized-args 2 --gated
+
+      - name: Run Lean differential smoke
+        run: bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf --lean-status-json .ci-artifacts/lean-formal/lean-check.json --output-dir .ci-artifacts/lean-formal
+
+      - name: Upload Lean formal artifacts
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: lean-formal-smoke
+          path: .ci-artifacts/lean-formal
+          if-no-files-found: error
 
   rust:
     runs-on: ubuntu-latest
@@ -65,8 +128,18 @@ jobs:
           path: .ci-artifacts/dogfooding-obligations
           if-no-files-found: error
 
+      - name: Run canonical system model quality gate
+        run: bash ./scripts/check_system_model.sh .ci-artifacts/system-model
+
+      - name: Upload system model gate artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: system-model
+          path: .ci-artifacts/system-model
+          if-no-files-found: error
+
       - name: Run formal backend check (non-blocking)
-        continue-on-error: true
+        continue-on-error: ${{ vars.PF_FORMAL_TRACK_BLOCKING != '1' }}
         run: bash ./scripts/run_formal_backend_check.sh .ci-artifacts/formal-backend
 
       - name: Upload formal backend artifacts

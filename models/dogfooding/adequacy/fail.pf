@@ -1,0 +1,34 @@
+problem: AdequacyFail
+
+domain Machine kind causal role machine
+domain Device kind causal role given
+
+interface "Machine-Device" connects Machine, Device {
+  shared: {
+    phenomenon Actuate : event [Machine -> Device] controlledBy Machine
+  }
+}
+
+requirement "R_required" {
+  frame: RequiredBehavior
+  constrains: Device
+}
+
+worldProperties W_base {
+  assert "some Machine and some Device" @Alloy
+  assert "device is available"
+}
+
+specification S_control {
+  assert "some Machine" @Alloy
+  assert "actuation can be issued"
+}
+
+requirementAssertions R_goal {
+  assert "no Device" @Alloy
+  assert "device must not exist"
+}
+
+correctnessArgument A_exec {
+  prove S_control and W_base entail R_goal
+}

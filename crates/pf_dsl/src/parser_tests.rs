@@ -37,6 +37,66 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_domain_marks_block() {
+        let input = r#"
+            problem: MarkedDomain
+            domain Payments kind causal role given marks: {
+                @ddd.bounded_context("Payments")
+                @ddd.aggregate_root
+                @sysml.block
+            }
+        "#;
+
+        let problem = parse(input).expect("Failed to parse domain marks");
+        assert_eq!(problem.domains.len(), 1);
+        let marks = &problem.domains[0].marks;
+        assert_eq!(marks.len(), 3);
+        assert_eq!(marks[0].name, "ddd.bounded_context");
+        assert_eq!(marks[0].value.as_deref(), Some("Payments"));
+        assert_eq!(marks[1].name, "ddd.aggregate_root");
+        assert_eq!(marks[1].value, None);
+    }
+
+    #[test]
+    fn test_parse_requirement_marks_block() {
+        let input = r#"
+            problem: MarkedRequirement
+            domain M kind causal role machine
+            domain UI kind biddable role given
+            requirement "R1" {
+                frame: InformationDisplay
+                reference: UI
+                constrains: UI
+                marks: {
+                    @sysml.requirement
+                    @ddd.application_service("ShowStatus")
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("Failed to parse requirement marks");
+        assert_eq!(problem.requirements.len(), 1);
+        let marks = &problem.requirements[0].marks;
+        assert_eq!(marks.len(), 2);
+        assert_eq!(marks[0].name, "sysml.requirement");
+        assert_eq!(marks[0].value, None);
+        assert_eq!(marks[1].name, "ddd.application_service");
+        assert_eq!(marks[1].value.as_deref(), Some("ShowStatus"));
+    }
+
+    #[test]
+    fn test_parse_malformed_marks_block_is_rejected() {
+        let input = r#"
+            problem: BadMarks
+            domain D kind causal role given marks: {
+                ddd.bounded_context("NoAtPrefix")
+            }
+        "#;
+
+        assert!(parse(input).is_err());
+    }
+
+    #[test]
     fn test_parse_error_diagnostic_for_duplicate_problem_decl() {
         let input = r#"
             problem: First

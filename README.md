@@ -39,21 +39,31 @@ Guides:
 
 - `docs/pf-mode-guide.md`
 - `docs/migration-v2.md`
+- `metamodel/README.md`
 
 ### CLI Outputs
 
 Available modes:
 
 ```bash
-pf_dsl <file.pf> [--dot | --report | --gen-rust | --obligations | --alloy]
+pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --lean-model | --lean-coverage-json | --formal-closure-map-tsv | --requirements-tsv | --correctness-arguments-tsv | --traceability-md | --traceability-csv | --decomposition-closure | --concern-coverage | --wrspm-report | --wrspm-json | --ddd-pim | --sysml2-text | --sysml2-json | --trace-map-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]
 ```
 
 Artifact generation currently includes:
 
-- DOT diagram export (`--dot`)
+- DOT diagram exports (`--dot`, `--dot-context`, `--dot-problem`, `--dot-decomposition`)
 - structured model report (`--report`)
+- decomposition closure report (`--decomposition-closure`)
 - proof-obligation markdown (`--obligations`)
 - Alloy model export (`--alloy`)
+- Lean model export for research track (`--lean-model`)
+- Lean formal coverage export (`--lean-coverage-json`)
+- Requirement-to-correctness-argument closure map export (`--formal-closure-map-tsv`)
+- Requirement inventory export (`--requirements-tsv`)
+- Correctness-argument inventory export (`--correctness-arguments-tsv`)
+- traceability markdown/CSV exports (`--traceability-md`, `--traceability-csv`)
+- WRSPM bridge report (`--wrspm-report`)
+- WRSPM bridge JSON (`--wrspm-json`)
 - Rust code skeleton generation (`--gen-rust`)
 
 ### LSP and VS Code
@@ -81,10 +91,17 @@ cargo build --release
 ### Run the CLI on sample model
 
 ```bash
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
-cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > model.dot
+cargo run -p pf_dsl -- models/examples/sample.pf --report
+cargo run -p pf_dsl -- models/examples/sample.pf --obligations
+cargo run -p pf_dsl -- models/examples/sample.pf --alloy > model.als
+cargo run -p pf_dsl -- models/examples/sample.pf --lean-model > model.lean
+cargo run -p pf_dsl -- models/examples/sample.pf --lean-coverage-json
+cargo run -p pf_dsl -- models/examples/sample.pf --decomposition-closure
+cargo run -p pf_dsl -- models/examples/sample.pf --wrspm-report
+cargo run -p pf_dsl -- models/examples/sample.pf --traceability-md --impact=domain:Controller --impact-hops=2
+cargo run -p pf_dsl -- models/examples/sample.pf --dot > model.dot
+cargo run -p pf_dsl -- models/system/tool_spec.pf --report
+cargo run -p pf_dsl -- models/system/tool_spec.pf --obligations
 ```
 
 ### Install VS Code extension
@@ -98,7 +115,11 @@ cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > model.dot
 - `crates/pf_dsl`: AST, parser, resolver, validator, generators
 - `crates/pf_lsp`: language server
 - `editors/code`: VS Code extension
+- `models`: repository-level PF models (including the canonical system model)
 - `docs/proposals`: product and engineering roadmap proposals
+- `docs/adoption`: onboarding, positioning, and pilot evidence assets
+- `metamodel`: machine-readable invariant catalog and rule-to-test contract
+- `theory`: Lean research-track project scaffold
 - `docs/runbooks`: operational playbooks (release rollback, supply chain, triage)
 - `scripts`: local automation for reports, obligations, metrics, and smoke checks
 
@@ -157,10 +178,18 @@ The roadmap is maintained as proposal documents in `docs/proposals`.
   - paper-driven prioritization (traceability, executable obligations, design bridge)
 - `docs/proposals/007-execution-backlog-m1-m3.md`
   - execution-ready backlog for near-term milestones
+- `metamodel/invariant-catalog.json`
+  - authoritative M1 invariant contract (`rule_id -> validator mapping -> tests`)
 - `docs/proposals/008-pf-ddd-sysmlv2-integration.md`
   - PF -> DDD/SysML v2 integration track (`CIM -> PIM -> PSM`)
 - `docs/proposals/008-execution-backlog-m4-m5.md`
   - execution-ready backlog for marks, generators, trace contract, API spike
+- `docs/proposals/009-pf-canonical-retro-addendum.md`
+  - canonical PF alignment addendum (explicit PF views, decomposition closure, concern coverage gate)
+- `docs/proposals/010-pf-wrspm-contract-bridge.md`
+  - WRSPM (`W/R/S/P/M`) operational bridge from PF artifacts to explicit contract evidence
+- `docs/proposals/010-execution-backlog-m6-m7.md`
+  - execution-ready backlog for WRSPM bridge coverage and executable adequacy evidence
 
 ## Dogfooding and Reporting
 
@@ -170,6 +199,20 @@ Generate internal artifacts from dogfooding PF models:
 bash ./scripts/generate_dogfooding_reports.sh
 bash ./scripts/generate_obligation_reports.sh
 DOGFOODING_TRIAGE_MODE=all ./scripts/generate_dogfooding_triage_report.sh
+bash ./scripts/run_adoption_demo.sh
+bash ./scripts/generate_pilot_evidence_report.sh
+```
+
+Canonical model of this toolchain:
+
+```bash
+cargo run -p pf_dsl -- models/system/tool_spec.pf --report
+bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
+bash ./scripts/check_system_model.sh
+bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 2
+bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf
+bash ./scripts/check_requirement_formal_closure.sh --model models/system/tool_spec.pf --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json
+bash ./scripts/generate_formal_gap_report.sh --model models/system/tool_spec.pf --closure-rows-tsv .ci-artifacts/system-model/tool_spec.formal-closure.rows.tsv --traceability-csv .ci-artifacts/system-model/tool_spec.traceability.csv
 ```
 
 Generate engineering metrics:

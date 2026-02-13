@@ -128,11 +128,79 @@ pub fn generate_alloy(problem: &Problem) -> String {
                 writeln!(&mut output, "  // R: {}", assertion.text).unwrap();
             }
         }
+
+        let spec_alloy = find_alloy_assertions(
+            problem,
+            &argument.specification_set,
+            AssertionScope::Specification,
+        );
+        let world_alloy = find_alloy_assertions(
+            problem,
+            &argument.world_set,
+            AssertionScope::WorldProperties,
+        );
+        let req_alloy = find_alloy_assertions(
+            problem,
+            &argument.requirement_set,
+            AssertionScope::RequirementAssertions,
+        );
+
+        if !spec_alloy.is_empty() || !world_alloy.is_empty() || !req_alloy.is_empty() {
+            for assertion in &spec_alloy {
+                writeln!(&mut output, "  ({})", assertion.text).unwrap();
+            }
+            for assertion in &world_alloy {
+                writeln!(&mut output, "  ({})", assertion.text).unwrap();
+            }
+
+            if !req_alloy.is_empty() {
+                if req_alloy.len() == 1 {
+                    writeln!(&mut output, "  not ({})", req_alloy[0].text).unwrap();
+                } else {
+                    writeln!(&mut output, "  not (").unwrap();
+                    for (index, assertion) in req_alloy.iter().enumerate() {
+                        let suffix = if index + 1 == req_alloy.len() {
+                            ""
+                        } else {
+                            " and"
+                        };
+                        writeln!(&mut output, "    ({}){}", assertion.text, suffix).unwrap();
+                    }
+                    writeln!(&mut output, "  )").unwrap();
+                }
+            }
+        }
+
         writeln!(&mut output, "}}").unwrap();
         writeln!(&mut output, "run {} for 6", pred_name).unwrap();
     }
 
     output
+}
+
+fn find_alloy_assertions<'a>(
+    problem: &'a Problem,
+    set_name: &str,
+    scope: AssertionScope,
+) -> Vec<&'a Assertion> {
+    let Some(set) = problem
+        .assertion_sets
+        .iter()
+        .find(|set| set.name == set_name && set.scope == scope)
+    else {
+        return Vec::new();
+    };
+
+    set.assertions
+        .iter()
+        .filter(|assertion| {
+            assertion
+                .language
+                .as_deref()
+                .map(|language| language.eq_ignore_ascii_case("Alloy"))
+                .unwrap_or(false)
+        })
+        .collect()
 }
 
 fn frame_name(frame: &FrameType) -> &str {
@@ -258,6 +326,7 @@ mod tests {
             name: name.to_string(),
             kind,
             role,
+            marks: vec![],
             span: span(),
             source_path: None,
         }
@@ -286,6 +355,7 @@ mod tests {
                 name: "req".to_string(),
                 frame: FrameType::RequiredBehavior,
                 phenomena: vec![],
+                marks: vec![],
                 constraint: "ok".to_string(),
                 constrains: None,
                 reference: None,
@@ -379,6 +449,7 @@ mod tests {
                 name: "R1".to_string(),
                 frame: FrameType::RequiredBehavior,
                 phenomena: vec![],
+                marks: vec![],
                 constraint: "maintain room".to_string(),
                 constrains: Some(reference("Room")),
                 reference: None,
@@ -439,5 +510,72 @@ mod tests {
         assert!(alloy.contains("one sig Machine extends Domain"));
         assert!(alloy.contains("pred Obl_A1"));
         assert!(alloy.contains("S_control and W_base entail R_goal"));
+    }
+
+    #[test]
+    fn emits_counterexample_formula_from_alloy_assertions() {
+        let problem = Problem {
+            name: "Adequacy".to_string(),
+            span: span(),
+            imports: vec![],
+            domains: vec![
+                domain("Machine", DomainKind::Causal, DomainRole::Machine),
+                domain("Device", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S_control".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "some Machine".to_string(),
+                        language: Some("Alloy".to_string()),
+                        span: span(),
+                    }],
+                    span: span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W_base".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "some Device".to_string(),
+                        language: Some("Alloy".to_string()),
+                        span: span(),
+                    }],
+                    span: span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R_goal".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "some Device".to_string(),
+                        language: Some("Alloy".to_string()),
+                        span: span(),
+                    }],
+                    span: span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A_exec".to_string(),
+                specification_set: "S_control".to_string(),
+                world_set: "W_base".to_string(),
+                requirement_set: "R_goal".to_string(),
+                specification_ref: reference("S_control"),
+                world_ref: reference("W_base"),
+                requirement_ref: reference("R_goal"),
+                span: span(),
+                source_path: None,
+            }],
+        };
+
+        let alloy = generate_alloy(&problem);
+        assert!(alloy.contains("(some Machine)"));
+        assert!(alloy.contains("(some Device)"));
+        assert!(alloy.contains("not (some Device)"));
     }
 }

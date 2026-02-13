@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::ast::*;
+    use crate::parser::parse;
     use crate::validator::{validate, validate_with_sources, ValidationError};
     use std::path::PathBuf;
 
@@ -27,6 +28,7 @@ mod tests {
             name: name.to_string(),
             kind,
             role,
+            marks: vec![],
             span: mock_span(),
             source_path: None,
         }
@@ -86,6 +88,43 @@ mod tests {
     }
 
     #[test]
+    fn test_invalid_domain_role_lexical_machine_uses_domain_source_path() {
+        let problem = Problem {
+            name: "InvalidDomainRoleSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![Domain {
+                name: "M".to_string(),
+                kind: DomainKind::Lexical,
+                role: DomainRole::Machine,
+                marks: vec![],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("domain.pf")),
+            }],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let invalid_role = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InvalidDomainRole(ref name, _, _) if name == "M"
+            )
+        });
+        assert!(invalid_role.is_some());
+        assert_eq!(
+            invalid_role.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("domain.pf"))
+        );
+    }
+
+    #[test]
     fn test_duplicate_domain_uses_duplicate_source_path() {
         let problem = Problem {
             name: "DuplicateDomainSources".to_string(),
@@ -96,6 +135,7 @@ mod tests {
                     name: "D1".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("a.pf")),
                 },
@@ -103,6 +143,7 @@ mod tests {
                     name: "D1".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("b.pf")),
                 },
@@ -292,6 +333,84 @@ mod tests {
     }
 
     #[test]
+    fn test_interface_requires_at_least_two_connections() {
+        let problem = Problem {
+            name: "InterfaceConnectionsSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![Interface {
+                name: "I1".to_string(),
+                connects: vec![mock_ref("M")],
+                shared_phenomena: vec![phenomenon("P1", PhenomenonType::Event, "M", "A", "M")],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("i.pf")),
+            }],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let insufficient = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InterfaceInsufficientConnections(ref name, _, _) if name == "I1"
+            )
+        });
+        assert!(insufficient.is_some());
+        assert_eq!(
+            insufficient.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("i.pf"))
+        );
+    }
+
+    #[test]
+    fn test_interface_requires_at_least_one_phenomenon() {
+        let problem = Problem {
+            name: "InterfacePhenomenaSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![Interface {
+                name: "I1".to_string(),
+                connects: vec![mock_ref("M"), mock_ref("A")],
+                shared_phenomena: vec![],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("i.pf")),
+            }],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let missing_phenomena = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InterfaceWithoutPhenomena(ref name, _, _) if name == "I1"
+            )
+        });
+        assert!(missing_phenomena.is_some());
+        assert_eq!(
+            missing_phenomena.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("i.pf"))
+        );
+    }
+
+    #[test]
     fn test_invalid_causality_uses_matching_source_path() {
         let problem = Problem {
             name: "InterfaceCausalitySource".to_string(),
@@ -363,6 +482,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -373,6 +493,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -458,6 +579,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("a.pf")),
                 },
@@ -468,6 +590,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("b.pf")),
                 },
@@ -494,6 +617,47 @@ mod tests {
     }
 
     #[test]
+    fn test_undefined_domain_in_requirement_uses_matching_source_path() {
+        let problem = Problem {
+            name: "RequirementUndefinedDomainSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("Missing")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                marks: vec![],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("req.pf")),
+            }],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let undefined = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::UndefinedDomainInRequirement(ref domain, ref requirement, _)
+                    if domain == "Missing" && requirement == "R1"
+            )
+        });
+        assert!(undefined.is_some());
+        assert_eq!(
+            undefined.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("req.pf"))
+        );
+    }
+
+    #[test]
     fn test_missing_required_field_uses_matching_requirement_source_path() {
         let problem = Problem {
             name: "RequirementSourceMapping".to_string(),
@@ -516,6 +680,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: Span { start: 1, end: 2 },
                     source_path: Some(PathBuf::from("a.pf")),
                 },
@@ -526,6 +691,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: Span { start: 10, end: 11 },
                     source_path: Some(PathBuf::from("b.pf")),
                 },
@@ -571,6 +737,7 @@ mod tests {
                 reference: Some(mock_ref("Op")),
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -605,6 +772,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -651,6 +819,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("a.pf")),
                 },
@@ -661,6 +830,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("b.pf")),
                 },
@@ -763,6 +933,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -798,6 +969,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -836,6 +1008,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -874,6 +1047,7 @@ mod tests {
                 reference: Some(mock_ref("M")),
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -930,6 +1104,7 @@ mod tests {
                 reference: Some(mock_ref("Ops")),
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -992,6 +1167,7 @@ mod tests {
                 reference: Some(mock_ref("User")),
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1030,6 +1206,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1117,6 +1294,7 @@ mod tests {
                     reference: Some(mock_ref("Viewer")),
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -1127,6 +1305,7 @@ mod tests {
                     reference: Some(mock_ref("Viewer")),
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -1137,6 +1316,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -1148,6 +1328,229 @@ mod tests {
 
         let result = validate(&problem);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_correctness_argument_valid_contract() {
+        let problem = Problem {
+            name: "CorrectnessValid".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "machine strategy".to_string(),
+                        language: Some("FOL".to_string()),
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world remains stable".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "requirement is met".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A1".to_string(),
+                specification_set: "S".to_string(),
+                world_set: "W".to_string(),
+                requirement_set: "R".to_string(),
+                specification_ref: mock_ref("S"),
+                world_ref: mock_ref("W"),
+                requirement_ref: mock_ref("R"),
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_specification_vocabulary_accepts_shared_interface_refs() {
+        let problem = Problem {
+            name: "SpecificationVocabularyValid".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("Plant", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-Plant",
+                &["M", "Plant"],
+                vec![
+                    phenomenon("Sense", PhenomenonType::Event, "Plant", "M", "Plant"),
+                    phenomenon("Act", PhenomenonType::Event, "M", "Plant", "M"),
+                ],
+            )],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "controller uses [[M-Plant.Sense]] and emits [[M-Plant.Act]]"
+                            .to_string(),
+                        language: Some("LTL".to_string()),
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "plant follows causal dynamics".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "target behavior achieved".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A1".to_string(),
+                specification_set: "S".to_string(),
+                world_set: "W".to_string(),
+                requirement_set: "R".to_string(),
+                specification_ref: mock_ref("S"),
+                world_ref: mock_ref("W"),
+                requirement_ref: mock_ref("R"),
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_specification_vocabulary_rejects_non_interface_ref_uses_assertion_set_source_path() {
+        let problem = Problem {
+            name: "SpecificationVocabularyInvalid".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("Plant", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-Plant",
+                &["M", "Plant"],
+                vec![phenomenon(
+                    "Sense",
+                    PhenomenonType::Event,
+                    "Plant",
+                    "M",
+                    "Plant",
+                )],
+            )],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "controller claims [[M-Plant.Missing]]".to_string(),
+                        language: Some("LTL".to_string()),
+                        span: Span { start: 50, end: 70 },
+                    }],
+                    span: Span { start: 40, end: 80 },
+                    source_path: Some(PathBuf::from("spec.pf")),
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world fact".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "requirement fact".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A1".to_string(),
+                specification_set: "S".to_string(),
+                world_set: "W".to_string(),
+                requirement_set: "R".to_string(),
+                specification_ref: mock_ref("S"),
+                world_ref: mock_ref("W"),
+                requirement_ref: mock_ref("R"),
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let invalid = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InvalidSpecificationVocabulary(ref set, ref token, _)
+                    if set == "S" && token == "M-Plant.Missing"
+            )
+        });
+        assert!(invalid.is_some());
+        assert_eq!(
+            invalid.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("spec.pf"))
+        );
     }
 
     #[test]
@@ -1524,6 +1927,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1587,6 +1991,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1630,6 +2035,102 @@ mod tests {
     }
 
     #[test]
+    fn test_undefined_domain_in_subproblem_uses_matching_source_path() {
+        let problem = Problem {
+            name: "SubproblemUndefinedDomainSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-A",
+                &["M", "A"],
+                vec![phenomenon("Observe", PhenomenonType::Event, "A", "M", "A")],
+            )],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("A")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                marks: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            subproblems: vec![Subproblem {
+                name: "Core".to_string(),
+                machine: Some(mock_ref("M")),
+                participants: vec![mock_ref("M"), mock_ref("A"), mock_ref("Ghost")],
+                requirements: vec![mock_ref("R1")],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("sub.pf")),
+            }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let undefined = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::UndefinedDomainInSubproblem(ref domain, ref name, _)
+                    if domain == "Ghost" && name == "Core"
+            )
+        });
+        assert!(undefined.is_some());
+        assert_eq!(
+            undefined.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("sub.pf"))
+        );
+    }
+
+    #[test]
+    fn test_undefined_requirement_in_subproblem_uses_matching_source_path() {
+        let problem = Problem {
+            name: "SubproblemUndefinedRequirementSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![Subproblem {
+                name: "Core".to_string(),
+                machine: Some(mock_ref("M")),
+                participants: vec![mock_ref("M"), mock_ref("A")],
+                requirements: vec![mock_ref("R_missing")],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("sub.pf")),
+            }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let undefined = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::UndefinedRequirementInSubproblem(ref requirement, ref name, _)
+                    if requirement == "R_missing" && name == "Core"
+            )
+        });
+        assert!(undefined.is_some());
+        assert_eq!(
+            undefined.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("sub.pf"))
+        );
+    }
+
+    #[test]
     fn test_subproblem_rejects_requirement_outside_participants() {
         let problem = Problem {
             name: "SubproblemBoundary".to_string(),
@@ -1659,6 +2160,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1708,6 +2210,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1725,5 +2228,275 @@ mod tests {
 
         let result = validate(&problem);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_mark_contract_accepts_valid_domain_and_requirement_marks() {
+        let input = r#"
+            problem: MarkContractValid
+            domain Tool kind causal role machine
+            domain Payments kind causal role given marks: {
+                @ddd.bounded_context("Payments")
+                @ddd.aggregate_root
+                @sysml.block
+            }
+            domain Console kind biddable role given
+            interface "Tool-Payments" connects Tool, Payments {
+                shared: {
+                    phenomenon Sync : event [Tool -> Payments] controlledBy Tool
+                }
+            }
+            interface "Tool-Console" connects Tool, Console {
+                shared: {
+                    phenomenon Render : event [Tool -> Console] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: InformationDisplay
+                reference: Console
+                constrains: Payments
+                marks: {
+                    @sysml.requirement
+                    @ddd.application_service("RenderPaymentState")
+                    @formal.argument("A1")
+                    @mda.layer("PIM")
+                }
+            }
+            worldProperties W1 {
+                assert "WorldStable" @LeanAtom
+            }
+            specification S1 {
+                assert "RenderPaymentState" @LeanAtom
+            }
+            requirementAssertions Rset {
+                assert "RenderPaymentState" @LeanAtom
+            }
+            correctnessArgument A1 {
+                prove S1 and W1 entail Rset
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_conflicting_domain_marks() {
+        let input = r#"
+            problem: MarkContractConflict
+            domain Tool kind causal role machine
+            domain Ledger kind causal role given marks: {
+                @ddd.bounded_context("Accounting")
+                @ddd.aggregate_root
+                @ddd.value_object
+            }
+            interface "Tool-Ledger" connects Tool, Ledger {
+                shared: {
+                    phenomenon Sync : event [Tool -> Ledger] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: RequiredBehavior
+                constrains: Ledger
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidDomainMark(domain, message, _)
+                    if domain == "Ledger" && message.contains("mutually exclusive")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_requirement_mark_with_missing_value() {
+        let input = r#"
+            problem: MarkContractRequirementMissingValue
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            domain User kind biddable role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            interface "Tool-User" connects Tool, User {
+                shared: {
+                    phenomenon Show : event [Tool -> User] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                reference: User
+                constrains: Store
+                marks: {
+                    @ddd.application_service
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1" && message.contains("requires non-empty string value")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_formal_argument_with_missing_value() {
+        let input = r#"
+            problem: MarkContractFormalArgumentMissingValue
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                constrains: Store
+                marks: {
+                    @formal.argument
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1" && message.contains("mark 'formal.argument' requires non-empty string value")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_formal_argument_unknown_correctness_argument() {
+        let input = r#"
+            problem: MarkContractFormalArgumentUnknownReference
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                constrains: Store
+                marks: {
+                    @formal.argument("A_missing")
+                }
+            }
+            worldProperties W1 {
+                assert "WorldStable" @LeanAtom
+            }
+            specification S1 {
+                assert "PersistCalled" @LeanAtom
+            }
+            requirementAssertions Rset {
+                assert "PersistCalled" @LeanAtom
+            }
+            correctnessArgument A1 {
+                prove S1 and W1 entail Rset
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1"
+                        && message.contains("references undefined correctness argument 'A_missing'")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_mda_layer_with_missing_value() {
+        let input = r#"
+            problem: MarkContractMdaLayerMissingValue
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                constrains: Store
+                marks: {
+                    @mda.layer
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1" && message.contains("mark 'mda.layer' requires non-empty string value")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_mda_layer_with_unsupported_value() {
+        let input = r#"
+            problem: MarkContractMdaLayerUnsupportedValue
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                constrains: Store
+                marks: {
+                    @mda.layer("M3")
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1" && message.contains("must be one of: CIM, PIM, PSM")
+            )
+        }));
     }
 }

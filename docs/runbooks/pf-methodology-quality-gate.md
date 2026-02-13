@@ -1,0 +1,144 @@
+# PF Methodology Quality Gate
+
+This runbook makes the current PF methodology operational for day-to-day engineering work.
+
+## Scope
+
+Use this gate for any PR that changes one or more PF models (`*.pf`) or model semantics.
+
+## Methodology (Required Order)
+
+1. Apply model-first governance: update canonical self-model requirements/decomposition before implementation artifacts.
+2. Model the problem world first (domains, interfaces, requirements), then adjust implementation artifacts.
+3. Enforce frame fit and strict semantic validation through `pf_dsl`.
+4. Verify decomposition closure (no uncovered requirements, no orphan subproblems, no boundary mismatches).
+5. Verify frame concern coverage (`requirement -> correctness argument`) with explicit uncovered/deferred entries.
+6. Generate correctness evidence (`obligations`, `alloy`) from the validated model.
+7. Generate PIM artifacts (`ddd-pim`, `sysml2-text`, `sysml2-json`) from the same validated source model.
+8. Generate source-to-target trace map and enforce coverage (`trace-map.json` status must be `PASS`).
+9. Generate traceability artifacts (relationship matrix + impact analysis with generated DDD/SysML targets).
+10. Generate adequacy differential evidence (`rust_verdict` vs `formal_verdict` proxy) for selected obligation class.
+11. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
+12. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
+13. Generate Lean research-track artifacts (`--lean-model`, `--lean-coverage-json`, non-blocking Lean smoke, differential report).
+14. For the canonical system model, run `check_system_model.sh` to generate per-requirement formal closure report (mapping derived from requirement `@formal.argument(...)` marks, constrained to declared correctness arguments, plus formalized status/mode).
+15. Generate formal gap report (`requirement -> frame -> subproblem`) to prioritize closure debt by model structure.
+
+## One-command Gate
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh <model.pf> [more models...]
+```
+
+Default output location:
+
+- `.ci-artifacts/pf-quality-gate/<model-name>/`
+
+Generated artifacts per model:
+
+- `report.md`
+- `decomposition-closure.md`
+- `obligations.md`
+- `concern-coverage.md`
+- `ddd-pim.md`
+- `sysml2.txt`
+- `sysml2.json`
+- `trace-map.json`
+- `model.als`
+- `traceability.md`
+- `traceability.csv`
+- `adequacy-differential.md`
+- `adequacy-evidence.json`
+- `implementation-trace.md`
+- `implementation-trace.policy.status`
+- `lean-model.lean`
+- `lean-coverage.json`
+- `lean-check.json`
+- `lean-differential.md`
+- `lean-differential.json`
+- `wrspm.md`
+- `wrspm.json`
+- `formal-closure.md`
+- `formal-closure.json`
+- `formal-closure.rows.tsv`
+- `formal-gap.md`
+- `formal-gap.json`
+
+## Impact-aware Gate (Optional)
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh \
+  --impact requirement:SafeOperation,domain:Controller \
+  --impact-hops 2 \
+  models/examples/sample.pf
+```
+
+## Controlled Exceptions
+
+If a PR intentionally carries open decomposition closure items (for exploratory or staged work), run:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh --allow-open-closure <model.pf>
+```
+
+If a PR intentionally carries open concern coverage items (for staged argumentation), run:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh --allow-open-concern-coverage <model.pf>
+```
+
+If you want implementation trace to act as a blocking gate (instead of informative mode), run:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh --enforce-implementation-trace <model.pf>
+```
+
+If you want staged policy enforcement (instead of strict all-PASS), run:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh \
+  --implementation-policy models/system/implementation_trace_policy.env \
+  --enforce-implementation-policy \
+  <model.pf>
+```
+
+Document the reason in PR "Why" and list closure/coverage debt explicitly.
+
+`--impact` and `--impact-hops` are forwarded to `pf_dsl --traceability-*`
+for impact-aware traceability artifacts. Decomposition closure and concern
+coverage verdict rules remain unchanged. Implementation trace is informative by
+default and blocking only when explicitly enforced.
+
+To require a minimum formalized Lean correctness-argument floor in the quality gate:
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh \
+  --min-lean-formalized-args 2 \
+  <model.pf>
+```
+
+To promote formal checks to blocking policy (default is non-blocking):
+
+```bash
+bash ./scripts/run_pf_quality_gate.sh --enforce-formal-track <model.pf>
+```
+
+CI can use `PF_FORMAL_TRACK_BLOCKING=1` to switch formal-track jobs from non-blocking to blocking.
+
+## CI Alignment
+
+CI publishes equivalent evidence through dogfooding artifacts:
+
+- `dogfooding-reports`
+- `dogfooding-obligations`
+- `system-model` (includes decomposition closure, concern coverage, PIM artifacts, trace-map coverage, adequacy evidence, implementation trace, and WRSPM outputs)
+- `formal-backend`
+- `sysml-api-smoke` (non-blocking, env-gated smoke JSON/log bundle)
+
+SysML API smoke is gated via `PF_SYSML_API_SMOKE_ENABLED=1` in CI environment.
+
+For agent-assisted model execution, run:
+
+```bash
+bash ./scripts/check_codex_self_model_contract.sh
+```

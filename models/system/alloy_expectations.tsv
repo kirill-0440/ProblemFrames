@@ -1,0 +1,8 @@
+# model_pattern|command_pattern|expected|note|required
+# First matching rule wins. Patterns use shell-style globs.
+# Use SAT unless a command is intentionally expected to be UNSAT.
+
+models/system/tool_spec.pf|Obl_A_roadmap_alignment|SAT|Canonical roadmap alignment obligation must be satisfiable|required
+models/system/tool_spec.pf|Obl_A_roadmap_alignment_formal|SAT|Canonical formal-track obligation must be satisfiable|required
+
+*|*|SAT|Default contract for current rollout; add specific UNSAT overrides above when introduced.|optional

@@ -3,6 +3,9 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use thiserror::Error;
 
+const FORMAL_ARGUMENT_MARK: &str = "formal.argument";
+const MDA_LAYER_MARK: &str = "mda.layer";
+
 #[derive(Error, Debug)]
 pub enum ValidationError {
     #[error("Domain '{0}' referenced in interface '{1}' but not defined.")]
@@ -53,6 +56,14 @@ pub enum ValidationError {
     InvalidCorrectnessArgument(String, String, Span),
     #[error("Duplicate correctness argument definition: '{0}'")]
     DuplicateCorrectnessArgument(String, Span, usize),
+    #[error(
+        "Specification assertion set '{0}' references non-shared interface vocabulary '{1}'. Use [[Interface.Phenomenon]] from declared shared phenomena."
+    )]
+    InvalidSpecificationVocabulary(String, String, Span),
+    #[error("Domain '{0}' has invalid mark contract: {1}")]
+    InvalidDomainMark(String, String, Span),
+    #[error("Requirement '{0}' has invalid mark contract: {1}")]
+    InvalidRequirementMark(String, String, Span),
 }
 
 #[derive(Debug)]
@@ -84,6 +95,236 @@ fn connected_to_machine(problem: &Problem, domain_name: &str) -> bool {
     })
 }
 
+fn shared_interface_vocabulary(problem: &Problem) -> HashSet<String> {
+    let mut vocabulary = HashSet::new();
+    for interface in &problem.interfaces {
+        for phenomenon in &interface.shared_phenomena {
+            vocabulary.insert(format!("{}.{}", interface.name, phenomenon.name));
+        }
+    }
+    vocabulary
+}
+
+fn extract_interface_vocab_tokens(assertion: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut cursor = 0;
+
+    while let Some(start_offset) = assertion[cursor..].find("[[") {
+        let start = cursor + start_offset + 2;
+        let Some(end_offset) = assertion[start..].find("]]") else {
+            break;
+        };
+        let end = start + end_offset;
+        let token = assertion[start..end].trim();
+        if !token.is_empty() {
+            tokens.push(token.to_string());
+        }
+        cursor = end + 2;
+    }
+
+    tokens
+}
+
+fn validate_domain_marks(domain: &Domain, errors: &mut Vec<ValidationError>) {
+    if domain.marks.is_empty() {
+        return;
+    }
+
+    let allowed_marks = [
+        "ddd.bounded_context",
+        "ddd.aggregate_root",
+        "ddd.value_object",
+        "ddd.external_system",
+        "sysml.block",
+        "sysml.port",
+        "sysml.signal",
+    ];
+
+    let mut seen_marks = HashSet::new();
+    let mut has_bounded_context = false;
+
+    for mark in &domain.marks {
+        if !allowed_marks.contains(&mark.name.as_str()) {
+            errors.push(ValidationError::InvalidDomainMark(
+                domain.name.clone(),
+                format!("unsupported mark '{}'", mark.name),
+                mark.span,
+            ));
+            continue;
+        }
+
+        if !seen_marks.insert(mark.name.as_str()) {
+            errors.push(ValidationError::InvalidDomainMark(
+                domain.name.clone(),
+                format!("duplicate mark '{}'", mark.name),
+                mark.span,
+            ));
+            continue;
+        }
+
+        match mark.name.as_str() {
+            "ddd.bounded_context" => {
+                has_bounded_context = true;
+                let is_missing = mark
+                    .value
+                    .as_ref()
+                    .map(|value| value.trim().is_empty())
+                    .unwrap_or(true);
+                if is_missing {
+                    errors.push(ValidationError::InvalidDomainMark(
+                        domain.name.clone(),
+                        "mark 'ddd.bounded_context' requires non-empty string value".to_string(),
+                        mark.span,
+                    ));
+                }
+            }
+            "ddd.aggregate_root"
+            | "ddd.value_object"
+            | "ddd.external_system"
+            | "sysml.block"
+            | "sysml.port"
+            | "sysml.signal" => {
+                if mark.value.is_some() {
+                    errors.push(ValidationError::InvalidDomainMark(
+                        domain.name.clone(),
+                        format!("mark '{}' does not accept a value", mark.name),
+                        mark.span,
+                    ));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let has_aggregate_root = seen_marks.contains("ddd.aggregate_root");
+    let has_value_object = seen_marks.contains("ddd.value_object");
+    if has_aggregate_root && has_value_object {
+        errors.push(ValidationError::InvalidDomainMark(
+            domain.name.clone(),
+            "marks 'ddd.aggregate_root' and 'ddd.value_object' are mutually exclusive".to_string(),
+            domain.span,
+        ));
+    }
+
+    if (has_aggregate_root || has_value_object) && !has_bounded_context {
+        errors.push(ValidationError::InvalidDomainMark(
+            domain.name.clone(),
+            "marks 'ddd.aggregate_root'/'ddd.value_object' require 'ddd.bounded_context'"
+                .to_string(),
+            domain.span,
+        ));
+    }
+}
+
+fn validate_requirement_marks(requirement: &Requirement, errors: &mut Vec<ValidationError>) {
+    if requirement.marks.is_empty() {
+        return;
+    }
+
+    let allowed_marks = [
+        "sysml.requirement",
+        "ddd.application_service",
+        FORMAL_ARGUMENT_MARK,
+        MDA_LAYER_MARK,
+    ];
+    let mut seen_marks = HashSet::new();
+
+    for mark in &requirement.marks {
+        if !allowed_marks.contains(&mark.name.as_str()) {
+            errors.push(ValidationError::InvalidRequirementMark(
+                requirement.name.clone(),
+                format!("unsupported mark '{}'", mark.name),
+                mark.span,
+            ));
+            continue;
+        }
+
+        if !seen_marks.insert(mark.name.as_str()) {
+            errors.push(ValidationError::InvalidRequirementMark(
+                requirement.name.clone(),
+                format!("duplicate mark '{}'", mark.name),
+                mark.span,
+            ));
+            continue;
+        }
+
+        match mark.name.as_str() {
+            "sysml.requirement" => {
+                if mark.value.is_some() {
+                    errors.push(ValidationError::InvalidRequirementMark(
+                        requirement.name.clone(),
+                        "mark 'sysml.requirement' does not accept a value".to_string(),
+                        mark.span,
+                    ));
+                }
+            }
+            "ddd.application_service" => {
+                let is_missing = mark
+                    .value
+                    .as_ref()
+                    .map(|value| value.trim().is_empty())
+                    .unwrap_or(true);
+                if is_missing {
+                    errors.push(ValidationError::InvalidRequirementMark(
+                        requirement.name.clone(),
+                        "mark 'ddd.application_service' requires non-empty string value"
+                            .to_string(),
+                        mark.span,
+                    ));
+                }
+            }
+            FORMAL_ARGUMENT_MARK => {
+                let is_missing = mark
+                    .value
+                    .as_ref()
+                    .map(|value| value.trim().is_empty())
+                    .unwrap_or(true);
+                if is_missing {
+                    errors.push(ValidationError::InvalidRequirementMark(
+                        requirement.name.clone(),
+                        format!(
+                            "mark '{}' requires non-empty string value",
+                            FORMAL_ARGUMENT_MARK
+                        ),
+                        mark.span,
+                    ));
+                }
+            }
+            MDA_LAYER_MARK => {
+                let value = mark.value.as_ref().map(|value| value.trim()).unwrap_or("");
+                if value.is_empty() {
+                    errors.push(ValidationError::InvalidRequirementMark(
+                        requirement.name.clone(),
+                        format!("mark '{}' requires non-empty string value", MDA_LAYER_MARK),
+                        mark.span,
+                    ));
+                } else if value != "CIM" && value != "PIM" && value != "PSM" {
+                    errors.push(ValidationError::InvalidRequirementMark(
+                        requirement.name.clone(),
+                        format!("mark '{}' must be one of: CIM, PIM, PSM", MDA_LAYER_MARK),
+                        mark.span,
+                    ));
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn requirement_formal_argument_mark(requirement: &Requirement) -> Option<(String, Span)> {
+    requirement.marks.iter().find_map(|mark| {
+        if mark.name != FORMAL_ARGUMENT_MARK {
+            return None;
+        }
+
+        mark.value
+            .as_ref()
+            .map(|value| value.trim())
+            .filter(|value| !value.is_empty())
+            .map(|value| (value.to_string(), mark.span))
+    })
+}
+
 pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     let mut errors = vec![];
     let mut defined_domains = HashSet::new();
@@ -110,6 +351,8 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                 ));
             }
         }
+
+        validate_domain_marks(domain, &mut errors);
     }
 
     if machine_count > 1 {
@@ -266,6 +509,8 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     }
 
     for req in &problem.requirements {
+        validate_requirement_marks(req, &mut errors);
+
         if let Some(ref c) = req.constrains {
             if !defined_domains.contains(&c.name) {
                 errors.push(ValidationError::UndefinedDomainInRequirement(
@@ -427,6 +672,25 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
         }
     }
 
+    let interface_vocabulary = shared_interface_vocabulary(problem);
+    for assertion_set in &problem.assertion_sets {
+        if assertion_set.scope != AssertionScope::Specification {
+            continue;
+        }
+
+        for assertion in &assertion_set.assertions {
+            for token in extract_interface_vocab_tokens(&assertion.text) {
+                if !interface_vocabulary.contains(&token) {
+                    errors.push(ValidationError::InvalidSpecificationVocabulary(
+                        assertion_set.name.clone(),
+                        token,
+                        assertion.span,
+                    ));
+                }
+            }
+        }
+    }
+
     let mut correctness_argument_names = HashSet::new();
     for (index, argument) in problem.correctness_arguments.iter().enumerate() {
         if !correctness_argument_names.insert(argument.name.clone()) {
@@ -507,6 +771,21 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                 ),
                 argument.span,
             )),
+        }
+    }
+
+    for requirement in &problem.requirements {
+        if let Some((argument_name, span)) = requirement_formal_argument_mark(requirement) {
+            if !correctness_argument_names.contains(argument_name.as_str()) {
+                errors.push(ValidationError::InvalidRequirementMark(
+                    requirement.name.clone(),
+                    format!(
+                        "mark '{}' references undefined correctness argument '{}'",
+                        FORMAL_ARGUMENT_MARK, argument_name
+                    ),
+                    span,
+                ));
+            }
         }
     }
 
@@ -841,7 +1120,10 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         | ValidationError::InvalidSubproblem(_, _, span)
         | ValidationError::DuplicateAssertionSet(_, span, _)
         | ValidationError::EmptyAssertionSet(_, span)
-        | ValidationError::InvalidCorrectnessArgument(_, _, span) => *span,
+        | ValidationError::InvalidCorrectnessArgument(_, _, span)
+        | ValidationError::InvalidSpecificationVocabulary(_, _, span)
+        | ValidationError::InvalidDomainMark(_, _, span)
+        | ValidationError::InvalidRequirementMark(_, _, span) => *span,
         ValidationError::DuplicateCorrectnessArgument(_, span, _) => *span,
     }
 }
@@ -1019,6 +1301,15 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
                     .find(|argument| argument.name == *name)
             })
             .and_then(|argument| argument.source_path.clone()),
+        ValidationError::InvalidSpecificationVocabulary(name, _, span) => problem
+            .assertion_sets
+            .iter()
+            .find(|set| {
+                set.name == *name
+                    && (set.span == *span || set.assertions.iter().any(|a| a.span == *span))
+            })
+            .or_else(|| problem.assertion_sets.iter().find(|set| set.name == *name))
+            .and_then(|set| set.source_path.clone()),
         ValidationError::MissingSubproblemField(name, _, span)
         | ValidationError::InvalidSubproblem(name, _, span) => problem
             .subproblems
@@ -1079,6 +1370,34 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
             .correctness_arguments
             .get(*index)
             .and_then(|argument| argument.source_path.clone()),
+        ValidationError::InvalidDomainMark(name, _, span) => problem
+            .domains
+            .iter()
+            .find(|domain| domain.name == *name && domain.span == *span)
+            .or_else(|| {
+                problem.domains.iter().find(|domain| {
+                    domain.name == *name && domain.marks.iter().any(|mark| mark.span == *span)
+                })
+            })
+            .or_else(|| problem.domains.iter().find(|domain| domain.name == *name))
+            .and_then(|domain| domain.source_path.clone()),
+        ValidationError::InvalidRequirementMark(name, _, span) => problem
+            .requirements
+            .iter()
+            .find(|requirement| requirement.name == *name && requirement.span == *span)
+            .or_else(|| {
+                problem.requirements.iter().find(|requirement| {
+                    requirement.name == *name
+                        && requirement.marks.iter().any(|mark| mark.span == *span)
+                })
+            })
+            .or_else(|| {
+                problem
+                    .requirements
+                    .iter()
+                    .find(|requirement| requirement.name == *name)
+            })
+            .and_then(|requirement| requirement.source_path.clone()),
     }
 }
 

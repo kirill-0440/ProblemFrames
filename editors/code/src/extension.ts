@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { workspace, ExtensionContext } from "vscode";
+import { workspace, ExtensionContext, commands, window } from "vscode";
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -45,6 +45,57 @@ export function activate(context: ExtensionContext) {
   );
 
   client.start();
+  context.subscriptions.push(client);
+
+  const impactCommand = commands.registerCommand(
+    "problemFrames.showImpactedRequirements",
+    async () => {
+      const editor = window.activeTextEditor;
+      if (!editor || editor.document.languageId !== "pf") {
+        void window.showInformationMessage(
+          "Open a PF model and place cursor on a domain or requirement symbol.",
+        );
+        return;
+      }
+
+      try {
+        const result = await client.sendRequest<{
+          seedKind: string;
+          seedId: string;
+          impactedRequirements: string[];
+          maxHops: number;
+        } | null>("problemFrames/impactRequirements", {
+          textDocument: { uri: editor.document.uri.toString() },
+          position: editor.selection.active,
+          maxHops: 2,
+        });
+
+        if (!result) {
+          void window.showInformationMessage(
+            "No impact seed resolved at cursor position.",
+          );
+          return;
+        }
+
+        const impacted =
+          result.impactedRequirements.length === 0
+            ? "(none)"
+            : result.impactedRequirements.join(", ");
+        void window.showInformationMessage(
+          `Impact (${result.seedKind}:${result.seedId}, hops=${result.maxHops}): ${impacted}`,
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Unknown impact request error";
+        void window.showErrorMessage(
+          `Failed to query impacted requirements: ${message}`,
+        );
+      }
+    },
+  );
+  context.subscriptions.push(impactCommand);
 }
 
 export function deactivate(): Thenable<void> | undefined {

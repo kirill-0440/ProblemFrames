@@ -1,0 +1,9 @@
+problem: PF_DSL_Tool
+
+// Canonical entrypoint for the system self-model.
+// Keep top-level composition here and move content changes to imported modules.
+import "domains.pf"
+import "interfaces.pf"
+import "requirements.pf"
+import "subproblems.pf"
+import "arguments.pf"

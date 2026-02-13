@@ -14,6 +14,38 @@ trap 'rm -rf "${tmp_dir}"' EXIT
 bash "${REPO_ROOT}/scripts/generate_dogfooding_reports.sh" "${tmp_dir}"
 bash "${REPO_ROOT}/scripts/generate_dogfooding_triage_report.sh" "${tmp_dir}"
 bash "${REPO_ROOT}/scripts/generate_obligation_reports.sh" "${tmp_dir}"
+bash "${REPO_ROOT}/scripts/generate_adequacy_expectations.sh" \
+  --selection "${REPO_ROOT}/models/system/adequacy_selection.env" \
+  --output "${REPO_ROOT}/models/system/adequacy_expectations.tsv" \
+  --check
+bash "${REPO_ROOT}/scripts/run_adoption_demo.sh" "${tmp_dir}/adoption-demo" "${REPO_ROOT}/models/examples/sample.pf"
+bash "${REPO_ROOT}/scripts/generate_pilot_evidence_report.sh" "${REPO_ROOT}/docs/adoption/pilot-evidence.tsv" "${tmp_dir}/adoption-pilot"
+bash "${REPO_ROOT}/scripts/run_pf_quality_gate.sh" \
+  --impact requirement:R009-A5-AgentAssistedModelExecution \
+  --impact-hops 2 \
+  "${REPO_ROOT}/models/system/tool_spec.pf"
+bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
+  --model "${REPO_ROOT}/models/system/tool_spec.pf" \
+  --min-formalized-args 2 \
+  --output-dir "${tmp_dir}/lean-formal"
+bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
+  --model "${REPO_ROOT}/models/system/tool_spec.pf" \
+  --lean-status-json "${tmp_dir}/lean-formal/lean-check.json" \
+  --output-dir "${tmp_dir}/lean-differential"
+bash "${REPO_ROOT}/scripts/run_sysml_api_smoke.sh" "${tmp_dir}/sysml-api"
+bash "${REPO_ROOT}/scripts/check_system_model.sh" "${tmp_dir}/system-model"
+bash "${REPO_ROOT}/scripts/generate_model_progress_report.sh" \
+  --model "${REPO_ROOT}/models/system/tool_spec.pf" \
+  --output "${tmp_dir}/system-model/tool_spec.progress.smoke.md" \
+  --json "${tmp_dir}/system-model/tool_spec.progress.smoke.json" \
+  --status-file "${tmp_dir}/system-model/tool_spec.progress.smoke.status" \
+  --implementation-trace-md "${tmp_dir}/system-model/tool_spec.implementation-trace.md" \
+  --implementation-trace-status "${tmp_dir}/system-model/tool_spec.implementation-trace.status" \
+  --adequacy-closure-tsv "${tmp_dir}/system-model/tool_spec.adequacy-closure.tsv" \
+  --adequacy-status "${tmp_dir}/system-model/tool_spec.adequacy.status" \
+  --skip-generate-inputs \
+  --enforce-pass
+bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
 bash "${REPO_ROOT}/scripts/run_formal_backend_check.sh" "${tmp_dir}/formal-backend"
 
 echo "Script smoke tests passed."

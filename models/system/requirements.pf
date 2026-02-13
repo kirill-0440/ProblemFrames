@@ -1,0 +1,546 @@
+// 3. Requirements
+// Requirement IDs align with roadmap/proposals in docs/proposals.
+
+// Proposal 001: product maturity roadmap.
+requirement "R001-A1-DeterministicMergeGateSet" {
+    frame: RequiredBehavior
+    constraint: "Mainline merges stay protected by deterministic CI, CodeQL, and dependency-review guardrails with stale-run cancellation"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: CI
+}
+
+requirement "R001-A2-ReleaseSmokeRollbackReadiness" {
+    frame: CommandedBehavior
+    constraint: "Release smoke checks and rollback playbook support controlled recovery from broken tagged releases"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: ReleaseWorkflow
+    reference: Developer
+}
+
+requirement "R001-A3-SupplyChainEvidenceBundle" {
+    frame: Transformation
+    constraint: "Release flow emits verifiable checksum, SBOM, and provenance evidence bundles"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: SecurityEvidence
+}
+
+requirement "R001-A4-WeeklyOpsMetricsCadence" {
+    frame: SimpleWorkpieces
+    constraint: "Weekly engineering metrics and triage artifacts are generated and preserved for operational decisions"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: OpsMetrics
+    reference: Developer
+}
+
+// Proposal 002: formal verification track.
+requirement "R002-F1-ProductionValidatorPrimaryPath" {
+    frame: RequiredBehavior
+    constraint: "Rust validator remains the production interactive path while formal checks execute in parallel non-blocking stages"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+}
+
+requirement "R002-F2-AlloyFirstExecutableBaseline" {
+    frame: Transformation
+    constraint: "At least one executable formal check path remains Alloy-first with reproducible artifacts"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: AdequacyEvidence
+}
+
+requirement "R002-F3-FormalDifferentialTriaging" {
+    frame: SimpleWorkpieces
+    constraint: "Differential mismatch reports between structural and formal verdicts remain explicit and triage-ready"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: AdequacyEvidence
+    reference: Developer
+}
+
+// Proposal 003: adoption and GTM focus.
+requirement "R003-G1-ICPUseCasePackaging" {
+    frame: InformationDisplay
+    constraint: "Repository exposes a concrete ICP-facing workflow narrative and artifacts for first-team onboarding"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: AdoptionAssets
+    reference: Developer
+}
+
+requirement "R003-G2-TimeToFirstValueWorkflow" {
+    frame: SimpleWorkpieces
+    constraint: "A narrow time-to-first-value path remains documented and scriptable for new teams"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: AdoptionAssets
+    reference: Developer
+}
+
+requirement "R003-G3-PilotFeedbackOperationalLoop" {
+    frame: CommandedBehavior
+    constraint: "Pilot-team feedback is captured and linked to roadmap decisions and follow-up artifacts"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: AdoptionAssets
+    reference: PilotTeam
+}
+
+// Proposal 004: Lean 4 integration (research track).
+requirement "R004-L1-LeanTrackSeparation" {
+    frame: RequiredBehavior
+    constraint: "Lean verification assets stay isolated from the interactive validator path and remain non-blocking"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+}
+
+requirement "R004-L2-LeanEmitterDeterminism" {
+    frame: Transformation
+    constraint: "Lean model emission is deterministic with source-aware naming and mapping"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: LeanTheory
+}
+
+requirement "R004-L3-LeanBuildFeedbackLoop" {
+    frame: CommandedBehavior
+    constraint: "Lean checks can be triggered and return deterministic pass/fail summaries"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: LeanToolchain
+    reference: Developer
+}
+
+requirement "R004-L4-LeanDifferentialContract" {
+    frame: SimpleWorkpieces
+    constraint: "Lean-versus-Rust differential verification policy is documented before any blocking-gate promotion"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: ProposalBacklog
+    reference: Developer
+}
+
+// Proposal 005: v0.2.0 scope and exit criteria.
+requirement "R005-G1-ReleaseReliabilityContract" {
+    frame: RequiredBehavior
+    constraint: "CI quality gates execute reliably for merge-time contract enforcement"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: CI
+}
+
+requirement "R005-G2-DogfoodingPlanningLoop" {
+    frame: SimpleWorkpieces
+    constraint: "Dogfooding model updates stay reviewable and synchronized with planning artifacts"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: SourceFile
+    reference: Developer
+}
+
+requirement "R005-G3-EditorFeedbackQuality" {
+    frame: InformationDisplay
+    constraint: "Developer receives source-aware diagnostics without leaving the editor loop"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: Editor
+    reference: Developer
+}
+
+// Proposal 006: machine-checkable semantics baseline.
+requirement "R006-S1-MetamodelV2AsContract" {
+    frame: SimpleWorkpieces
+    constraint: "PF metamodel entities and invariant catalog stay versioned as contract artifacts"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: MetamodelContract
+    reference: Developer
+}
+
+requirement "R006-S2-StrictSemanticInvariantSet" {
+    frame: RequiredBehavior
+    constraint: "Strict semantic invariant checks stay deterministic and comprehensive in validator and CI flows"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: CI
+}
+
+requirement "R006-S3-ImportAwareDiagnosticPrecision" {
+    frame: InformationDisplay
+    constraint: "Multi-file diagnostics and navigation preserve precise source-file ownership and ranges"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: Editor
+    reference: Developer
+}
+
+requirement "R006-S4-FrameFitDecompositionDiscipline" {
+    frame: RequiredBehavior
+    constraint: "Frame-fit and decomposition constraints are enforced before PF quality claims"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: CI
+}
+
+requirement "R006-S5-WSRObligationArtifactPipeline" {
+    frame: Transformation
+    constraint: "W, S, and R assertion sets generate machine-checkable obligation artifacts"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: ObligationArtifacts
+}
+
+requirement "R006-S6-NonBlockingFormalBackendStage" {
+    frame: CommandedBehavior
+    constraint: "Formal backend checks run in a non-blocking stage until promotion thresholds are reached"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+    reference: Developer
+}
+
+// Proposal 007: M1-M3 execution backlog.
+requirement "R007-M1-MetamodelContract" {
+    frame: SimpleWorkpieces
+    constraint: "Invariant catalog and rule-test matrix remain versioned and consistent"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: MetamodelContract
+    reference: Developer
+}
+
+requirement "R007-M2-TraceabilityImpactExports" {
+    frame: Transformation
+    constraint: "Relationship graph updates produce deterministic traceability and impact exports"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: TraceabilityStore
+}
+
+requirement "R007-M3-ExecutableObligationCheck" {
+    frame: RequiredBehavior
+    constraint: "At least one obligation class is checked in CI with reproducible evidence"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+}
+
+// Proposal 008: M4a-M5a integration track.
+requirement "R008-M4A-MarkValidationContract" {
+    frame: RequiredBehavior
+    constraint: "Mark parsing and validation rules run in CI without weakening strict PF checks"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: CI
+}
+
+requirement "R008-M4B-FileBasedPIMGeneration" {
+    frame: Transformation
+    constraint: "Validated PF models generate deterministic DDD and SysML PIM artifacts"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: PIMArtifacts
+}
+
+requirement "R008-M4C-TraceCoverageContract" {
+    frame: Transformation
+    constraint: "Generated PIM artifacts maintain complete source-to-target trace coverage"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: TraceabilityStore
+}
+
+requirement "R008-M5A-ControlledAPIBridgeSpike" {
+    frame: CommandedBehavior
+    constraint: "API bridge spike can be triggered safely and return a reproducible status verdict"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: SysMLApi
+    reference: Developer
+}
+
+// Proposal 009: canonical PF alignment addendum.
+requirement "R009-A1-ExplicitPFViews" {
+    frame: Transformation
+    constraint: "Context, problem, and decomposition views are generated explicitly from validated models"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: GeneratedCode
+}
+
+requirement "R009-A2-DecompositionClosureArtifact" {
+    frame: Transformation
+    constraint: "Decomposition closure is exported as an operational artifact for review and CI"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: TraceabilityStore
+}
+
+requirement "R009-A3-FrameConcernCoverageGate" {
+    frame: RequiredBehavior
+    constraint: "Frame concern coverage is evaluated as a quality gate before roadmap completion claims"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+}
+
+requirement "R009-A4-OneCommandPFQualityGate" {
+    frame: SimpleWorkpieces
+    constraint: "A one-command PF quality gate script runs and emits deterministic review artifacts"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: SourceFile
+    reference: Developer
+}
+
+requirement "R009-A5-AgentAssistedModelExecution" {
+    frame: SimpleWorkpieces
+    constraint: "Developer can delegate implementation work to Codex while preserving the same deterministic PF quality gate outputs"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: SourceFile
+    reference: Codex
+}
+
+requirement "R009-A6-ModelFirstChangeControl" {
+    frame: SimpleWorkpieces
+    constraint: "All production changes are introduced through canonical self-model updates before implementation artifacts are updated"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: SourceFile
+    reference: Codex
+}
+
+requirement "R009-A7-ModelDirectoryPFContainment" {
+    frame: SimpleWorkpieces
+    constraint: "All repository PF models, fixtures, and standard templates are stored under models/"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: SourceFile
+    reference: Codex
+}
+
+// Proposal 010: WRSPM contract bridge (M6-M7).
+requirement "R010-M6-WRSPMBridgeCoverage" {
+    frame: Transformation
+    constraint: "Validated PF models produce deterministic WRSPM bridge outputs with explicit unresolved sections"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: WRSPMContract
+}
+
+requirement "R010-M6-SVocabularyDiscipline" {
+    frame: RequiredBehavior
+    constraint: "Specification-level checks enforce shared-interface vocabulary discipline for WRSPM S"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: CI
+}
+
+requirement "R010-M6-WRSPMReportModes" {
+    frame: Transformation
+    constraint: "CLI supports deterministic WRSPM Markdown and JSON report modes"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PIM")
+    }
+    constrains: WRSPMContract
+}
+
+requirement "R010-M7-ObligationSelectionControl" {
+    frame: CommandedBehavior
+    constraint: "The first adequacy-oriented obligation class is explicitly selected before execution"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+    reference: Developer
+}
+
+requirement "R010-M7-ExecutableAdequacyEvidence" {
+    frame: RequiredBehavior
+    constraint: "Executable pass and fail adequacy evidence is produced in CI for the selected class"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+}
+
+requirement "R010-M7-DifferentialVerdictArtifacts" {
+    frame: Transformation
+    constraint: "Differential rust-versus-formal verdict artifacts are generated deterministically"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: AdequacyEvidence
+}
+
+requirement "R010-M7-FormalClosureCoverageReport" {
+    frame: Transformation
+    constraint: "Lean formal checks export per-correctness-argument formalized-versus-skipped coverage with explicit reasons and entailment mode (mirror or subset over W/S projections)"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+        @mda.layer("PSM")
+    }
+    constrains: AdequacyEvidence
+}
+
+requirement "R010-M7-MinFormalClosureFloor" {
+    frame: RequiredBehavior
+    constraint: "Canonical system-model gate enforces full formalized correctness-argument floor for the LeanAtom track"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+}
+
+requirement "R010-M7-RequirementFormalClosureTrace" {
+    frame: Transformation
+    constraint: "Canonical system-model gate exports per-requirement formal-closure status mapped only to declared correctness arguments and fails on open entries"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+        @mda.layer("PIM")
+    }
+    constrains: AdequacyEvidence
+}
+
+requirement "R010-M7-FormalGapReport" {
+    frame: Transformation
+    constraint: "PF quality gate exports requirement-to-subproblem-to-frame formal gap reports with explicit closure reasons"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+        @mda.layer("PIM")
+    }
+    constrains: AdequacyEvidence
+}
+
+requirement "R010-M7-FormalTrackPolicySwitch" {
+    frame: CommandedBehavior
+    constraint: "Formal-track checks remain non-blocking by default and can be promoted to blocking through explicit gate policy switch"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+    reference: Developer
+}
+
+// Proposal 011: execution-hardening contracts.
+requirement "R011-H1-SolverBackedAdequacyEvidence" {
+    frame: Transformation
+    constraint: "Adequacy differential verdicts are derived from Alloy solver SAT/UNSAT expectation checks for the selected obligation class, and canonical gates fail closed on non-PASS adequacy status"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+        @mda.layer("PSM")
+    }
+    constrains: AdequacyEvidence
+}
+
+requirement "R011-H3-CommandLevelAdequacyCoverage" {
+    frame: Transformation
+    constraint: "Adequacy and canonical Alloy checks use command-level expectation manifests with required-rule coverage, and unmatched required rules fail the gate"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+        @mda.layer("PSM")
+    }
+    constrains: AdequacyEvidence
+    reference: CI
+}
+
+requirement "R011-H2-DiffBasedModelFirstGate" {
+    frame: RequiredBehavior
+    constraint: "When implementation artifacts change, the same git diff must include canonical self-model updates under models/system/*.pf before the change is accepted"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+    reference: Codex
+}

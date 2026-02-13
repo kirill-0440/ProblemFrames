@@ -868,3 +868,131 @@ fn dogfooding_flow_handles_import_collision_and_definition_rebind() {
 
     let _ = fs::remove_dir_all(dir);
 }
+
+#[test]
+fn impact_request_resolves_cross_file_import_model() {
+    let dir = make_temp_dir("pf-lsp-impact-cross-file");
+    let root_path = dir.join("root.pf");
+    let import_path = dir.join("imp.pf");
+    let root_uri = file_uri(&root_path);
+
+    let imported_text = "problem: Imported\ndomain Machine kind causal role machine\ndomain Operator kind biddable role given\ndomain Sensor kind causal role given\ninterface \"Operator-Machine\" connects Operator, Machine {\n  shared: { phenomenon Command : command [Operator -> Machine] controlledBy Operator }\n}\ninterface \"Sensor-Machine\" connects Sensor, Machine {\n  shared: { phenomenon Reading : value [Sensor -> Machine] controlledBy Sensor }\n}\nrequirement \"R_imported\" {\n  frame: InformationDisplay\n  reference: Operator\n  constrains: Sensor\n}\nsubproblem ImportedFlow {\n  machine: Machine\n  participants: Machine, Operator, Sensor\n  requirements: \"R_imported\"\n}\n";
+    fs::write(&import_path, imported_text).expect("failed to write imported model");
+
+    let root_text = "problem: Root\nimport \"imp.pf\"\nrequirement \"R_root\" {\n  frame: InformationDisplay\n  reference: Operator\n  constrains: Sensor\n}\nsubproblem RootFlow {\n  machine: Machine\n  participants: Machine, Operator, Sensor\n  requirements: \"R_root\"\n}\n";
+    let sensor_position = position_of(root_text, "Sensor", 0);
+    fs::write(&root_path, root_text).expect("failed to write root model");
+
+    let mut client = TestLspClient::spawn();
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": root_uri,
+                "languageId": "pf",
+                "version": 1,
+                "text": root_text
+            }
+        }
+    }));
+
+    let _ =
+        client.wait_for(|msg| msg.get("method") == Some(&json!("textDocument/publishDiagnostics")));
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 40,
+        "method": "problemFrames/impactRequirements",
+        "params": {
+            "textDocument": { "uri": file_uri(&root_path) },
+            "position": {
+                "line": sensor_position.line,
+                "character": sensor_position.character
+            },
+            "maxHops": 2
+        }
+    }));
+
+    let response = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(40)))
+        .expect("did not receive impact response");
+    assert_ne!(response.get("result"), Some(&Value::Null));
+    assert_eq!(response["result"]["seedKind"].as_str(), Some("domain"));
+    assert_eq!(response["result"]["seedId"].as_str(), Some("Sensor"));
+
+    let impacted = response["result"]["impactedRequirements"]
+        .as_array()
+        .expect("impactedRequirements must be array")
+        .iter()
+        .filter_map(|item| item.as_str())
+        .collect::<Vec<_>>();
+    assert!(impacted.contains(&"R_root"));
+    assert!(impacted.contains(&"R_imported"));
+
+    let _ = fs::remove_dir_all(dir);
+}
+
+#[test]
+fn impact_request_large_model_stays_under_timeout() {
+    let dir = make_temp_dir("pf-lsp-impact-perf");
+    let path = dir.join("perf.pf");
+    let uri = file_uri(&path);
+
+    let mut text = String::from("problem: Perf\n");
+    text.push_str("domain M kind causal role machine\n");
+    for i in 0..120 {
+        text.push_str(&format!("domain D{i} kind causal role given\n"));
+        text.push_str(&format!(
+            "interface \"M-D{i}\" connects M, D{i} {{\n  shared: {{ phenomenon Ev{i} : event [D{i} -> M] controlledBy D{i} }}\n}}\n"
+        ));
+        text.push_str(&format!(
+            "requirement \"R{i}\" {{\n  frame: RequiredBehavior\n  constrains: D{i}\n}}\n"
+        ));
+    }
+    fs::write(&path, &text).expect("failed to write perf model");
+    let target_position = position_of(&text, "\"R60\"", 0);
+
+    let mut client = TestLspClient::spawn();
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": uri,
+                "languageId": "pf",
+                "version": 1,
+                "text": text
+            }
+        }
+    }));
+
+    let _ =
+        client.wait_for(|msg| msg.get("method") == Some(&json!("textDocument/publishDiagnostics")));
+
+    let started = Instant::now();
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 41,
+        "method": "problemFrames/impactRequirements",
+        "params": {
+            "textDocument": { "uri": file_uri(&path) },
+            "position": {
+                "line": target_position.line,
+                "character": target_position.character
+            },
+            "maxHops": 2
+        }
+    }));
+
+    let response = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(41)))
+        .expect("did not receive perf impact response");
+    assert_ne!(response.get("result"), Some(&Value::Null));
+    assert!(
+        started.elapsed() < Duration::from_secs(2),
+        "impact request exceeded performance budget"
+    );
+
+    let _ = fs::remove_dir_all(dir);
+}

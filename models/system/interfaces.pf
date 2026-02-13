@@ -1,0 +1,213 @@
+// 2. Interfaces
+
+// Developer edits the SourceFile
+interface "Dev-Source" connects Developer, SourceFile {
+    shared: {
+        phenomenon Edit : event [Developer -> SourceFile] controlledBy Developer
+    }
+}
+
+// Developer delegates tasks to Codex and receives reviewed outputs.
+interface "Dev-Codex" connects Developer, Codex {
+    shared: {
+        phenomenon RequestImplementation : command [Developer -> Codex] controlledBy Developer
+        phenomenon ReceiveWorkSummary : value [Codex -> Developer] controlledBy Codex
+    }
+}
+
+// Developer invokes tool actions
+interface "Dev-Tool" connects Developer, Tool {
+    shared: {
+        phenomenon RunValidation : command [Developer -> Tool] controlledBy Developer
+        phenomenon RunGeneration : command [Developer -> Tool] controlledBy Developer
+        phenomenon RunPFQualityGate : command [Developer -> Tool] controlledBy Developer
+        phenomenon TriggerApiBridgeSpike : command [Developer -> Tool] controlledBy Developer
+    }
+}
+
+// Codex invokes the same toolchain commands while implementing requested work.
+interface "Codex-Tool" connects Codex, Tool {
+    shared: {
+        phenomenon RunValidationByAgent : command [Codex -> Tool] controlledBy Codex
+        phenomenon RunGenerationByAgent : command [Codex -> Tool] controlledBy Codex
+        phenomenon RunPFQualityGateByAgent : command [Codex -> Tool] controlledBy Codex
+    }
+}
+
+// Tool reads the SourceFile
+interface "Tool-Source" connects Tool, SourceFile {
+    shared: {
+        phenomenon FileContent : value [SourceFile -> Tool] controlledBy SourceFile
+        phenomenon FileExists : state [SourceFile -> Tool] controlledBy SourceFile
+    }
+}
+
+// Codex reads and applies patches to SourceFile while operating in the modeling loop.
+interface "Codex-Source" connects Codex, SourceFile {
+    shared: {
+        phenomenon ReadModelText : value [SourceFile -> Codex] controlledBy SourceFile
+        phenomenon ApplyModelPatch : event [Codex -> SourceFile] controlledBy Codex
+    }
+}
+
+// Tool interacts with Editor via LSP
+interface "Tool-Editor" connects Tool, Editor {
+    shared: {
+        phenomenon DidOpen : event [Editor -> Tool] controlledBy Editor
+        phenomenon DidChange : event [Editor -> Tool] controlledBy Editor
+        phenomenon PublishDiagnostics : event [Tool -> Editor] controlledBy Tool
+        phenomenon Hover : event [Editor -> Tool] controlledBy Editor
+        phenomenon HoverInfo : value [Tool -> Editor] controlledBy Tool
+    }
+}
+
+// Tool generates output (Code or DOT)
+interface "Tool-Output" connects Tool, GeneratedCode {
+    shared: {
+        phenomenon WriteFile : event [Tool -> GeneratedCode] controlledBy Tool
+        phenomenon CodeStructure : value [Tool -> GeneratedCode] controlledBy Tool
+    }
+}
+
+// Developer views the Output/Editor
+interface "Dev-View" connects Developer, Editor, GeneratedCode {
+    shared: {
+        phenomenon SeeSquiggles : event [Editor -> Developer] controlledBy Editor
+        phenomenon ReadCode : value [GeneratedCode -> Developer] controlledBy GeneratedCode
+    }
+}
+
+// Tool publishes quality gate runs and receives verdicts from CI.
+interface "Tool-CI" connects Tool, CI {
+    shared: {
+        phenomenon TriggerQualityGate : event [Tool -> CI] controlledBy Tool
+        phenomenon PublishCIVerdict : event [CI -> Tool] controlledBy CI
+    }
+}
+
+// Tool writes and reloads metamodel contract artifacts (M1 alignment).
+interface "Tool-Metamodel" connects Tool, MetamodelContract {
+    shared: {
+        phenomenon ExportInvariantCatalog : value [Tool -> MetamodelContract] controlledBy Tool
+        phenomenon ImportRuleMatrix : value [MetamodelContract -> Tool] controlledBy MetamodelContract
+    }
+}
+
+// Tool persists traceability exports and reuses them for impact reports (M2/M4c alignment).
+interface "Tool-Traceability" connects Tool, TraceabilityStore {
+    shared: {
+        phenomenon PersistTraceMap : value [Tool -> TraceabilityStore] controlledBy Tool
+        phenomenon LoadImpactSlice : value [TraceabilityStore -> Tool] controlledBy TraceabilityStore
+        phenomenon PersistDecompositionClosure : value [Tool -> TraceabilityStore] controlledBy Tool
+        phenomenon PersistConcernCoverage : value [Tool -> TraceabilityStore] controlledBy Tool
+    }
+}
+
+// Tool generates DDD and SysML packages in file-based form (M4b alignment).
+interface "Tool-PIMArtifacts" connects Tool, PIMArtifacts {
+    shared: {
+        phenomenon GenerateDDDPim : value [Tool -> PIMArtifacts] controlledBy Tool
+        phenomenon GenerateSysMLText : value [Tool -> PIMArtifacts] controlledBy Tool
+        phenomenon GenerateSysMLJson : value [Tool -> PIMArtifacts] controlledBy Tool
+    }
+}
+
+// Optional API bridge communication for SysML repository integration (M5a alignment).
+interface "Tool-SysMLApi" connects Tool, SysMLApi {
+    shared: {
+        phenomenon PushModelPackage : event [Tool -> SysMLApi] controlledBy Tool
+        phenomenon PullBridgeStatus : event [SysMLApi -> Tool] controlledBy SysMLApi
+    }
+}
+
+// Tool projects validated PF models into WRSPM bridge artifacts (M6 alignment).
+interface "Tool-WRSPMContract" connects Tool, WRSPMContract {
+    shared: {
+        phenomenon GenerateWRSPMReport : value [Tool -> WRSPMContract] controlledBy Tool
+        phenomenon GenerateWRSPMJson : value [Tool -> WRSPMContract] controlledBy Tool
+        phenomenon LoadWRSPMCoverage : value [WRSPMContract -> Tool] controlledBy WRSPMContract
+    }
+}
+
+// Tool writes adequacy-oriented formal evidence and differential verdict artifacts (M7 alignment).
+interface "Tool-AdequacyEvidence" connects Tool, AdequacyEvidence {
+    shared: {
+        phenomenon PersistAdequacyRun : value [Tool -> AdequacyEvidence] controlledBy Tool
+        phenomenon PersistDifferentialVerdict : value [Tool -> AdequacyEvidence] controlledBy Tool
+        phenomenon PersistLeanCoverage : value [Tool -> AdequacyEvidence] controlledBy Tool
+        phenomenon PersistRequirementFormalClosure : value [Tool -> AdequacyEvidence] controlledBy Tool
+    }
+}
+
+// Tool orchestrates release smoke checks and consumes release-status feedback (proposal 001).
+interface "Tool-ReleaseWorkflow" connects Tool, ReleaseWorkflow {
+    shared: {
+        phenomenon TriggerReleaseSmoke : event [Tool -> ReleaseWorkflow] controlledBy Tool
+        phenomenon PublishReleaseStatus : event [ReleaseWorkflow -> Tool] controlledBy ReleaseWorkflow
+    }
+}
+
+// Tool emits and consumes supply-chain evidence bundles (proposal 001).
+interface "Tool-SecurityEvidence" connects Tool, SecurityEvidence {
+    shared: {
+        phenomenon GenerateSupplyChainBundle : value [Tool -> SecurityEvidence] controlledBy Tool
+        phenomenon LoadSupplyChainPolicy : value [SecurityEvidence -> Tool] controlledBy SecurityEvidence
+    }
+}
+
+// Tool updates engineering-metrics artifacts and reuses baseline signals (proposal 001).
+interface "Tool-OpsMetrics" connects Tool, OpsMetrics {
+    shared: {
+        phenomenon PublishMetricsSnapshot : value [Tool -> OpsMetrics] controlledBy Tool
+        phenomenon LoadMetricsBaseline : value [OpsMetrics -> Tool] controlledBy OpsMetrics
+    }
+}
+
+// Tool manages onboarding/demo artifacts and consumes pilot feedback (proposal 003).
+interface "Tool-AdoptionAssets" connects Tool, AdoptionAssets {
+    shared: {
+        phenomenon PublishOnboardingGuide : value [Tool -> AdoptionAssets] controlledBy Tool
+        phenomenon PublishDemoFlow : value [Tool -> AdoptionAssets] controlledBy Tool
+        phenomenon LoadPilotFeedback : value [AdoptionAssets -> Tool] controlledBy AdoptionAssets
+    }
+}
+
+// Pilot teams command trial runs and receive output summaries (proposal 003).
+interface "Pilot-Tool" connects PilotTeam, Tool {
+    shared: {
+        phenomenon RequestPilotRun : command [PilotTeam -> Tool] controlledBy PilotTeam
+        phenomenon ReceivePilotSummary : value [Tool -> PilotTeam] controlledBy Tool
+    }
+}
+
+// Tool emits Lean artifacts and reads theory status in the formal track (proposals 002/004).
+interface "Tool-LeanTheory" connects Tool, LeanTheory {
+    shared: {
+        phenomenon GenerateLeanModel : value [Tool -> LeanTheory] controlledBy Tool
+        phenomenon LoadLeanTheoryStatus : value [LeanTheory -> Tool] controlledBy LeanTheory
+    }
+}
+
+// Tool runs Lean checks in a dedicated environment and receives verdict events (proposals 002/004).
+interface "Tool-LeanToolchain" connects Tool, LeanToolchain {
+    shared: {
+        phenomenon RunLeanChecks : event [Tool -> LeanToolchain] controlledBy Tool
+        phenomenon PublishLeanVerdict : event [LeanToolchain -> Tool] controlledBy LeanToolchain
+    }
+}
+
+// Tool persists roadmap/proposal alignment state as operational work artifacts.
+interface "Tool-ProposalBacklog" connects Tool, ProposalBacklog {
+    shared: {
+        phenomenon PersistRoadmapAlignment : value [Tool -> ProposalBacklog] controlledBy Tool
+        phenomenon LoadProposalScope : value [ProposalBacklog -> Tool] controlledBy ProposalBacklog
+    }
+}
+
+// Tool persists machine-checkable obligation artifacts and reads schema status (proposal 006).
+interface "Tool-ObligationArtifacts" connects Tool, ObligationArtifacts {
+    shared: {
+        phenomenon PersistObligationReport : value [Tool -> ObligationArtifacts] controlledBy Tool
+        phenomenon LoadObligationSchemaStatus : value [ObligationArtifacts -> Tool] controlledBy ObligationArtifacts
+    }
+}

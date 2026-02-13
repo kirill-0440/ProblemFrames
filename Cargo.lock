@@ -326,6 +326,8 @@ dependencies = [
  "anyhow",
  "pest",
  "pest_derive",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -340,6 +342,15 @@ dependencies = [
  "serde",
  "serde_json",
  "url",
+]
+
+[[package]]
+name = "pf_sysml_api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

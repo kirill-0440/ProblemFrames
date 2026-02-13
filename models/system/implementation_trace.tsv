@@ -1,0 +1,250 @@
+# requirement_id|check_type|target|value|note
+# check_type: file_contains | file_exists | command_passes | manual_pending
+
+R001-A1-DeterministicMergeGateSet|file_exists|.github/workflows/ci.yml||CI workflow exists for deterministic merge checks
+R001-A1-DeterministicMergeGateSet|file_exists|.github/workflows/codeql.yml||CodeQL workflow exists
+R001-A1-DeterministicMergeGateSet|file_exists|.github/workflows/dependency-review.yml||dependency-review workflow exists
+R001-A1-DeterministicMergeGateSet|file_contains|.github/workflows/ci.yml|cancel-in-progress: true|stale CI runs are cancelled
+
+R001-A2-ReleaseSmokeRollbackReadiness|file_contains|.github/workflows/release-artifacts.yml|Smoke test pf_lsp startup|release smoke check for pf_lsp binary exists
+R001-A2-ReleaseSmokeRollbackReadiness|file_contains|.github/workflows/release-artifacts.yml|Smoke check VSIX contents|release smoke check for VSIX payload exists
+R001-A2-ReleaseSmokeRollbackReadiness|file_exists|docs/runbooks/release-rollback.md||rollback runbook exists
+
+R001-A3-SupplyChainEvidenceBundle|file_contains|.github/workflows/release-artifacts.yml|Generate release SBOM|SBOM generation is wired in release flow
+R001-A3-SupplyChainEvidenceBundle|file_contains|.github/workflows/release-artifacts.yml|Attest release bundle provenance|provenance attestation step exists
+R001-A3-SupplyChainEvidenceBundle|file_exists|docs/runbooks/supply-chain-verification.md||supply-chain verification runbook exists
+
+R001-A4-WeeklyOpsMetricsCadence|file_exists|scripts/generate_engineering_metrics_report.sh||engineering metrics script exists
+R001-A4-WeeklyOpsMetricsCadence|file_contains|.github/workflows/weekly-engineering-triage.yml|Generate engineering metrics report|weekly metrics workflow executes report generation
+R001-A4-WeeklyOpsMetricsCadence|file_exists|docs/runbooks/weekly-triage.md||weekly triage cadence runbook exists
+
+R002-F1-ProductionValidatorPrimaryPath|file_contains|docs/proposals/002-formal-verification-track.md|Keep Rust validator as production source of truth|formal track preserves Rust validator as primary production path
+R002-F1-ProductionValidatorPrimaryPath|file_contains|.github/workflows/ci.yml|Run formal backend check (non-blocking)|formal backend runs in non-blocking CI stage
+
+R002-F2-AlloyFirstExecutableBaseline|file_exists|scripts/run_alloy_solver_check.sh||Alloy solver check script exists
+R002-F2-AlloyFirstExecutableBaseline|file_contains|scripts/check_system_model.sh|run_alloy_solver_check.sh|canonical system-model gate executes Alloy solver check
+R002-F2-AlloyFirstExecutableBaseline|command_passes|tmp_dir="$(mktemp -d)" && bash ./scripts/run_alloy_solver_check.sh --model models/system/tool_spec.pf --output-dir "${tmp_dir}/alloy-solver" --report "${tmp_dir}/alloy-solver.md" --json "${tmp_dir}/alloy-solver.json" --status-file "${tmp_dir}/alloy-solver.status" && test "$(cat "${tmp_dir}/alloy-solver.status")" = "PASS"||Alloy-first formal backend path executes solver and yields PASS on canonical model
+
+R002-F3-FormalDifferentialTriaging|file_contains|scripts/run_adequacy_evidence.sh|category="rust_only_pass"|differential mismatch categories are explicit
+R002-F3-FormalDifferentialTriaging|file_exists|docs/formal-backend/adequacy-go-no-go-criteria.md||formal mismatch-governance criteria are documented
+
+R003-G1-ICPUseCasePackaging|file_exists|docs/proposals/003-adoption-and-gtm.md||ICP/adoption strategy proposal exists
+R003-G1-ICPUseCasePackaging|file_exists|docs/adoption/product-positioning.md||one-page product positioning memo exists
+R003-G1-ICPUseCasePackaging|file_exists|docs/adoption/canonical-use-case.md||canonical proof-of-value use case is documented
+
+R003-G2-TimeToFirstValueWorkflow|file_contains|README.md|## Quick Start|basic time-to-first-value quick-start path exists
+R003-G2-TimeToFirstValueWorkflow|file_exists|docs/adoption/start-in-30-min.md||dedicated 30-minute onboarding guide exists
+R003-G2-TimeToFirstValueWorkflow|command_passes|bash ./scripts/run_adoption_demo.sh .ci-artifacts/adoption-demo-local models/system/tool_spec.pf||scripted adoption demo flow executes and emits deterministic artifacts
+
+R003-G3-PilotFeedbackOperationalLoop|file_exists|docs/adoption/pilot-evidence.tsv||pilot baseline/post metrics dataset exists
+R003-G3-PilotFeedbackOperationalLoop|command_passes|bash ./scripts/generate_pilot_evidence_report.sh docs/adoption/pilot-evidence.tsv .ci-artifacts/adoption-pilot-local||pilot evidence report generation is executable
+
+R004-L1-LeanTrackSeparation|file_contains|docs/proposals/004-lean-integration-proposal.md|Separate Lifecycle|Lean track separation policy is documented
+R004-L1-LeanTrackSeparation|file_contains|.github/workflows/ci.yml|Run formal backend check (non-blocking)|formal checks are non-blocking in CI
+R004-L1-LeanTrackSeparation|file_contains|.github/workflows/ci.yml|lean-formal-smoke|Lean-specific non-blocking CI lane is declared
+
+R004-L2-LeanEmitterDeterminism|file_exists|crates/pf_dsl/src/lean_export.rs||Lean emitter module exists in pf_dsl
+R004-L2-LeanEmitterDeterminism|file_contains|crates/pf_dsl/src/main.rs|--lean-model|Lean model generation mode is exposed in CLI
+R004-L2-LeanEmitterDeterminism|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-model||Lean model generation runs deterministically from PF source
+
+R004-L3-LeanBuildFeedbackLoop|file_exists|theory/lakefile.lean||Lean theory project scaffold exists
+R004-L3-LeanBuildFeedbackLoop|file_exists|scripts/run_lean_formal_check.sh||Lean formal smoke script exists
+R004-L3-LeanBuildFeedbackLoop|command_passes|bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/lean-formal-local||Lean formal smoke path is executable in non-blocking mode
+
+R004-L4-LeanDifferentialContract|file_exists|docs/proposals/004-lean-integration-proposal.md||Lean differential contract intent is documented
+R004-L4-LeanDifferentialContract|file_exists|docs/formal-backend/lean-differential-policy.md||Lean differential promotion policy is documented
+R004-L4-LeanDifferentialContract|command_passes|bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/lean-differential-local||Lean-vs-Rust differential report pipeline executes
+
+R005-G1-ReleaseReliabilityContract|file_contains|scripts/run_pf_quality_gate.sh|--alloy|quality gate executes formal artifact generation
+R005-G1-ReleaseReliabilityContract|file_contains|scripts/smoke_test_scripts.sh|run_pf_quality_gate.sh|quality gate is exercised in smoke tests
+
+R005-G2-DogfoodingPlanningLoop|file_contains|scripts/generate_dogfooding_reports.sh|dogfooding|dogfooding report generation script exists
+R005-G2-DogfoodingPlanningLoop|file_contains|scripts/generate_dogfooding_triage_report.sh|dogfooding|dogfooding triage generation script exists
+
+R005-G3-EditorFeedbackQuality|file_contains|crates/pf_lsp/src/main.rs|publish_diagnostics|LSP diagnostics publishing path exists
+R005-G3-EditorFeedbackQuality|file_contains|crates/pf_lsp/tests/lsp_integration.rs|diagnostics_follow_did_change_buffer_state|LSP diagnostics behavior is covered by integration tests
+
+R006-S1-MetamodelV2AsContract|file_exists|metamodel/invariant-catalog.json||metamodel invariant catalog exists
+R006-S1-MetamodelV2AsContract|file_exists|metamodel/rule-test-matrix.tsv||rule-test matrix exists
+
+R006-S2-StrictSemanticInvariantSet|file_contains|crates/pf_dsl/src/validator.rs|expected at most one machine domain|core strict machine invariants are implemented
+R006-S2-StrictSemanticInvariantSet|file_contains|metamodel/invariant-catalog.json|PF-VAL-025|strict semantic rule catalog is maintained
+
+R006-S3-ImportAwareDiagnosticPrecision|file_contains|crates/pf_lsp/src/main.rs|source_path|LSP keeps source-path ownership for semantic entities
+R006-S3-ImportAwareDiagnosticPrecision|file_contains|crates/pf_lsp/tests/lsp_integration.rs|diagnostics_are_attributed_to_imported_file_uri|cross-file diagnostics attribution is covered
+
+R006-S4-FrameFitDecompositionDiscipline|file_contains|crates/pf_dsl/src/validator.rs|InvalidFrameDomain|frame-fit validation errors are implemented
+R006-S4-FrameFitDecompositionDiscipline|file_contains|scripts/run_pf_quality_gate.sh|--decomposition-closure|decomposition closure gate is enforced in quality flow
+
+R006-S5-WSRObligationArtifactPipeline|file_contains|crates/pf_dsl/src/main.rs|--obligations|obligation generation mode is exposed in CLI
+R006-S5-WSRObligationArtifactPipeline|file_contains|models/system/arguments.pf|prove S_roadmap_execution and W_roadmap_context entail R_roadmap_outcomes|self-model includes explicit W/S/R correctness argument
+
+R006-S6-NonBlockingFormalBackendStage|file_contains|.github/workflows/ci.yml|Run formal backend check (non-blocking)|formal backend stage is configured as non-blocking
+R006-S6-NonBlockingFormalBackendStage|file_contains|scripts/run_formal_backend_check.sh|run_alloy_solver_check.sh|formal backend stage executes solver checks while remaining policy-controlled non-blocking by default
+
+R007-M1-MetamodelContract|file_exists|metamodel/invariant-catalog.json||metamodel invariant catalog is versioned
+R007-M1-MetamodelContract|file_exists|metamodel/rule-test-matrix.tsv||rule-test matrix is versioned
+R007-M1-MetamodelContract|file_contains|crates/pf_dsl/src/metamodel_contract_tests.rs|test_metamodel_catalog_is_complete_and_well_formed|contract consistency tests exist
+
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/main.rs|--traceability-md|traceability markdown mode is exposed in CLI
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/main.rs|--traceability-csv|traceability CSV mode is exposed in CLI
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/traceability.rs|generate_traceability_markdown|traceability report generation exists
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_lsp/src/main.rs|problemFrames/impactRequirements|LSP impact request path exists
+R007-M2-TraceabilityImpactExports|file_contains|editors/code/src/extension.ts|showImpactedRequirements|VS Code command for impact query is wired
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_lsp/tests/lsp_integration.rs|impact_request_resolves_cross_file_import_model|cross-file import impact integration test exists
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_lsp/tests/lsp_integration.rs|impact_request_large_model_stays_under_timeout|impact request performance guard exists
+
+R007-M3-ExecutableObligationCheck|file_contains|scripts/run_formal_backend_check.sh|run_alloy_solver_check.sh|formal backend check executes generated obligations with real Alloy solver
+R007-M3-ExecutableObligationCheck|file_contains|crates/pf_dsl/src/formal_alloy.rs|generate_alloy|alloy backend generator exists
+R007-M3-ExecutableObligationCheck|file_contains|scripts/check_system_model.sh|tool_spec.alloy-solver.md|canonical CI gate publishes reproducible solver evidence artifacts
+R007-M3-ExecutableObligationCheck|file_exists|models/system/alloy_expectations.tsv||canonical SAT/UNSAT expectation contract is versioned in the self-model
+R007-M3-ExecutableObligationCheck|file_contains|scripts/check_system_model.sh|--expectations|canonical gate enforces solver verdicts against expectation contract
+R007-M3-ExecutableObligationCheck|file_contains|scripts/run_alloy_solver_check.sh|--expectations <path>|solver check supports explicit SAT/UNSAT expectation manifests
+R007-M3-ExecutableObligationCheck|command_passes|tmp_dir="$(mktemp -d)" && bash ./scripts/run_alloy_solver_check.sh --model models/system/tool_spec.pf --expectations models/system/alloy_expectations.tsv --output-dir "${tmp_dir}/alloy-solver" --report "${tmp_dir}/alloy-solver.md" --json "${tmp_dir}/alloy-solver.json" --status-file "${tmp_dir}/alloy-solver.status" && test "$(cat "${tmp_dir}/alloy-solver.status")" = "PASS"||canonical Alloy solver check matches SAT/UNSAT expectation contract
+
+R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/ast.rs|pub struct Mark|mark metadata is represented in AST
+R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/problem_frames.pest|marks_block|mark syntax is supported in grammar
+R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/validator.rs|InvalidDomainMark|domain mark contract validator rules exist
+R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/validator.rs|mda.layer|requirement mark contract validates explicit MDA layer marks
+R008-M4A-MarkValidationContract|file_contains|models/system/requirements.pf|@mda.layer("CIM")|canonical system requirements include explicit MDA layer grouping marks
+R008-M4A-MarkValidationContract|file_contains|scripts/check_codex_self_model_contract.sh|--requirements-tsv|codex self-model contract enforces valid requirement-layer inventory rows
+R008-M4A-MarkValidationContract|file_contains|metamodel/invariant-catalog.json|PF-VAL-026|mark validation rules are versioned in metamodel contract
+R008-M4A-MarkValidationContract|file_contains|metamodel/invariant-catalog.json|PF-VAL-027|requirement mark contract (including MDA layer values) is versioned in metamodel contract
+
+R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/main.rs|--ddd-pim|DDD PIM mode is exposed in CLI
+R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/main.rs|--sysml2-text|SysML text mode is exposed in CLI
+R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/main.rs|--sysml2-json|SysML JSON mode is exposed in CLI
+R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/pim.rs|generate_ddd_pim_markdown|PIM generator implementation exists
+
+R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/main.rs|--trace-map-json|source-to-target trace-map mode is exposed in CLI
+R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/trace_map.rs|TraceMapCoverage|trace-map coverage model is implemented
+R008-M4C-TraceCoverageContract|file_contains|scripts/run_pf_quality_gate.sh|Trace-map coverage status|quality gate evaluates trace-map coverage status
+R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/traceability.rs|generated targets|impact report includes generated DDD/SysML targets
+R008-M4C-TraceCoverageContract|file_exists|models/dogfooding/traceability_cross_model/main.pf||cross-model impact fixture exists
+R008-M4C-TraceCoverageContract|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --trace-map-json||trace-map generation command executes successfully
+
+R008-M5A-ControlledAPIBridgeSpike|file_exists|crates/pf_sysml_api/Cargo.toml||pf_sysml_api crate scaffold exists
+R008-M5A-ControlledAPIBridgeSpike|file_contains|crates/pf_sysml_api/src/main.rs|Usage: pf_sysml_api smoke|controlled API smoke entrypoint exists
+R008-M5A-ControlledAPIBridgeSpike|file_exists|scripts/run_sysml_api_smoke.sh||non-blocking smoke script exists
+R008-M5A-ControlledAPIBridgeSpike|file_contains|scripts/run_sysml_api_smoke.sh|PF_SYSML_API_SMOKE_ENABLED|smoke script supports explicit env gating
+R008-M5A-ControlledAPIBridgeSpike|file_contains|.github/workflows/ci.yml|sysml-api-smoke|non-blocking CI smoke job is declared
+R008-M5A-ControlledAPIBridgeSpike|file_contains|.github/workflows/ci.yml|PF_SYSML_API_SMOKE_ENABLED|CI smoke job is explicitly env-gated
+R008-M5A-ControlledAPIBridgeSpike|file_contains|scripts/run_sysml_api_smoke.sh|smoke.log|smoke script emits deterministic logs for artifacts
+R008-M5A-ControlledAPIBridgeSpike|file_exists|docs/formal-backend/sysml-api-spike-go-no-go.md||go/no-go memo for API bridge is documented
+R008-M5A-ControlledAPIBridgeSpike|command_passes|bash ./scripts/run_sysml_api_smoke.sh||controlled API smoke script executes safely
+
+R009-A1-ExplicitPFViews|file_contains|crates/pf_dsl/src/main.rs|--dot-context|context view export mode exists
+R009-A1-ExplicitPFViews|file_contains|crates/pf_dsl/src/main.rs|--dot-problem|problem view export mode exists
+R009-A1-ExplicitPFViews|file_contains|crates/pf_dsl/src/main.rs|--dot-decomposition|decomposition view export mode exists
+
+R009-A2-DecompositionClosureArtifact|file_contains|crates/pf_dsl/src/main.rs|--decomposition-closure|decomposition closure report mode exists
+R009-A2-DecompositionClosureArtifact|file_contains|crates/pf_dsl/src/decomposition_closure.rs|Decomposition Closure Report|closure report generator exists
+
+R009-A3-FrameConcernCoverageGate|file_contains|crates/pf_dsl/src/main.rs|--concern-coverage|concern coverage mode exists
+R009-A3-FrameConcernCoverageGate|file_contains|scripts/run_pf_quality_gate.sh|concern-coverage.md|quality gate emits concern coverage artifact
+
+R009-A4-OneCommandPFQualityGate|file_exists|scripts/run_pf_quality_gate.sh||one-command quality gate script exists
+R009-A4-OneCommandPFQualityGate|file_contains|scripts/run_pf_quality_gate.sh|PF Quality Gate Summary|quality gate emits deterministic summary artifact
+R009-A4-OneCommandPFQualityGate|file_exists|scripts/generate_model_progress_report.sh||unified model progress report generator exists
+R009-A4-OneCommandPFQualityGate|file_contains|scripts/run_pf_quality_gate.sh|progress.md|quality gate publishes unified progress artifact
+R009-A4-OneCommandPFQualityGate|file_contains|scripts/check_system_model.sh|tool_spec.progress.md|system-model gate publishes unified progress artifact
+R009-A4-OneCommandPFQualityGate|command_passes|tmp_dir="$(mktemp -d)" && printf '# Implementation Trace Report: sample\n\n- Implementation trace status: PASS\n- Requirements total: 1\n- Implemented: 1\n- Partial: 0\n- Planned: 0\n- Policy status: PASS\n' > "${tmp_dir}/impl.md" && echo PASS > "${tmp_dir}/impl.status" && printf '%b\n' '# fixture\x7cmodel\x7ccommand\x7cexpected\x7cactual\x7cstatus\x7crule\x7crequired\x7cnote' 'fx\x7cm\x7cObl_A\x7cUNSAT\x7cUNSAT\x7cMATCH\x7cr\x7c1\x7cn' > "${tmp_dir}/closure.tsv" && echo PASS > "${tmp_dir}/adequacy.status" && bash ./scripts/generate_model_progress_report.sh --model models/system/tool_spec.pf --output "${tmp_dir}/progress.md" --json "${tmp_dir}/progress.json" --status-file "${tmp_dir}/progress.status" --implementation-trace-md "${tmp_dir}/impl.md" --implementation-trace-status "${tmp_dir}/impl.status" --adequacy-closure-tsv "${tmp_dir}/closure.tsv" --adequacy-status "${tmp_dir}/adequacy.status" --skip-generate-inputs --enforce-pass && test "$(cat "${tmp_dir}/progress.status")" = "PASS"||progress report merges requirement and obligation status using provided artifacts
+
+R009-A5-AgentAssistedModelExecution|file_exists|scripts/check_codex_self_model_contract.sh||agent-assisted model execution contract script exists
+R009-A5-AgentAssistedModelExecution|file_contains|models/system/requirements.pf|R009-A5-AgentAssistedModelExecution|agent-assisted requirement is modeled
+
+R009-A6-ModelFirstChangeControl|file_contains|models/system/requirements.pf|R009-A6-ModelFirstChangeControl|model-first governance requirement is modeled
+R009-A6-ModelFirstChangeControl|file_contains|scripts/check_codex_self_model_contract.sh|R009-A6-ModelFirstChangeControl|model-first requirement is enforced in Codex contract checks
+R009-A6-ModelFirstChangeControl|file_contains|models/system/subproblems.pf|R009-A6-ModelFirstChangeControl|model-first requirement is mapped in canonical PF decomposition
+R009-A6-ModelFirstChangeControl|command_passes|bash ./scripts/check_codex_self_model_contract.sh||Codex self-model contract check enforces model-first requirement
+
+R009-A7-ModelDirectoryPFContainment|file_contains|models/system/requirements.pf|R009-A7-ModelDirectoryPFContainment|PF model directory-containment requirement is modeled
+R009-A7-ModelDirectoryPFContainment|file_contains|models/system/subproblems.pf|R009-A7-ModelDirectoryPFContainment|directory-containment requirement is mapped in canonical PF decomposition
+R009-A7-ModelDirectoryPFContainment|file_contains|scripts/check_codex_self_model_contract.sh|pf_outside_models="$(rg --files -g '**/*.pf'|codex self-model contract enforces that all PF files live under models/
+R009-A7-ModelDirectoryPFContainment|command_passes|bash ./scripts/check_codex_self_model_contract.sh||directory-containment contract check executes successfully
+
+R010-M6-WRSPMBridgeCoverage|file_contains|crates/pf_dsl/src/wrspm.rs|pub struct WrspmProjection|WRSPM projection model exists
+R010-M6-WRSPMBridgeCoverage|file_contains|crates/pf_dsl/src/wrspm.rs|eh partition is deferred|WRSPM unresolved/deferred entries are explicit
+
+R010-M6-SVocabularyDiscipline|file_contains|crates/pf_dsl/src/validator.rs|InvalidSpecificationVocabulary|S vocabulary validator rule exists
+R010-M6-SVocabularyDiscipline|file_contains|metamodel/invariant-catalog.json|PF-VAL-025|S vocabulary validator rule is tracked in metamodel contract
+
+R010-M6-WRSPMReportModes|file_contains|crates/pf_dsl/src/main.rs|--wrspm-report|WRSPM markdown mode exists
+R010-M6-WRSPMReportModes|file_contains|crates/pf_dsl/src/main.rs|--wrspm-json|WRSPM JSON mode exists
+
+R010-M7-ObligationSelectionControl|file_exists|docs/formal-backend/adequacy-obligation-selection.md||obligation-class selection memo is documented
+R010-M7-ObligationSelectionControl|file_contains|models/system/adequacy_selection.env|ADEQUACY_CLASS_ID|selected adequacy obligation class is explicitly configured
+
+R010-M7-ExecutableAdequacyEvidence|file_exists|models/dogfooding/adequacy/pass.pf||expected-pass adequacy fixture exists
+R010-M7-ExecutableAdequacyEvidence|file_exists|models/dogfooding/adequacy/fail.pf||expected-fail adequacy fixture exists
+R010-M7-ExecutableAdequacyEvidence|command_passes|bash ./scripts/run_adequacy_evidence.sh||executable adequacy evidence generation runs end-to-end
+
+R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/run_adequacy_evidence.sh|adequacy-differential.md|differential verdict artifact generation is implemented
+R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/run_pf_quality_gate.sh|adequacy-differential.md|quality gate publishes adequacy differential artifacts
+R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/check_system_model.sh|tool_spec.adequacy-differential.md|system-model gate publishes adequacy differential artifacts
+R010-M7-DifferentialVerdictArtifacts|file_exists|docs/formal-backend/adequacy-go-no-go-criteria.md||go/no-go checkpoint criteria are documented
+
+R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/main.rs|--lean-coverage-json|Lean coverage mode is exposed in CLI
+R010-M7-FormalClosureCoverageReport|file_contains|scripts/run_lean_formal_check.sh|coverage_status|Lean formal check status includes formalized/skipped coverage verdict
+R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/lean_export.rs|lean_atom_projection_subset_entailment|Lean coverage report includes subset-entailment formalization mode
+R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/lean_export.rs|requirement_not_covered_by_specification_or_world_projection|Lean coverage report emits explicit uncovered-projection skip reason
+R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/lean_export.rs|formalizes_subset_requirement_projection_with_world_support|subset-entailment formalization path is covered by deterministic unit test
+R010-M7-FormalClosureCoverageReport|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-coverage-json||Lean coverage JSON is generated from canonical model
+
+R010-M7-MinFormalClosureFloor|file_contains|scripts/check_system_model.sh|--min-formalized-args 2|canonical system-model gate enforces full formalized correctness arguments
+R010-M7-MinFormalClosureFloor|file_contains|scripts/check_system_model.sh|System model Lean formal coverage failed|system-model gate fails when formalized floor is not met
+R010-M7-MinFormalClosureFloor|command_passes|bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 2 --output-dir .ci-artifacts/lean-formal-floor-local||full formalized-floor check executes for canonical model
+
+R010-M7-RequirementFormalClosureTrace|file_exists|scripts/check_requirement_formal_closure.sh||per-requirement formal closure check script exists
+R010-M7-RequirementFormalClosureTrace|file_contains|scripts/check_system_model.sh|tool_spec.formal-closure.md|system-model gate publishes per-requirement formal closure report
+R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/main.rs|--formal-closure-map-tsv|CLI exposes model-derived requirement formal-closure map mode
+R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/main.rs|--requirements-tsv|CLI exposes requirement inventory export for model-derived formal closure checks
+R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/main.rs|--correctness-arguments-tsv|CLI exposes correctness-argument inventory export for model-derived formal closure checks
+R010-M7-RequirementFormalClosureTrace|file_contains|scripts/check_requirement_formal_closure.sh|--rows-tsv|formal closure checker emits per-requirement status rows for downstream gap analysis
+R010-M7-RequirementFormalClosureTrace|file_contains|models/system/requirements.pf|@formal.argument("A_roadmap_alignment_formal")|formal closure mapping is declared in requirement marks inside canonical model
+R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/validator.rs|references undefined correctness argument|validator enforces requirement mark -> declared correctness argument referential integrity
+R010-M7-RequirementFormalClosureTrace|file_contains|crates/pf_dsl/src/validator_tests.rs|test_mark_contract_rejects_formal_argument_unknown_correctness_argument|formal.argument referential-integrity validation is covered by deterministic unit test
+R010-M7-RequirementFormalClosureTrace|command_passes|tmp_dir="$(mktemp -d)" && cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-coverage-json > "${tmp_dir}/lean-coverage.json" && bash ./scripts/check_requirement_formal_closure.sh --model models/system/tool_spec.pf --lean-coverage-json "${tmp_dir}/lean-coverage.json" --output "${tmp_dir}/formal-closure-local.md" --json "${tmp_dir}/formal-closure-local.json" --status-file "${tmp_dir}/formal-closure-local.status" --rows-tsv "${tmp_dir}/formal-closure-local.rows.tsv" && test "$(cat "${tmp_dir}/formal-closure-local.status")" = "PASS"||per-requirement formal closure check executes for canonical model with model-derived inventories
+
+R010-M7-FormalGapReport|file_exists|scripts/generate_formal_gap_report.sh||formal gap report generator script exists
+R010-M7-FormalGapReport|file_contains|scripts/run_pf_quality_gate.sh|formal-gap.md|quality gate emits formal gap report artifact
+R010-M7-FormalGapReport|file_contains|scripts/check_system_model.sh|tool_spec.formal-gap.md|system-model gate publishes formal gap report artifact
+R010-M7-FormalGapReport|file_contains|models/system/subproblems.pf|R010-M7-FormalGapReport|formal gap report requirement is mapped in canonical PF decomposition
+R010-M7-FormalGapReport|command_passes|bash ./scripts/generate_formal_gap_report.sh --help||formal gap report generator exposes deterministic CLI contract
+
+R010-M7-FormalTrackPolicySwitch|file_contains|scripts/run_pf_quality_gate.sh|--enforce-formal-track|quality gate exposes explicit formal-track blocking switch
+R010-M7-FormalTrackPolicySwitch|file_contains|scripts/run_pf_quality_gate.sh|PF_FORMAL_TRACK_BLOCKING|quality gate supports env-driven formal-track blocking policy
+R010-M7-FormalTrackPolicySwitch|file_contains|.github/workflows/ci.yml|PF_FORMAL_TRACK_BLOCKING|CI wiring surfaces formal-track policy variable
+R010-M7-FormalTrackPolicySwitch|file_contains|.github/workflows/ci.yml|continue-on-error: ${{ vars.PF_FORMAL_TRACK_BLOCKING != '1' }}|CI jobs switch between non-blocking and blocking formal-track mode
+R010-M7-FormalTrackPolicySwitch|file_contains|models/system/subproblems.pf|R010-M7-FormalTrackPolicySwitch|formal-track policy-switch requirement is mapped in canonical PF decomposition
+R010-M7-FormalTrackPolicySwitch|command_passes|PF_FORMAL_TRACK_BLOCKING=1 bash ./scripts/run_pf_quality_gate.sh --help||formal-track policy switch is accepted through environment without changing CLI contract
+
+R011-H1-SolverBackedAdequacyEvidence|file_contains|models/system/requirements.pf|R011-H1-SolverBackedAdequacyEvidence|solver-backed adequacy requirement is modeled
+R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_adequacy_evidence.sh|run_alloy_solver_check.sh|adequacy evidence formal verdict is backed by Alloy solver checks
+R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_adequacy_evidence.sh|formal_solver_status|adequacy evidence stores solver-backed status per fixture
+R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/check_system_model.sh|--enforce-pass|canonical system-model gate fails closed on non-PASS adequacy status
+R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_pf_quality_gate.sh|adequacy_args+=(--enforce-pass)|formal-track blocking mode enforces PASS adequacy status
+R011-H1-SolverBackedAdequacyEvidence|file_contains|models/system/subproblems.pf|R011-H1-SolverBackedAdequacyEvidence|solver-backed adequacy requirement is mapped in canonical PF decomposition
+R011-H1-SolverBackedAdequacyEvidence|command_passes|bash ./scripts/run_adequacy_evidence.sh||solver-backed adequacy evidence generation executes end-to-end
+
+R011-H3-CommandLevelAdequacyCoverage|file_contains|models/system/requirements.pf|R011-H3-CommandLevelAdequacyCoverage|command-level adequacy coverage requirement is modeled
+R011-H3-CommandLevelAdequacyCoverage|file_exists|models/system/adequacy_expectations.tsv||command-level adequacy expectations manifest exists
+R011-H3-CommandLevelAdequacyCoverage|file_exists|scripts/generate_adequacy_expectations.sh||model-driven adequacy expectations generator script exists
+R011-H3-CommandLevelAdequacyCoverage|file_contains|crates/pf_dsl/src/formal_alloy.rs|not ({})|Alloy exporter encodes counterexample-style obligation body as S and W and not R when @Alloy assertions are present
+R011-H3-CommandLevelAdequacyCoverage|file_contains|scripts/run_alloy_solver_check.sh|required_expectation_rules_missing|required expectation-rule coverage is enforced in solver check
+R011-H3-CommandLevelAdequacyCoverage|file_contains|scripts/run_adequacy_evidence.sh|required_expectation_rules_missing|adequacy differential captures command-level required-rule coverage and mismatch data
+R011-H3-CommandLevelAdequacyCoverage|file_contains|scripts/run_adequacy_evidence.sh|adequacy-obligation-closure.tsv|adequacy evidence publishes aggregated command-level obligation closure matrix artifact
+R011-H3-CommandLevelAdequacyCoverage|file_contains|scripts/check_system_model.sh|tool_spec.adequacy-closure.tsv|canonical system-model gate publishes adequacy obligation closure matrix artifact
+R011-H3-CommandLevelAdequacyCoverage|file_contains|scripts/run_pf_quality_gate.sh|adequacy-closure.tsv|pf quality gate publishes adequacy obligation closure matrix artifact
+R011-H3-CommandLevelAdequacyCoverage|file_contains|scripts/check_codex_self_model_contract.sh|generate_adequacy_expectations.sh|self-model contract enforces generated expectations manifest synchronization
+R011-H3-CommandLevelAdequacyCoverage|file_contains|models/system/subproblems.pf|R011-H3-CommandLevelAdequacyCoverage|command-level adequacy coverage requirement is mapped in canonical PF decomposition
+R011-H3-CommandLevelAdequacyCoverage|command_passes|bash ./scripts/generate_adequacy_expectations.sh --selection models/system/adequacy_selection.env --output models/system/adequacy_expectations.tsv --check||model-derived adequacy expectations manifest remains synchronized with selected fixture obligations
+R011-H3-CommandLevelAdequacyCoverage|command_passes|tmp_dir="$(mktemp -d)" && bash ./scripts/run_alloy_solver_check.sh --model models/dogfooding/adequacy/pass.pf --expectations models/system/adequacy_expectations.tsv --output-dir "${tmp_dir}/pass" --report "${tmp_dir}/pass.md" --json "${tmp_dir}/pass.json" --status-file "${tmp_dir}/pass.status" && test "$(cat "${tmp_dir}/pass.status")" = "PASS"||pass fixture satisfies required command-level adequacy expectation rules
+R011-H3-CommandLevelAdequacyCoverage|command_passes|tmp_dir="$(mktemp -d)" && bash ./scripts/run_alloy_solver_check.sh --model models/dogfooding/adequacy/fail.pf --expectations models/system/adequacy_expectations.tsv --output-dir "${tmp_dir}/fail" --report "${tmp_dir}/fail.md" --json "${tmp_dir}/fail.json" --status-file "${tmp_dir}/fail.status" && test "$(cat "${tmp_dir}/fail.status")" = "OPEN"||fail fixture exposes a solver counterexample against required UNSAT expectation
+R011-H3-CommandLevelAdequacyCoverage|command_passes|tmp_dir="$(mktemp -d)" && bash ./scripts/run_adequacy_evidence.sh --output-dir "${tmp_dir}/adequacy" --closure-matrix-tsv "${tmp_dir}/adequacy/adequacy-obligation-closure.tsv" --closure-matrix-md "${tmp_dir}/adequacy/adequacy-obligation-closure.md" --enforce-pass && test -f "${tmp_dir}/adequacy/adequacy-obligation-closure.tsv" && grep -q '^# fixture' "${tmp_dir}/adequacy/adequacy-obligation-closure.tsv"||adequacy evidence emits machine-readable command-level closure matrix artifact
+
+R011-H2-DiffBasedModelFirstGate|file_contains|models/system/requirements.pf|R011-H2-DiffBasedModelFirstGate|diff-based model-first requirement is modeled
+R011-H2-DiffBasedModelFirstGate|file_contains|scripts/check_codex_self_model_contract.sh|git -C "${REPO_ROOT}" diff --name-only --diff-filter=ACMR|model-first contract evaluates changed artifacts from git diff
+R011-H2-DiffBasedModelFirstGate|file_contains|scripts/check_codex_self_model_contract.sh|Model-first contract violation|model-first contract rejects implementation-only diffs without canonical model updates
+R011-H2-DiffBasedModelFirstGate|file_contains|models/system/subproblems.pf|R011-H2-DiffBasedModelFirstGate|diff-based model-first requirement is mapped in canonical PF decomposition
+R011-H2-DiffBasedModelFirstGate|command_passes|bash ./scripts/check_codex_self_model_contract.sh||diff-based model-first contract check executes successfully

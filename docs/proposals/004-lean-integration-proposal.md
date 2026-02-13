@@ -4,6 +4,11 @@
 
 Draft
 
+## Position in Current Roadmap
+
+This proposal defines the Lean research track details.
+Near-term executable obligation checks in roadmap `007`/`010` run Alloy-first by default; Lean adoption remains non-blocking and parallel.
+
 ## Problem Statement
 
 This document outlines a revised strategy for integrating [Lean 4](https://leanprover.github.io/) for formal verification of Problem Frames models. This approach prioritizes correctness, separation of concerns, and robust tooling.

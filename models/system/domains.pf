@@ -1,0 +1,23 @@
+// 1. Domains
+domain Developer kind biddable role given // The user of the tool
+domain Codex kind biddable role given // Coding agent operating on behalf of the developer
+domain SourceFile kind lexical role given // The .pf file on disk
+domain Tool kind causal role machine      // The CLI/LSP tool
+domain Editor kind causal role given      // VS Code or other editor (interacting with LSP)
+domain GeneratedCode kind lexical role given // The Rust code or DOT output
+domain CI kind causal role given // CI pipeline executing quality gates
+domain MetamodelContract kind lexical role given // invariant catalog and rule matrix artifacts
+domain TraceabilityStore kind lexical role given // relationship graph and impact exports
+domain PIMArtifacts kind lexical role given // generated DDD/SysML model packages
+domain SysMLApi kind causal role given // optional API bridge endpoint for model publishing
+domain WRSPMContract kind lexical role given // derived W/R/S/P/M bridge and coverage outputs
+domain AdequacyEvidence kind lexical role given // executable pass/fail and differential verdict artifacts
+domain ReleaseWorkflow kind causal role given // release and smoke-check workflow execution environment
+domain SecurityEvidence kind lexical role given // SBOM, provenance, checksum, and supply-chain evidence bundles
+domain OpsMetrics kind lexical role given // engineering metrics and weekly triage artifacts
+domain AdoptionAssets kind lexical role given // onboarding, demo, and pilot workflow assets
+domain PilotTeam kind biddable role given // pilot users evaluating workflow value
+domain LeanTheory kind lexical role given // Lean theory files and generated model/proof stubs
+domain LeanToolchain kind causal role given // Lean/lake execution environment for research checks
+domain ProposalBacklog kind lexical role given // roadmap proposals and alignment status artifacts
+domain ObligationArtifacts kind lexical role given // obligation reports and schema-level evidence outputs

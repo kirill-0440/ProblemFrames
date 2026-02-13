@@ -14,6 +14,14 @@ This directory contains product and engineering proposals for Problem Frames.
 - `007-execution-backlog-m1-m3.md`: execution-ready issue/checklist backlog for milestone group `M1-M3` from proposal `007`.
 - `008-pf-ddd-sysmlv2-integration.md`: integration track for extending PF-DSL from CIM authority to DDD and SysML v2 PIM outputs with mandatory transformation traces.
 - `008-execution-backlog-m4-m5.md`: execution-ready backlog for proposal `008` milestones (`M4a-M5a`) across marks, generators, trace contracts, and API spike.
+- `009-pf-canonical-retro-addendum.md`: retrospective alignment addendum that adds canonical PF method quality gates (concern coverage, view separation, decomposition closure) to execution.
+- `010-pf-wrspm-contract-bridge.md`: WRSPM (`W/R/S/P/M`) bridge track that operationalizes PF outputs into explicit contract evidence and adequacy-oriented checks.
+- `010-execution-backlog-m6-m7.md`: execution-ready backlog for proposal `010` milestones (`M6-M7`) across WRSPM mapping, coverage rules, and executable adequacy evidence.
+- `011-execution-hardening-contracts.md`: hardening contracts for solver-backed adequacy evidence, command-level coverage enforcement, and git-diff model-first governance.
+
+## Companion Guides
+
+- `docs/runbooks/pf-marks-ddd-sysml-guide.md`: mark syntax, validation contract, and anti-patterns for DDD/SysML bridge annotations.
 
 ## Proposal Status
 

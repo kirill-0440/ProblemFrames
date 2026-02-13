@@ -1,0 +1,48 @@
+problem: AdequacyPass
+
+domain Machine kind causal role machine
+domain Operator kind biddable role given
+domain Device kind causal role given
+
+interface "Operator-Machine" connects Operator, Machine {
+  shared: {
+    phenomenon Command : command [Operator -> Machine] controlledBy Operator
+  }
+}
+
+interface "Machine-Device" connects Machine, Device {
+  shared: {
+    phenomenon Actuate : event [Machine -> Device] controlledBy Machine
+  }
+}
+
+requirement "R_commanded" {
+  frame: CommandedBehavior
+  reference: Operator
+  constrains: Device
+}
+
+subproblem Execution {
+  machine: Machine
+  participants: Machine, Operator, Device
+  requirements: "R_commanded"
+}
+
+worldProperties W_base {
+  assert "some Machine and some Device and some Operator" @Alloy
+  assert "device can be actuated"
+}
+
+specification S_control {
+  assert "some Machine" @Alloy
+  assert "[[Operator-Machine.Command]] implies [[Machine-Device.Actuate]]"
+}
+
+requirementAssertions R_goal {
+  assert "some Device" @Alloy
+  assert "commanded behavior reaches device"
+}
+
+correctnessArgument A_exec {
+  prove S_control and W_base entail R_goal
+}
