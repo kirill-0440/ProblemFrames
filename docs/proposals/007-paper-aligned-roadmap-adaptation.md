@@ -173,6 +173,7 @@ Exit criteria:
 - `007-execution-backlog-m1-m3.md` is the execution-ready backlog for near-term milestone delivery.
 - `009-pf-canonical-retro-addendum.md` captures retrospective PF-method alignment constraints for execution quality gates.
 - `008-pf-ddd-sysmlv2-integration.md` defines the follow-on integration track for DDD/SysML v2 after M1-M3 foundation.
+- `010-pf-wrspm-contract-bridge.md` defines the WRSPM contract bridge (`W/R/S/P/M`) to make concern adequacy evidence explicit before broad PIM/PSM expansion.
 - this proposal defines the paper-aligned prioritization order on top of `005/006`:
   - near-term: M1, M2, M3
   - medium-term: M4, M5

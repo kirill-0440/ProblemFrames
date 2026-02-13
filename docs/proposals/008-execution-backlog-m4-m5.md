@@ -149,6 +149,7 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Complete M4a before enabling M4b outputs by default.
 - M4c starts after first stable outputs from M4b.
 - M5a starts only after two successful CI cycles with M4b/M4c artifacts.
+- Prefer sequencing after `010` M6 contract outputs are available to reuse WRSPM coverage evidence in generated trace bundles.
 
 ## Tracking Recommendation
 

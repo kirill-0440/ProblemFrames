@@ -191,6 +191,7 @@ Exit criteria:
 - Proposal `007` (traceability and design bridge foundation)
 - Proposal `009` (PF canonical alignment addendum for concern/decomposition gates)
 - Proposal `006` (validator semantics baseline)
+- Proposal `010` (WRSPM contract bridge for explicit `W/R/S/P/M` evidence and adequacy checks)
 
 ## Decision Needed
 
