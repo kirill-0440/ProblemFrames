@@ -67,14 +67,6 @@ bash "${REPO_ROOT}/scripts/run_adequacy_evidence.sh" \
   --output "${ADEQUACY_DIFFERENTIAL_FILE}" \
   --json "${ADEQUACY_JSON_FILE}" \
   --status-file "${ADEQUACY_STATUS_FILE}"
-bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
-  --traceability-csv "${TRACEABILITY_CSV_FILE}" \
-  --output "${IMPLEMENTATION_TRACE_FILE}" \
-  --status-file "${IMPLEMENTATION_TRACE_STATUS_FILE}" \
-  --policy "${IMPLEMENTATION_POLICY_FILE}" \
-  --policy-status-file "${IMPLEMENTATION_TRACE_POLICY_STATUS_FILE}" \
-  --enforce-policy \
-  "${MODEL_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --lean-model > "${LEAN_MODEL_FILE}"
 bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
   --model "${MODEL_FILE}" \
@@ -104,6 +96,14 @@ bash "${REPO_ROOT}/scripts/generate_formal_gap_report.sh" \
   --output "${FORMAL_GAP_REPORT_FILE}" \
   --json "${FORMAL_GAP_JSON_FILE}" \
   --status-file "${FORMAL_GAP_STATUS_FILE}"
+bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
+  --traceability-csv "${TRACEABILITY_CSV_FILE}" \
+  --output "${IMPLEMENTATION_TRACE_FILE}" \
+  --status-file "${IMPLEMENTATION_TRACE_STATUS_FILE}" \
+  --policy "${IMPLEMENTATION_POLICY_FILE}" \
+  --policy-status-file "${IMPLEMENTATION_TRACE_POLICY_STATUS_FILE}" \
+  --enforce-policy \
+  "${MODEL_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-report > "${WRSPM_REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-json > "${WRSPM_JSON_FILE}"
 bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"

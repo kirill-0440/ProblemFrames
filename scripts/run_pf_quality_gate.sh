@@ -211,20 +211,6 @@ for model in "${models[@]}"; do
     --output "${adequacy_differential_file}" \
     --json "${adequacy_json_file}" \
     --status-file "${adequacy_status_file}"
-  trace_check_args=(
-    --traceability-csv "${traceability_csv_file}"
-    --output "${implementation_trace_file}"
-    --status-file "${implementation_trace_status_file}"
-    --policy-status-file "${implementation_trace_policy_status_file}"
-  )
-  if [[ -n "${implementation_policy_path}" ]]; then
-    trace_check_args+=(--policy "${implementation_policy_path}")
-  fi
-  if [[ "${enforce_implementation_policy}" -eq 1 ]]; then
-    trace_check_args+=(--enforce-policy)
-  fi
-  trace_check_args+=("${model}")
-  bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" "${trace_check_args[@]}"
   cargo run -p pf_dsl -- "${model}" --lean-model > "${lean_model_file}"
   bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
     --model "${model}" \
@@ -251,6 +237,20 @@ for model in "${models[@]}"; do
     --output "${formal_gap_report_file}" \
     --json "${formal_gap_json_file}" \
     --status-file "${formal_gap_status_file}"
+  trace_check_args=(
+    --traceability-csv "${traceability_csv_file}"
+    --output "${implementation_trace_file}"
+    --status-file "${implementation_trace_status_file}"
+    --policy-status-file "${implementation_trace_policy_status_file}"
+  )
+  if [[ -n "${implementation_policy_path}" ]]; then
+    trace_check_args+=(--policy "${implementation_policy_path}")
+  fi
+  if [[ "${enforce_implementation_policy}" -eq 1 ]]; then
+    trace_check_args+=(--enforce-policy)
+  fi
+  trace_check_args+=("${model}")
+  bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" "${trace_check_args[@]}"
   cargo run -p pf_dsl -- "${model}" --wrspm-report > "${wrspm_file}"
   cargo run -p pf_dsl -- "${model}" --wrspm-json > "${wrspm_json_file}"
 
