@@ -41,6 +41,8 @@ pub enum ValidationError {
     UndefinedDomainInSubproblem(String, String, Span),
     #[error("Requirement '{0}' referenced in subproblem '{1}' but not defined.")]
     UndefinedRequirementInSubproblem(String, String, Span),
+    #[error("Duplicate subproblem definition: '{0}'")]
+    DuplicateSubproblem(String, Span, usize),
     #[error("Subproblem '{0}' is invalid: {1}")]
     InvalidSubproblem(String, String, Span),
     #[error("Duplicate assertion set definition: '{0}'")]
@@ -49,6 +51,8 @@ pub enum ValidationError {
     EmptyAssertionSet(String, Span),
     #[error("Correctness argument '{0}' is invalid: {1}")]
     InvalidCorrectnessArgument(String, String, Span),
+    #[error("Duplicate correctness argument definition: '{0}'")]
+    DuplicateCorrectnessArgument(String, Span, usize),
 }
 
 #[derive(Debug)]
@@ -273,6 +277,17 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
         }
     }
 
+    let mut subproblem_names = HashSet::new();
+    for (index, subproblem) in problem.subproblems.iter().enumerate() {
+        if !subproblem_names.insert(subproblem.name.clone()) {
+            errors.push(ValidationError::DuplicateSubproblem(
+                subproblem.name.clone(),
+                subproblem.span,
+                index,
+            ));
+        }
+    }
+
     for subproblem in &problem.subproblems {
         if subproblem.machine.is_none() {
             errors.push(ValidationError::MissingSubproblemField(
@@ -398,6 +413,17 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
             errors.push(ValidationError::EmptyAssertionSet(
                 assertion_set.name.clone(),
                 assertion_set.span,
+            ));
+        }
+    }
+
+    let mut correctness_argument_names = HashSet::new();
+    for (index, argument) in problem.correctness_arguments.iter().enumerate() {
+        if !correctness_argument_names.insert(argument.name.clone()) {
+            errors.push(ValidationError::DuplicateCorrectnessArgument(
+                argument.name.clone(),
+                argument.span,
+                index,
             ));
         }
     }
@@ -794,10 +820,12 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         | ValidationError::MissingSubproblemField(_, _, span)
         | ValidationError::UndefinedDomainInSubproblem(_, _, span)
         | ValidationError::UndefinedRequirementInSubproblem(_, _, span)
+        | ValidationError::DuplicateSubproblem(_, span, _)
         | ValidationError::InvalidSubproblem(_, _, span)
         | ValidationError::DuplicateAssertionSet(_, span, _)
         | ValidationError::EmptyAssertionSet(_, span)
         | ValidationError::InvalidCorrectnessArgument(_, _, span) => *span,
+        ValidationError::DuplicateCorrectnessArgument(_, span, _) => *span,
     }
 }
 
@@ -886,6 +914,14 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
             .iter()
             .find(|subproblem| subproblem.name == *name)
             .and_then(|subproblem| subproblem.source_path.clone()),
+        ValidationError::DuplicateSubproblem(_, _, index) => problem
+            .subproblems
+            .get(*index)
+            .and_then(|subproblem| subproblem.source_path.clone()),
+        ValidationError::DuplicateCorrectnessArgument(_, _, index) => problem
+            .correctness_arguments
+            .get(*index)
+            .and_then(|argument| argument.source_path.clone()),
     }
 }
 

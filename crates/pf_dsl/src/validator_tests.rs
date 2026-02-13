@@ -1002,6 +1002,93 @@ mod tests {
     }
 
     #[test]
+    fn test_duplicate_correctness_argument_uses_duplicate_source_path() {
+        let problem = Problem {
+            name: "DuplicateCorrectnessArgs".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "spec".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "req".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![
+                CorrectnessArgument {
+                    name: "A1".to_string(),
+                    specification_set: "S".to_string(),
+                    world_set: "W".to_string(),
+                    requirement_set: "R".to_string(),
+                    specification_ref: mock_ref("S"),
+                    world_ref: mock_ref("W"),
+                    requirement_ref: mock_ref("R"),
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                CorrectnessArgument {
+                    name: "A1".to_string(),
+                    specification_set: "S".to_string(),
+                    world_set: "W".to_string(),
+                    requirement_set: "R".to_string(),
+                    specification_ref: mock_ref("S"),
+                    world_ref: mock_ref("W"),
+                    requirement_ref: mock_ref("R"),
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let duplicate = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::DuplicateCorrectnessArgument(ref name, _, _) if name == "A1"
+            )
+        });
+        assert!(duplicate.is_some());
+        assert_eq!(
+            duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
     fn test_subproblem_missing_machine_is_invalid() {
         let problem = Problem {
             name: "SubproblemMissingMachine".to_string(),
@@ -1032,6 +1119,69 @@ mod tests {
                     if name == "Core" && field == "machine"
             )
         }));
+    }
+
+    #[test]
+    fn test_duplicate_subproblem_uses_duplicate_source_path() {
+        let problem = Problem {
+            name: "DuplicateSubproblems".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-A",
+                &["M", "A"],
+                vec![phenomenon("Control", PhenomenonType::Event, "M", "A", "M")],
+            )],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("A")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            subproblems: vec![
+                Subproblem {
+                    name: "Core".to_string(),
+                    machine: Some(mock_ref("M")),
+                    participants: vec![mock_ref("M"), mock_ref("A")],
+                    requirements: vec![mock_ref("R1")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Subproblem {
+                    name: "Core".to_string(),
+                    machine: Some(mock_ref("M")),
+                    participants: vec![mock_ref("M"), mock_ref("A")],
+                    requirements: vec![mock_ref("R1")],
+                    span: mock_span(),
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let duplicate = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::DuplicateSubproblem(ref name, _, _) if name == "Core"
+            )
+        });
+        assert!(duplicate.is_some());
+        assert_eq!(
+            duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
     }
 
     #[test]
