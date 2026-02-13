@@ -20,6 +20,7 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 10. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
 11. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
 12. Generate Lean research-track artifacts (`--lean-model`, `--lean-coverage-json`, non-blocking Lean smoke, differential report).
+13. For the canonical system model, run `check_system_model.sh` to generate per-requirement formal closure report (requirement-to-correctness-argument mapping + formalized status).
 
 ## One-command Gate
 
@@ -105,7 +106,7 @@ To require a minimum formalized Lean correctness-argument floor in the quality g
 
 ```bash
 bash ./scripts/run_pf_quality_gate.sh \
-  --min-lean-formalized-args 1 \
+  --min-lean-formalized-args 2 \
   <model.pf>
 ```
 

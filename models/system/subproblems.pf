@@ -73,5 +73,5 @@ subproblem WRSPMBridgeCoverageLoop {
 subproblem AdequacyEvidenceLoop {
     machine: Tool
     participants: Tool, Developer, CI, AdequacyEvidence, LeanTheory
-    requirements: "R010-M7-ObligationSelectionControl", "R010-M7-ExecutableAdequacyEvidence", "R010-M7-DifferentialVerdictArtifacts", "R010-M7-FormalClosureCoverageReport", "R010-M7-MinFormalClosureFloor"
+    requirements: "R010-M7-ObligationSelectionControl", "R010-M7-ExecutableAdequacyEvidence", "R010-M7-DifferentialVerdictArtifacts", "R010-M7-FormalClosureCoverageReport", "R010-M7-MinFormalClosureFloor", "R010-M7-RequirementFormalClosureTrace"
 }

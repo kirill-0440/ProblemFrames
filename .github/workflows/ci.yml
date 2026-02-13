@@ -69,7 +69,7 @@ jobs:
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
 
       - name: Run Lean formal smoke (gated)
-        run: bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/lean-formal --min-formalized-args 1 --gated
+        run: bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/lean-formal --min-formalized-args 2 --gated
 
       - name: Run Lean differential smoke
         run: bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf --lean-status-json .ci-artifacts/lean-formal/lean-check.json --output-dir .ci-artifacts/lean-formal

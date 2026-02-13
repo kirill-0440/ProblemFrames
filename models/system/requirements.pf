@@ -283,6 +283,12 @@ requirement "R010-M7-FormalClosureCoverageReport" {
 
 requirement "R010-M7-MinFormalClosureFloor" {
     frame: RequiredBehavior
-    constraint: "Canonical system-model gate enforces a minimum formalized correctness-argument floor for the LeanAtom track"
+    constraint: "Canonical system-model gate enforces full formalized correctness-argument floor for the LeanAtom track"
     constrains: CI
+}
+
+requirement "R010-M7-RequirementFormalClosureTrace" {
+    frame: Transformation
+    constraint: "Canonical system-model gate exports per-requirement formal-closure status mapped to correctness arguments and fails on open entries"
+    constrains: AdequacyEvidence
 }

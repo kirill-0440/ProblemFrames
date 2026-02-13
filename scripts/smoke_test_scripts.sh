@@ -22,7 +22,7 @@ bash "${REPO_ROOT}/scripts/run_pf_quality_gate.sh" \
   "${REPO_ROOT}/models/system/tool_spec.pf"
 bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
   --model "${REPO_ROOT}/models/system/tool_spec.pf" \
-  --min-formalized-args 1 \
+  --min-formalized-args 2 \
   --output-dir "${tmp_dir}/lean-formal"
 bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
   --model "${REPO_ROOT}/models/system/tool_spec.pf" \

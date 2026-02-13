@@ -164,6 +164,11 @@ R010-M7-FormalClosureCoverageReport|file_contains|crates/pf_dsl/src/main.rs|--le
 R010-M7-FormalClosureCoverageReport|file_contains|scripts/run_lean_formal_check.sh|coverage_status|Lean formal check status includes formalized/skipped coverage verdict
 R010-M7-FormalClosureCoverageReport|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --lean-coverage-json||Lean coverage JSON is generated from canonical model
 
-R010-M7-MinFormalClosureFloor|file_contains|scripts/check_system_model.sh|--min-formalized-args 1|canonical system-model gate enforces minimum formalized correctness arguments
+R010-M7-MinFormalClosureFloor|file_contains|scripts/check_system_model.sh|--min-formalized-args 2|canonical system-model gate enforces full formalized correctness arguments
 R010-M7-MinFormalClosureFloor|file_contains|scripts/check_system_model.sh|System model Lean formal coverage failed|system-model gate fails when formalized floor is not met
-R010-M7-MinFormalClosureFloor|command_passes|bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 1 --output-dir .ci-artifacts/lean-formal-floor-local||minimum formalized-floor check executes for canonical model
+R010-M7-MinFormalClosureFloor|command_passes|bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 2 --output-dir .ci-artifacts/lean-formal-floor-local||full formalized-floor check executes for canonical model
+
+R010-M7-RequirementFormalClosureTrace|file_exists|scripts/check_requirement_formal_closure.sh||per-requirement formal closure check script exists
+R010-M7-RequirementFormalClosureTrace|file_contains|scripts/check_system_model.sh|tool_spec.formal-closure.md|system-model gate publishes per-requirement formal closure report
+R010-M7-RequirementFormalClosureTrace|file_contains|models/system/formal_closure_map.tsv|R010-M7-MinFormalClosureFloor|formal closure mapping is versioned in canonical model assets
+R010-M7-RequirementFormalClosureTrace|command_passes|bash ./scripts/check_requirement_formal_closure.sh --requirements-file models/system/requirements.pf --arguments-file models/system/arguments.pf --map-file models/system/formal_closure_map.tsv --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json --output .ci-artifacts/system-model/formal-closure-local.md --json .ci-artifacts/system-model/formal-closure-local.json --status-file .ci-artifacts/system-model/formal-closure-local.status||per-requirement formal closure check executes for canonical model

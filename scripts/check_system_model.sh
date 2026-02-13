@@ -42,6 +42,9 @@ LEAN_CHECK_STATUS_FILE="${OUTPUT_DIR}/tool_spec.lean-check.status"
 LEAN_DIFFERENTIAL_FILE="${OUTPUT_DIR}/tool_spec.lean-differential.md"
 LEAN_DIFFERENTIAL_JSON_FILE="${OUTPUT_DIR}/tool_spec.lean-differential.json"
 LEAN_DIFFERENTIAL_STATUS_FILE="${OUTPUT_DIR}/tool_spec.lean-differential.status"
+FORMAL_CLOSURE_REPORT_FILE="${OUTPUT_DIR}/tool_spec.formal-closure.md"
+FORMAL_CLOSURE_JSON_FILE="${OUTPUT_DIR}/tool_spec.formal-closure.json"
+FORMAL_CLOSURE_STATUS_FILE="${OUTPUT_DIR}/tool_spec.formal-closure.status"
 IMPLEMENTATION_POLICY_FILE="${REPO_ROOT}/models/system/implementation_trace_policy.env"
 
 cargo run -p pf_dsl -- "${MODEL_FILE}" --report > "${REPORT_FILE}"
@@ -71,7 +74,7 @@ bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
 cargo run -p pf_dsl -- "${MODEL_FILE}" --lean-model > "${LEAN_MODEL_FILE}"
 bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
   --model "${MODEL_FILE}" \
-  --min-formalized-args 1 \
+  --min-formalized-args 2 \
   --output-dir "${OUTPUT_DIR}/lean-formal"
 bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
   --model "${MODEL_FILE}" \
@@ -83,6 +86,14 @@ bash "${REPO_ROOT}/scripts/run_lean_differential_check.sh" \
 cp "${OUTPUT_DIR}/lean-formal/lean-check.json" "${LEAN_CHECK_JSON_FILE}"
 cp "${OUTPUT_DIR}/lean-formal/lean-check.status" "${LEAN_CHECK_STATUS_FILE}"
 cp "${OUTPUT_DIR}/lean-formal/lean-coverage.json" "${LEAN_COVERAGE_JSON_FILE}"
+bash "${REPO_ROOT}/scripts/check_requirement_formal_closure.sh" \
+  --requirements-file "${REPO_ROOT}/models/system/requirements.pf" \
+  --arguments-file "${REPO_ROOT}/models/system/arguments.pf" \
+  --map-file "${REPO_ROOT}/models/system/formal_closure_map.tsv" \
+  --lean-coverage-json "${LEAN_COVERAGE_JSON_FILE}" \
+  --output "${FORMAL_CLOSURE_REPORT_FILE}" \
+  --json "${FORMAL_CLOSURE_JSON_FILE}" \
+  --status-file "${FORMAL_CLOSURE_STATUS_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-report > "${WRSPM_REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-json > "${WRSPM_JSON_FILE}"
 bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
@@ -131,6 +142,8 @@ lean_total_correctness_arguments="$(
 lean_total_correctness_arguments="${lean_total_correctness_arguments:-0}"
 lean_differential_status="$(cat "${LEAN_DIFFERENTIAL_STATUS_FILE}" 2>/dev/null || true)"
 lean_differential_status="${lean_differential_status:-UNKNOWN}"
+formal_closure_status="$(cat "${FORMAL_CLOSURE_STATUS_FILE}" 2>/dev/null || true)"
+formal_closure_status="${formal_closure_status:-UNKNOWN}"
 
 {
   echo "# System Model Quality Gate"
@@ -146,6 +159,7 @@ lean_differential_status="${lean_differential_status:-UNKNOWN}"
   echo "- Lean formal check status: \`${lean_check_status}\`"
   echo "- Lean formal coverage status: \`${lean_coverage_status}\` (${lean_formalized_count}/${lean_total_correctness_arguments} formalized)"
   echo "- Lean differential status: \`${lean_differential_status}\`"
+  echo "- Requirement formal closure status: \`${formal_closure_status}\`"
   echo
   echo "## Artifacts"
   echo
@@ -170,6 +184,8 @@ lean_differential_status="${lean_differential_status:-UNKNOWN}"
   echo "- \`tool_spec.lean-check.json\`"
   echo "- \`tool_spec.lean-differential.md\`"
   echo "- \`tool_spec.lean-differential.json\`"
+  echo "- \`tool_spec.formal-closure.md\`"
+  echo "- \`tool_spec.formal-closure.json\`"
   echo "- \`tool_spec.wrspm.md\`"
   echo "- \`tool_spec.wrspm.json\`"
 } > "${SUMMARY_FILE}"
@@ -193,5 +209,10 @@ fi
 
 if [[ "${lean_coverage_status}" != "PASS" ]]; then
   echo "System model Lean formal coverage failed (${lean_coverage_status})" >&2
+  exit 1
+fi
+
+if [[ "${formal_closure_status}" != "PASS" ]]; then
+  echo "System model requirement formal closure failed (${formal_closure_status})" >&2
   exit 1
 fi

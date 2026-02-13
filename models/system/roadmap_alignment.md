@@ -47,7 +47,8 @@ This map links canonical system-model requirements to roadmap/proposal items in
 | `R010-M7-ExecutableAdequacyEvidence` | `010-pf-wrspm-contract-bridge.md`, `010-execution-backlog-m6-m7.md` | M7 executable adequacy check path (`R010-M7-02`) |
 | `R010-M7-DifferentialVerdictArtifacts` | `010-pf-wrspm-contract-bridge.md`, `010-execution-backlog-m6-m7.md` | M7 differential verdict and CI publication (`R010-M7-03`, `R010-M7-04`) |
 | `R010-M7-FormalClosureCoverageReport` | `010-pf-wrspm-contract-bridge.md`, `004-lean-integration-proposal.md` | M7 Lean closure coverage projection (`formalized/skipped` with reasons per correctness argument) |
-| `R010-M7-MinFormalClosureFloor` | `010-execution-backlog-m6-m7.md`, `004-lean-integration-proposal.md` | M7 canonical floor for minimum formalized Lean correctness arguments in system gate |
+| `R010-M7-MinFormalClosureFloor` | `010-execution-backlog-m6-m7.md`, `004-lean-integration-proposal.md` | M7 canonical floor for full formalized Lean correctness arguments in system gate |
+| `R010-M7-RequirementFormalClosureTrace` | `010-execution-backlog-m6-m7.md`, `004-lean-integration-proposal.md` | M7 per-requirement formal closure report mapped to correctness arguments with gate enforcement |
 
 ## Usage
 

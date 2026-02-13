@@ -135,6 +135,7 @@ interface "Tool-AdequacyEvidence" connects Tool, AdequacyEvidence {
         phenomenon PersistAdequacyRun : value [Tool -> AdequacyEvidence] controlledBy Tool
         phenomenon PersistDifferentialVerdict : value [Tool -> AdequacyEvidence] controlledBy Tool
         phenomenon PersistLeanCoverage : value [Tool -> AdequacyEvidence] controlledBy Tool
+        phenomenon PersistRequirementFormalClosure : value [Tool -> AdequacyEvidence] controlledBy Tool
     }
 }
 

@@ -206,8 +206,9 @@ Canonical model of this toolchain:
 cargo run -p pf_dsl -- models/system/tool_spec.pf --report
 bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh
-bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 1
+bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 2
 bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf
+bash ./scripts/check_requirement_formal_closure.sh --requirements-file models/system/requirements.pf --arguments-file models/system/arguments.pf --map-file models/system/formal_closure_map.tsv --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json
 ```
 
 Generate engineering metrics:

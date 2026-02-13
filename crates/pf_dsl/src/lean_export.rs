@@ -222,12 +222,12 @@ fn lean_string_list_expr(values: &[String]) -> String {
     )
 }
 
-fn assertion_set_is_formal(set: &AssertionSet) -> bool {
-    !set.assertions.is_empty()
-        && set
-            .assertions
-            .iter()
-            .all(|assertion| assertion.language.as_deref() == Some("LeanAtom"))
+fn lean_atom_assertion_values(set: &AssertionSet) -> Vec<String> {
+    set.assertions
+        .iter()
+        .filter(|assertion| assertion.language.as_deref() == Some("LeanAtom"))
+        .map(|assertion| assertion.text.clone())
+        .collect()
 }
 
 enum FormalCoverageDecision {
@@ -239,13 +239,6 @@ enum FormalCoverageDecision {
     Skipped {
         reason: &'static str,
     },
-}
-
-fn assertion_values(set: &AssertionSet) -> Vec<String> {
-    set.assertions
-        .iter()
-        .map(|assertion| assertion.text.clone())
-        .collect()
 }
 
 fn evaluate_formal_argument(
@@ -268,31 +261,34 @@ fn evaluate_formal_argument(
         };
     };
 
-    if !assertion_set_is_formal(specification_set) {
-        return FormalCoverageDecision::Skipped {
-            reason: "non_leanatom_specification_set",
-        };
-    }
-    if !assertion_set_is_formal(world_set) {
-        return FormalCoverageDecision::Skipped {
-            reason: "non_leanatom_world_set",
-        };
-    }
-    if !assertion_set_is_formal(requirement_set) {
-        return FormalCoverageDecision::Skipped {
-            reason: "non_leanatom_requirement_set",
-        };
-    }
+    let specification_values = lean_atom_assertion_values(specification_set);
+    let world_values = lean_atom_assertion_values(world_set);
+    let requirement_values = lean_atom_assertion_values(requirement_set);
 
-    let specification_values = assertion_values(specification_set);
-    let world_values = assertion_values(world_set);
-    let requirement_values = assertion_values(requirement_set);
+    // Mixed assertion sets are allowed; formal closure is computed over the
+    // LeanAtom projection so narrative tracks (e.g. LTL) can coexist.
+    if specification_values.is_empty() {
+        return FormalCoverageDecision::Skipped {
+            reason: "no_leanatom_specification_projection",
+        };
+    }
+    if world_values.is_empty() {
+        return FormalCoverageDecision::Skipped {
+            reason: "no_leanatom_world_projection",
+        };
+    }
+    if requirement_values.is_empty() {
+        return FormalCoverageDecision::Skipped {
+            reason: "no_leanatom_requirement_projection",
+        };
+    }
 
     // The current strict closure mode proves formal entailment only when
-    // requirement assertions mirror specification assertions exactly.
+    // requirement LeanAtom projection mirrors specification LeanAtom
+    // projection exactly.
     if specification_values != requirement_values {
         return FormalCoverageDecision::Skipped {
-            reason: "requirement_not_mirror_specification",
+            reason: "requirement_not_mirror_specification_projection",
         };
     }
 
@@ -436,7 +432,7 @@ pub fn generate_lean_coverage_json(problem: &Problem) -> Result<String, serde_js
             } => {
                 formalized.push(LeanCoverageFormalizedEntry {
                     argument: argument.name.clone(),
-                    mode: "lean_atom_mirror_entailment".to_string(),
+                    mode: "lean_atom_projection_mirror_entailment".to_string(),
                     specification_assertions: specification_values.len(),
                     world_assertions: world_values.len(),
                     requirement_assertions: requirement_values.len(),
@@ -686,5 +682,99 @@ mod tests {
         let coverage_json = generate_lean_coverage_json(&problem).expect("coverage json");
         assert!(coverage_json.contains("\"formalized_count\": 0"));
         assert!(coverage_json.contains("\"reason\": \"missing_world_set\""));
+    }
+
+    #[test]
+    fn formalizes_mixed_assertion_sets_via_leanatom_projection() {
+        let problem = Problem {
+            name: "Projection".to_string(),
+            span: span(),
+            imports: vec![],
+            domains: vec![Domain {
+                name: "Machine".to_string(),
+                kind: DomainKind::Causal,
+                role: DomainRole::Machine,
+                marks: vec![],
+                span: span(),
+                source_path: None,
+            }],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![
+                        Assertion {
+                            text: "world narrative".to_string(),
+                            language: Some("LTL".to_string()),
+                            span: span(),
+                        },
+                        Assertion {
+                            text: "WorldFact".to_string(),
+                            language: Some("LeanAtom".to_string()),
+                            span: span(),
+                        },
+                    ],
+                    span: span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![
+                        Assertion {
+                            text: "spec narrative".to_string(),
+                            language: Some("LTL".to_string()),
+                            span: span(),
+                        },
+                        Assertion {
+                            text: "SpecFact".to_string(),
+                            language: Some("LeanAtom".to_string()),
+                            span: span(),
+                        },
+                    ],
+                    span: span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![
+                        Assertion {
+                            text: "requirement narrative".to_string(),
+                            language: Some("LTL".to_string()),
+                            span: span(),
+                        },
+                        Assertion {
+                            text: "SpecFact".to_string(),
+                            language: Some("LeanAtom".to_string()),
+                            span: span(),
+                        },
+                    ],
+                    span: span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A_projection".to_string(),
+                specification_set: "S".to_string(),
+                world_set: "W".to_string(),
+                requirement_set: "R".to_string(),
+                specification_ref: reference("S"),
+                world_ref: reference("W"),
+                requirement_ref: reference("R"),
+                span: span(),
+                source_path: None,
+            }],
+        };
+
+        let lean_model = generate_lean_model(&problem);
+        assert!(lean_model.contains("theorem A_projectionEntailment"));
+
+        let coverage_json = generate_lean_coverage_json(&problem).expect("coverage json");
+        assert!(coverage_json.contains("\"formalized_count\": 1"));
+        assert!(coverage_json.contains("\"mode\": \"lean_atom_projection_mirror_entailment\""));
     }
 }
