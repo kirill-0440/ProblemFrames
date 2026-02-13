@@ -102,7 +102,7 @@ Primary source proposals:
 - Deliverables:
   - impact report output + tests
 - Depends on: `T007-M2-01`
-- Maps to: `R007-M2-02`, `R007-M4C-02` (future integration)
+- Maps to: `R007-M2-02`, `R008-M4C-02` (future integration)
 
 #### T007-M2-04 - LSP Impact Navigation
 
