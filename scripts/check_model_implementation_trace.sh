@@ -525,6 +525,11 @@ if [[ "${enforce_pass}" -eq 1 && "${overall_status}" != "PASS" ]]; then
     IFS='|' read -r requirement evidence status note <<<"${row}"
     if [[ "${status}" != "implemented" ]]; then
       echo "  - ${requirement}: ${status} (${evidence}; ${note})" >&2
+      if [[ -n "${details["${requirement}"]}" ]]; then
+        while IFS= read -r detail_line; do
+          echo "      ${detail_line}" >&2
+        done <<<"${details["${requirement}"]}"
+      fi
     fi
   done
   echo "Implementation trace status is ${overall_status}; expected PASS." >&2
@@ -537,6 +542,11 @@ if [[ "${enforce_policy}" -eq 1 && "${policy_status}" != "PASS" ]]; then
     IFS='|' read -r requirement evidence status note <<<"${row}"
     if [[ "${status}" != "implemented" ]]; then
       echo "  - ${requirement}: ${status} (${evidence}; ${note})" >&2
+      if [[ -n "${details["${requirement}"]}" ]]; then
+        while IFS= read -r detail_line; do
+          echo "      ${detail_line}" >&2
+        done <<<"${details["${requirement}"]}"
+      fi
     fi
   done
   if [[ "${#policy_notes[@]}" -gt 0 ]]; then
