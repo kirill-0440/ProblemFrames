@@ -85,6 +85,8 @@ cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > model.dot
+cargo run -p pf_dsl -- models/system/tool_spec.pf --report
+cargo run -p pf_dsl -- models/system/tool_spec.pf --obligations
 ```
 
 ### Install VS Code extension
@@ -98,6 +100,7 @@ cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > model.dot
 - `crates/pf_dsl`: AST, parser, resolver, validator, generators
 - `crates/pf_lsp`: language server
 - `editors/code`: VS Code extension
+- `models`: repository-level PF models (including the canonical system model)
 - `docs/proposals`: product and engineering roadmap proposals
 - `docs/runbooks`: operational playbooks (release rollback, supply chain, triage)
 - `scripts`: local automation for reports, obligations, metrics, and smoke checks
@@ -170,6 +173,12 @@ Generate internal artifacts from dogfooding PF models:
 bash ./scripts/generate_dogfooding_reports.sh
 bash ./scripts/generate_obligation_reports.sh
 DOGFOODING_TRIAGE_MODE=all ./scripts/generate_dogfooding_triage_report.sh
+```
+
+Canonical model of this toolchain:
+
+```bash
+cargo run -p pf_dsl -- models/system/tool_spec.pf --report
 ```
 
 Generate engineering metrics:
