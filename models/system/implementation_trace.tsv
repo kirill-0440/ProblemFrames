@@ -139,6 +139,11 @@ R009-A4-OneCommandPFQualityGate|file_contains|scripts/run_pf_quality_gate.sh|PF 
 R009-A5-AgentAssistedModelExecution|file_exists|scripts/check_codex_self_model_contract.sh||agent-assisted model execution contract script exists
 R009-A5-AgentAssistedModelExecution|file_contains|models/system/requirements.pf|R009-A5-AgentAssistedModelExecution|agent-assisted requirement is modeled
 
+R009-A6-ModelFirstChangeControl|file_contains|models/system/requirements.pf|R009-A6-ModelFirstChangeControl|model-first governance requirement is modeled
+R009-A6-ModelFirstChangeControl|file_contains|scripts/check_codex_self_model_contract.sh|R009-A6-ModelFirstChangeControl|model-first requirement is enforced in Codex contract checks
+R009-A6-ModelFirstChangeControl|file_contains|models/system/subproblems.pf|R009-A6-ModelFirstChangeControl|model-first requirement is mapped in canonical PF decomposition
+R009-A6-ModelFirstChangeControl|command_passes|bash ./scripts/check_codex_self_model_contract.sh||Codex self-model contract check enforces model-first requirement
+
 R010-M6-WRSPMBridgeCoverage|file_contains|crates/pf_dsl/src/wrspm.rs|pub struct WrspmProjection|WRSPM projection model exists
 R010-M6-WRSPMBridgeCoverage|file_contains|crates/pf_dsl/src/wrspm.rs|eh partition is deferred|WRSPM unresolved/deferred entries are explicit
 

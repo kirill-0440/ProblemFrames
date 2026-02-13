@@ -237,6 +237,13 @@ requirement "R009-A5-AgentAssistedModelExecution" {
     reference: Codex
 }
 
+requirement "R009-A6-ModelFirstChangeControl" {
+    frame: SimpleWorkpieces
+    constraint: "All production changes are introduced through canonical self-model updates before implementation artifacts are updated"
+    constrains: SourceFile
+    reference: Codex
+}
+
 // Proposal 010: WRSPM contract bridge (M6-M7).
 requirement "R010-M6-WRSPMBridgeCoverage" {
     frame: Transformation

@@ -61,7 +61,7 @@ subproblem ControlledApiBridgeSpike {
 subproblem CanonicalPFAlignmentAddendumLoop {
     machine: Tool
     participants: Tool, Developer, Codex, GeneratedCode, TraceabilityStore, SourceFile, CI
-    requirements: "R009-A1-ExplicitPFViews", "R009-A2-DecompositionClosureArtifact", "R009-A3-FrameConcernCoverageGate", "R009-A4-OneCommandPFQualityGate", "R009-A5-AgentAssistedModelExecution"
+    requirements: "R009-A1-ExplicitPFViews", "R009-A2-DecompositionClosureArtifact", "R009-A3-FrameConcernCoverageGate", "R009-A4-OneCommandPFQualityGate", "R009-A5-AgentAssistedModelExecution", "R009-A6-ModelFirstChangeControl"
 }
 
 subproblem WRSPMBridgeCoverageLoop {

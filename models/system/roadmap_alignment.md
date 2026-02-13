@@ -36,6 +36,7 @@ This map links canonical system-model requirements to roadmap/proposal items in
 | `R009-A3-FrameConcernCoverageGate` | `007-execution-backlog-m1-m3.md`, `009-pf-canonical-retro-addendum.md` | M3 frame concern coverage gate (`R007-M3-04`) |
 | `R009-A4-OneCommandPFQualityGate` | `009-pf-canonical-retro-addendum.md`, `010-execution-backlog-m6-m7.md` | one-command PF quality gate operationalization (`scripts/run_pf_quality_gate.sh`) |
 | `R009-A5-AgentAssistedModelExecution` | `009-pf-canonical-retro-addendum.md` | agent-assisted execution under the same PF quality gate contract |
+| `R009-A6-ModelFirstChangeControl` | `009-pf-canonical-retro-addendum.md` | model-first change governance: canonical self-model update precedes implementation updates |
 | `R008-M4A-MarkValidationContract` | `008-execution-backlog-m4-m5.md` | M4a (`R008-M4A-01`, `R008-M4A-02`, `R008-M4A-03`) |
 | `R008-M4B-FileBasedPIMGeneration` | `008-execution-backlog-m4-m5.md` | M4b (`R008-M4B-01`, `R008-M4B-02`, `R008-M4B-03`) |
 | `R008-M4C-TraceCoverageContract` | `008-execution-backlog-m4-m5.md` | M4c (`R008-M4C-01`, `R008-M4C-02`, `R008-M4C-03`) |

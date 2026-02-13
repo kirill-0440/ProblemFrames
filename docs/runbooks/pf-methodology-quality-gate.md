@@ -8,19 +8,20 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 
 ## Methodology (Required Order)
 
-1. Model the problem world first (domains, interfaces, requirements), then adjust implementation artifacts.
-2. Enforce frame fit and strict semantic validation through `pf_dsl`.
-3. Verify decomposition closure (no uncovered requirements, no orphan subproblems, no boundary mismatches).
-4. Verify frame concern coverage (`requirement -> correctness argument`) with explicit uncovered/deferred entries.
-5. Generate correctness evidence (`obligations`, `alloy`) from the validated model.
-6. Generate PIM artifacts (`ddd-pim`, `sysml2-text`, `sysml2-json`) from the same validated source model.
-7. Generate source-to-target trace map and enforce coverage (`trace-map.json` status must be `PASS`).
-8. Generate traceability artifacts (relationship matrix + impact analysis with generated DDD/SysML targets).
-9. Generate adequacy differential evidence (`rust_verdict` vs `formal_verdict` proxy) for selected obligation class.
-10. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
-11. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
-12. Generate Lean research-track artifacts (`--lean-model`, `--lean-coverage-json`, non-blocking Lean smoke, differential report).
-13. For the canonical system model, run `check_system_model.sh` to generate per-requirement formal closure report (requirement-to-correctness-argument mapping + formalized status).
+1. Apply model-first governance: update canonical self-model requirements/decomposition before implementation artifacts.
+2. Model the problem world first (domains, interfaces, requirements), then adjust implementation artifacts.
+3. Enforce frame fit and strict semantic validation through `pf_dsl`.
+4. Verify decomposition closure (no uncovered requirements, no orphan subproblems, no boundary mismatches).
+5. Verify frame concern coverage (`requirement -> correctness argument`) with explicit uncovered/deferred entries.
+6. Generate correctness evidence (`obligations`, `alloy`) from the validated model.
+7. Generate PIM artifacts (`ddd-pim`, `sysml2-text`, `sysml2-json`) from the same validated source model.
+8. Generate source-to-target trace map and enforce coverage (`trace-map.json` status must be `PASS`).
+9. Generate traceability artifacts (relationship matrix + impact analysis with generated DDD/SysML targets).
+10. Generate adequacy differential evidence (`rust_verdict` vs `formal_verdict` proxy) for selected obligation class.
+11. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
+12. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
+13. Generate Lean research-track artifacts (`--lean-model`, `--lean-coverage-json`, non-blocking Lean smoke, differential report).
+14. For the canonical system model, run `check_system_model.sh` to generate per-requirement formal closure report (requirement-to-correctness-argument mapping + formalized status).
 
 ## One-command Gate
 

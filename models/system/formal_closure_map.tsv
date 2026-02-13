@@ -34,6 +34,7 @@ R009-A2-DecompositionClosureArtifact|A_roadmap_alignment
 R009-A3-FrameConcernCoverageGate|A_roadmap_alignment
 R009-A4-OneCommandPFQualityGate|A_roadmap_alignment
 R009-A5-AgentAssistedModelExecution|A_roadmap_alignment
+R009-A6-ModelFirstChangeControl|A_roadmap_alignment
 R010-M6-WRSPMBridgeCoverage|A_roadmap_alignment
 R010-M6-SVocabularyDiscipline|A_roadmap_alignment
 R010-M6-WRSPMReportModes|A_roadmap_alignment

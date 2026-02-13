@@ -25,6 +25,11 @@ grep -q '^requirement "R009-A5-AgentAssistedModelExecution"' "${REQUIREMENTS_FIL
   exit 1
 }
 
+grep -q '^requirement "R009-A6-ModelFirstChangeControl"' "${REQUIREMENTS_FILE}" || {
+  echo "R009-A6 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
 grep -q 'participants: .*\bCodex\b' "${SUBPROBLEMS_FILE}" || {
   echo "No subproblem participants include Codex in ${SUBPROBLEMS_FILE}" >&2
   exit 1
@@ -32,6 +37,11 @@ grep -q 'participants: .*\bCodex\b' "${SUBPROBLEMS_FILE}" || {
 
 grep -q 'requirements: .*"R009-A5-AgentAssistedModelExecution"' "${SUBPROBLEMS_FILE}" || {
   echo "R009-A5 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+grep -q 'requirements: .*"R009-A6-ModelFirstChangeControl"' "${SUBPROBLEMS_FILE}" || {
+  echo "R009-A6 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
   exit 1
 }
 
@@ -46,6 +56,16 @@ cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-md \
 impact_line="$(grep -F '`requirement:R009-A5-AgentAssistedModelExecution` -> ' "${traceability_file}" || true)"
 if [[ -z "${impact_line}" || "${impact_line}" != *"R009-A5-AgentAssistedModelExecution"* ]]; then
   echo "Impact trace for R009-A5 is missing in traceability export" >&2
+  exit 1
+fi
+
+cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-md \
+  --impact=requirement:R009-A6-ModelFirstChangeControl \
+  --impact-hops=2 > "${traceability_file}"
+
+impact_line="$(grep -F '`requirement:R009-A6-ModelFirstChangeControl` -> ' "${traceability_file}" || true)"
+if [[ -z "${impact_line}" || "${impact_line}" != *"R009-A6-ModelFirstChangeControl"* ]]; then
+  echo "Impact trace for R009-A6 is missing in traceability export" >&2
   exit 1
 fi
 
