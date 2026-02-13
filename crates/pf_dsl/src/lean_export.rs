@@ -1,7 +1,8 @@
 use crate::ast::{
-    AssertionScope, CorrectnessArgument, Domain, DomainKind, DomainRole, FrameType, Interface,
-    Phenomenon, PhenomenonType, Problem, Requirement,
+    AssertionScope, AssertionSet, CorrectnessArgument, Domain, DomainKind, DomainRole, FrameType,
+    Interface, Phenomenon, PhenomenonType, Problem, Requirement,
 };
+use std::collections::{BTreeMap, BTreeSet};
 
 fn escape_lean_string(value: &str) -> String {
     let mut escaped = String::with_capacity(value.len());
@@ -188,6 +189,162 @@ fn emit_correctness_arguments(arguments: &[CorrectnessArgument], output: &mut St
     output.push_str("]\n\n");
 }
 
+fn lean_ident(value: &str) -> String {
+    let mut ident = String::with_capacity(value.len());
+    for ch in value.chars() {
+        if ch.is_ascii_alphanumeric() {
+            ident.push(ch);
+        } else {
+            ident.push('_');
+        }
+    }
+
+    if ident.is_empty() {
+        ident.push_str("arg");
+    }
+
+    if ident.as_bytes()[0].is_ascii_digit() {
+        ident.insert(0, '_');
+    }
+
+    ident
+}
+
+fn lean_string_list_expr(values: &[String]) -> String {
+    format!(
+        "[{}]",
+        values
+            .iter()
+            .map(|value| format!("\"{}\"", escape_lean_string(value)))
+            .collect::<Vec<_>>()
+            .join(", ")
+    )
+}
+
+fn assertion_set_is_formal(set: &AssertionSet) -> bool {
+    !set.assertions.is_empty()
+        && set
+            .assertions
+            .iter()
+            .all(|assertion| assertion.language.as_deref() == Some("LeanAtom"))
+}
+
+fn emit_formal_correctness_argument_proofs(problem: &Problem, output: &mut String) {
+    let mut sets_by_name = BTreeMap::new();
+    for set in &problem.assertion_sets {
+        sets_by_name.insert(set.name.as_str(), set);
+    }
+
+    output.push_str("def Holds (sem : String -> Prop) (xs : List String) : Prop :=\n");
+    output.push_str("  forall a, List.Mem a xs -> sem a\n\n");
+
+    let mut sorted_arguments = problem.correctness_arguments.clone();
+    sorted_arguments.sort_by(|left, right| left.name.cmp(&right.name));
+    let mut emitted_names = BTreeSet::new();
+
+    for argument in sorted_arguments {
+        let Some(specification_set) = sets_by_name.get(argument.specification_set.as_str()) else {
+            continue;
+        };
+        let Some(world_set) = sets_by_name.get(argument.world_set.as_str()) else {
+            continue;
+        };
+        let Some(requirement_set) = sets_by_name.get(argument.requirement_set.as_str()) else {
+            continue;
+        };
+
+        if !(assertion_set_is_formal(specification_set)
+            && assertion_set_is_formal(world_set)
+            && assertion_set_is_formal(requirement_set))
+        {
+            continue;
+        }
+
+        let mut base = lean_ident(&argument.name);
+        let mut suffix = 2usize;
+        while !emitted_names.insert(base.clone()) {
+            base = format!("{}_{}", lean_ident(&argument.name), suffix);
+            suffix += 1;
+        }
+
+        let spec_values = specification_set
+            .assertions
+            .iter()
+            .map(|assertion| assertion.text.clone())
+            .collect::<Vec<_>>();
+        let world_values = world_set
+            .assertions
+            .iter()
+            .map(|assertion| assertion.text.clone())
+            .collect::<Vec<_>>();
+        let req_values = requirement_set
+            .assertions
+            .iter()
+            .map(|assertion| assertion.text.clone())
+            .collect::<Vec<_>>();
+
+        // The current strict closure mode proves formal entailment only when
+        // requirement assertions mirror specification assertions exactly.
+        if spec_values != req_values {
+            continue;
+        }
+
+        output.push_str(&format!(
+            "def {}SpecAssertions : List String := {}\n",
+            base,
+            lean_string_list_expr(&spec_values),
+        ));
+        output.push_str(&format!(
+            "def {}WorldAssertions : List String := {}\n",
+            base,
+            lean_string_list_expr(&world_values),
+        ));
+        output.push_str(&format!(
+            "def {}ReqAssertions : List String := {}\n\n",
+            base,
+            lean_string_list_expr(&req_values),
+        ));
+
+        output.push_str(&format!(
+            "/-- Closed coverage witness generated for correctness argument `{}`. -/\n",
+            escape_lean_string(&argument.name),
+        ));
+        output.push_str(&format!("theorem {}CoverageClosed :\n", base,));
+        output.push_str(&format!(
+            "    forall a, List.Mem a {}ReqAssertions -> List.Mem a {}SpecAssertions \\/ List.Mem a {}WorldAssertions := by\n",
+            base, base, base,
+        ));
+        output.push_str("  intro a hReq\n");
+        output.push_str(&format!(
+            "  exact Or.inl (by simpa [{}ReqAssertions, {}SpecAssertions] using hReq)\n\n",
+            base, base,
+        ));
+        output.push_str(&format!(
+            "/-- Formal W/S/R entailment closure for correctness argument `{}`. -/\n",
+            escape_lean_string(&argument.name),
+        ));
+        output.push_str(&format!(
+            "theorem {}Entailment (sem : String -> Prop)\n",
+            base
+        ));
+        output.push_str(&format!("    (hSpec : Holds sem {}SpecAssertions)\n", base));
+        output.push_str(&format!(
+            "    (hWorld : Holds sem {}WorldAssertions) :\n",
+            base
+        ));
+        output.push_str(&format!("    Holds sem {}ReqAssertions := by\n", base));
+        output.push_str("  intro a hReq\n");
+        output.push_str(&format!(
+            "  have hCov : List.Mem a {}SpecAssertions \\/ List.Mem a {}WorldAssertions :=\n",
+            base, base,
+        ));
+        output.push_str(&format!("    {}CoverageClosed a hReq\n", base));
+        output.push_str("  cases hCov with\n");
+        output.push_str("  | inl hSpecMem => exact hSpec a hSpecMem\n");
+        output.push_str("  | inr hWorldMem => exact hWorld a hWorldMem\n\n");
+    }
+}
+
 pub fn generate_lean_model(problem: &Problem) -> String {
     let mut output = String::new();
 
@@ -302,6 +459,7 @@ pub fn generate_lean_model(problem: &Problem) -> String {
     );
     output.push_str("theorem correctnessArgumentsStructured : correctnessArgumentsStructuredBool = true := by\n");
     output.push_str("  decide\n\n");
+    emit_formal_correctness_argument_proofs(problem, &mut output);
     output.push_str("end ProblemFramesGenerated\n");
 
     output

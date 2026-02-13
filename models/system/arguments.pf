@@ -21,3 +21,20 @@ requirementAssertions R_roadmap_outcomes {
 correctnessArgument A_roadmap_alignment {
     prove S_roadmap_execution and W_roadmap_context entail R_roadmap_outcomes
 }
+
+worldProperties W_roadmap_formal {
+    assert "CIStable" @LeanAtom
+    assert "TracePolicyPass" @LeanAtom
+}
+
+specification S_roadmap_formal {
+    assert "PFQualityGateExecuted" @LeanAtom
+}
+
+requirementAssertions R_roadmap_formal {
+    assert "PFQualityGateExecuted" @LeanAtom
+}
+
+correctnessArgument A_roadmap_alignment_formal {
+    prove S_roadmap_formal and W_roadmap_formal entail R_roadmap_formal
+}

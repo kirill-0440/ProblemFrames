@@ -16,3 +16,12 @@ Related governance notes:
 - `adequacy-go-no-go-criteria.md`: criteria for future promotion of adequacy checks to blocking.
 - `sysml-api-spike-go-no-go.md`: M5a runtime/reliability/maintenance memo and recommendation.
 - `lean-differential-policy.md`: non-blocking Lean differential policy and promotion criteria.
+
+## Lean W/S/R closure mode
+
+`pf_dsl --lean-model` now emits machine-checked closure theorems for
+`correctnessArgument` entries when all three linked assertion sets use
+`@LeanAtom` assertions and requirement assertions mirror specification assertions.
+
+This keeps the theorem closure explicit and non-placeholder while preserving
+the existing natural-language (`@LTL`) argumentation track.
