@@ -1,17 +1,17 @@
-domain Machine [Machine]
-domain ControlledDomain [Causal]
-domain Operator [Biddable]
+domain Machine kind causal role machine
+domain ControlledDomain kind causal role given
+domain Operator kind biddable role given
 
-interface "Machine-ControlledDomain" {
+interface "Machine-ControlledDomain" connects Machine, ControlledDomain {
     shared: {
-        event control [Machine -> ControlledDomain]
-        event feedback [ControlledDomain -> Machine]
+        phenomenon control : event [Machine -> ControlledDomain] controlledBy Machine
+        phenomenon feedback : event [ControlledDomain -> Machine] controlledBy ControlledDomain
     }
 }
 
-interface "Operator-Machine" {
+interface "Operator-Machine" connects Operator, Machine {
     shared: {
-        event command [Operator -> Machine]
+        phenomenon command : event [Operator -> Machine] controlledBy Operator
     }
 }
 

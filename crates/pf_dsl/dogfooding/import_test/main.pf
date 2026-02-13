@@ -2,10 +2,10 @@ problem: ImportTest
 
 import "hardware.pf"
 
-domain Controller [Machine]
+domain Controller kind causal role machine
 
-interface "Controller-Sensor" {
+interface "Controller-Sensor" connects Controller, Sensor {
     shared: {
-        event read [Sensor -> Controller]
+        phenomenon read : event [Sensor -> Controller] controlledBy Sensor
     }
 }

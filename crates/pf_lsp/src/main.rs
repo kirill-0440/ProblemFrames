@@ -348,6 +348,25 @@ fn validate_document(connection: &Connection, uri: Uri, text: &str) -> Result<()
                             }
                             pf_dsl::validator::ValidationError::MissingRequiredField(_, _, s) => *s,
                             pf_dsl::validator::ValidationError::UnsupportedFrame(_, _, s) => *s,
+                            pf_dsl::validator::ValidationError::InvalidDomainRole(_, _, s) => *s,
+                            pf_dsl::validator::ValidationError::InterfaceInsufficientConnections(
+                                _,
+                                s,
+                            ) => *s,
+                            pf_dsl::validator::ValidationError::InterfaceWithoutPhenomena(_, s) => {
+                                *s
+                            }
+                            pf_dsl::validator::ValidationError::InterfaceControllerMismatch(
+                                _,
+                                _,
+                                _,
+                                s,
+                            ) => *s,
+                            pf_dsl::validator::ValidationError::RequirementReferencesMachine(
+                                _,
+                                _,
+                                s,
+                            ) => *s,
                         };
 
                         let diagnostic = Diagnostic {

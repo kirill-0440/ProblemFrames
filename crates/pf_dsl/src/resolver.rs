@@ -110,12 +110,20 @@ pub fn find_definition(problem: &Problem, offset: usize) -> Option<(Option<PathB
 
     // 1. Check Interfaces (Phenomena)
     for interface in &problem.interfaces {
+        for domain_ref in &interface.connects {
+            if offset >= domain_ref.span.start && offset < domain_ref.span.end {
+                return find_domain(&domain_ref.name);
+            }
+        }
         for phen in &interface.shared_phenomena {
             if offset >= phen.from.span.start && offset < phen.from.span.end {
                 return find_domain(&phen.from.name);
             }
             if offset >= phen.to.span.start && offset < phen.to.span.end {
                 return find_domain(&phen.to.name);
+            }
+            if offset >= phen.controlled_by.span.start && offset < phen.controlled_by.span.end {
+                return find_domain(&phen.controlled_by.name);
             }
         }
     }
@@ -162,17 +170,20 @@ mod tests {
             imports: vec![],
             domains: vec![Domain {
                 name: "D".to_string(),
-                domain_type: DomainType::Machine,
+                kind: DomainKind::Causal,
+                role: DomainRole::Machine,
                 span: mock_span(10, 20),
                 source_path: None,
             }],
             interfaces: vec![Interface {
                 name: "I".to_string(),
+                connects: vec![mock_ref("D", 32, 33), mock_ref("X", 34, 35)],
                 shared_phenomena: vec![Phenomenon {
                     name: "E".to_string(),
                     type_: PhenomenonType::Event,
                     from: mock_ref("D", 50, 55),
                     to: mock_ref("X", 60, 65), // X not defined
+                    controlled_by: mock_ref("D", 66, 71),
                     span: mock_span(40, 70),
                 }],
                 span: mock_span(30, 80),
@@ -205,7 +216,8 @@ mod tests {
             imports: vec![],
             domains: vec![Domain {
                 name: "C".to_string(),
-                domain_type: DomainType::Causal,
+                kind: DomainKind::Causal,
+                role: DomainRole::Given,
                 span: mock_span(10, 20),
                 source_path: None,
             }],

@@ -19,13 +19,13 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
 ```pf
 problem: SluiceGateControl
 
-domain Controller [Machine]
-domain Gate      [Causal]
-domain Operator  [Biddable]
+domain Gate kind causal role given
+domain Operator kind biddable role given
+domain Controller kind causal role machine
 
-interface "Operator-Controller" {
+interface "Operator-Controller" connects Operator, Controller {
     shared: {
-        event OpenCommand [Operator -> Controller]
+        phenomenon OpenCommand : event [Operator -> Controller] controlledBy Operator
     }
 }
 

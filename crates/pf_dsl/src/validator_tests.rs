@@ -14,6 +14,43 @@ mod tests {
         }
     }
 
+    fn domain(name: &str, kind: DomainKind, role: DomainRole) -> Domain {
+        Domain {
+            name: name.to_string(),
+            kind,
+            role,
+            span: mock_span(),
+            source_path: None,
+        }
+    }
+
+    fn phenomenon(
+        name: &str,
+        type_: PhenomenonType,
+        from: &str,
+        to: &str,
+        controlled_by: &str,
+    ) -> Phenomenon {
+        Phenomenon {
+            name: name.to_string(),
+            type_,
+            from: mock_ref(from),
+            to: mock_ref(to),
+            controlled_by: mock_ref(controlled_by),
+            span: mock_span(),
+        }
+    }
+
+    fn interface(name: &str, connects: &[&str], shared_phenomena: Vec<Phenomenon>) -> Interface {
+        Interface {
+            name: name.to_string(),
+            connects: connects.iter().map(|name| mock_ref(name)).collect(),
+            shared_phenomena,
+            span: mock_span(),
+            source_path: None,
+        }
+    }
+
     #[test]
     fn test_duplicate_domain_detection() {
         let problem = Problem {
@@ -21,18 +58,9 @@ mod tests {
             span: mock_span(),
             imports: vec![],
             domains: vec![
-                Domain {
-                    name: "D1".to_string(),
-                    domain_type: DomainType::Machine,
-                    span: mock_span(),
-                    source_path: None,
-                },
-                Domain {
-                    name: "D1".to_string(),
-                    domain_type: DomainType::Causal,
-                    span: mock_span(),
-                    source_path: None,
-                },
+                domain("Machine", DomainKind::Causal, DomainRole::Machine),
+                domain("D1", DomainKind::Causal, DomainRole::Given),
+                domain("D1", DomainKind::Causal, DomainRole::Given),
             ],
             interfaces: vec![],
             requirements: vec![],
@@ -48,32 +76,22 @@ mod tests {
 
     #[test]
     fn test_missing_connection_commanded() {
-        // Operator is not connected to any Machine
         let problem = Problem {
             name: "Test".to_string(),
             span: mock_span(),
             imports: vec![],
             domains: vec![
-                Domain {
-                    name: "Op".to_string(),
-                    domain_type: DomainType::Biddable,
-                    span: mock_span(),
-                    source_path: None,
-                },
-                Domain {
-                    name: "M".to_string(),
-                    domain_type: DomainType::Machine,
-                    span: mock_span(),
-                    source_path: None,
-                },
+                domain("Op", DomainKind::Biddable, DomainRole::Given),
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
             ],
-            interfaces: vec![], // No connection!
+            interfaces: vec![],
             requirements: vec![Requirement {
                 name: "R1".to_string(),
                 frame: FrameType::CommandedBehavior,
-                constrains: None,
+                constrains: Some(mock_ref("C")),
                 reference: Some(mock_ref("Op")),
-                constraint: "M".to_string(),
+                constraint: "".to_string(),
                 phenomena: vec![],
                 span: mock_span(),
                 source_path: None,
@@ -90,24 +108,13 @@ mod tests {
 
     #[test]
     fn test_missing_connection_required() {
-        // Machine is not connected to Controlled Domain
         let problem = Problem {
             name: "Test".to_string(),
             span: mock_span(),
             imports: vec![],
             domains: vec![
-                Domain {
-                    name: "M".to_string(),
-                    domain_type: DomainType::Machine,
-                    span: mock_span(),
-                    source_path: None,
-                },
-                Domain {
-                    name: "C".to_string(),
-                    domain_type: DomainType::Causal,
-                    span: mock_span(),
-                    source_path: None,
-                },
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
             ],
             interfaces: vec![],
             requirements: vec![Requirement {
@@ -132,88 +139,58 @@ mod tests {
 
     #[test]
     fn test_invalid_causality() {
-        // Event originating from Lexical domain
         let problem = Problem {
             name: "Test".to_string(),
             span: mock_span(),
             imports: vec![],
             domains: vec![
-                Domain {
-                    name: "L".to_string(),
-                    domain_type: DomainType::Lexical,
-                    span: mock_span(),
-                    source_path: None,
-                },
-                Domain {
-                    name: "M".to_string(),
-                    domain_type: DomainType::Machine,
-                    span: mock_span(),
-                    source_path: None,
-                },
+                domain("L", DomainKind::Lexical, DomainRole::Given),
+                domain("M", DomainKind::Causal, DomainRole::Machine),
             ],
-            interfaces: vec![Interface {
-                name: "I1".to_string(),
-                shared_phenomena: vec![Phenomenon {
-                    name: "E1".to_string(),
-                    type_: PhenomenonType::Event,
-                    from: mock_ref("L"),
-                    to: mock_ref("M"),
-                    span: mock_span(),
-                }],
-                span: mock_span(),
-                source_path: None,
-            }],
+            interfaces: vec![interface(
+                "I1",
+                &["L", "M"],
+                vec![phenomenon("E1", PhenomenonType::Event, "L", "M", "L")],
+            )],
             requirements: vec![],
         };
 
         let result = validate(&problem);
         assert!(result.is_err());
         let errors = result.unwrap_err();
-        // Check for InvalidCausality
-        assert!(errors.iter().any(|e| matches!(e, ValidationError::InvalidCausality(p, _, d, _, _) if p == "E1" && d == "L")));
+        assert!(errors.iter().any(
+            |e| matches!(e, ValidationError::InvalidCausality(p, _, d, _, _) if p == "E1" && d == "L")
+        ));
     }
 
     #[test]
     fn test_invalid_command_origin() {
-        // Command originating from Machine (should be Operator/Biddable)
         let problem = Problem {
             name: "Test".to_string(),
             span: mock_span(),
             imports: vec![],
             domains: vec![
-                Domain {
-                    name: "M".to_string(),
-                    domain_type: DomainType::Machine,
-                    span: mock_span(),
-                    source_path: None,
-                },
-                Domain {
-                    name: "C".to_string(),
-                    domain_type: DomainType::Causal,
-                    span: mock_span(),
-                    source_path: None,
-                },
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
             ],
-            interfaces: vec![Interface {
-                name: "M-C".to_string(),
-                shared_phenomena: vec![Phenomenon {
-                    name: "Cmd1".to_string(),
-                    type_: PhenomenonType::Command,
-                    from: mock_ref("M"),
-                    to: mock_ref("C"),
-                    span: mock_span(),
-                }],
-                span: mock_span(),
-                source_path: None,
-            }],
+            interfaces: vec![interface(
+                "M-C",
+                &["M", "C"],
+                vec![phenomenon("Cmd1", PhenomenonType::Command, "M", "C", "M")],
+            )],
             requirements: vec![],
         };
 
         let result = validate(&problem);
         assert!(result.is_err());
         let errors = result.unwrap_err();
-        // Should fail because M is Machine, not Biddable
-        assert!(errors.iter().any(|e| matches!(e, ValidationError::InvalidCausality(p, t, d, _, _) if p == "Cmd1" && matches!(t, PhenomenonType::Command) && d == "M")));
+        assert!(errors.iter().any(|e| {
+            matches!(
+                e,
+                ValidationError::InvalidCausality(p, t, d, _, _)
+                    if p == "Cmd1" && matches!(t, PhenomenonType::Command) && d == "M"
+            )
+        }));
     }
 
     #[test]
@@ -222,7 +199,7 @@ mod tests {
             name: "Test".to_string(),
             span: mock_span(),
             imports: vec![],
-            domains: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
             interfaces: vec![],
             requirements: vec![Requirement {
                 name: "R1".to_string(),
@@ -254,7 +231,7 @@ mod tests {
             name: "Test".to_string(),
             span: mock_span(),
             imports: vec![],
-            domains: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
             interfaces: vec![],
             requirements: vec![Requirement {
                 name: "R1".to_string(),
@@ -287,18 +264,8 @@ mod tests {
             span: mock_span(),
             imports: vec![],
             domains: vec![
-                Domain {
-                    name: "M".to_string(),
-                    domain_type: DomainType::Machine,
-                    span: mock_span(),
-                    source_path: None,
-                },
-                Domain {
-                    name: "C".to_string(),
-                    domain_type: DomainType::Causal,
-                    span: mock_span(),
-                    source_path: None,
-                },
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
             ],
             interfaces: vec![],
             requirements: vec![Requirement {
@@ -321,6 +288,41 @@ mod tests {
                 e,
                 ValidationError::MissingRequiredField(req, field, _)
                     if req == "R1" && field == "reference"
+            )
+        }));
+    }
+
+    #[test]
+    fn test_requirement_cannot_reference_machine() {
+        let problem = Problem {
+            name: "Test".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("C")),
+                reference: Some(mock_ref("M")),
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|e| {
+            matches!(
+                e,
+                ValidationError::RequirementReferencesMachine(req, domain, _)
+                    if req == "R1" && domain == "M"
             )
         }));
     }

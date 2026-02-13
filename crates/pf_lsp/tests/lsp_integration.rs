@@ -183,7 +183,8 @@ fn diagnostics_follow_did_change_buffer_state() {
     let uri = file_uri(&path);
     let mut client = TestLspClient::spawn();
 
-    let invalid_text = "problem: P\ninterface \"A-B\" { shared: { event e [A -> B] } }\n";
+    let invalid_text =
+        "problem: P\ninterface \"A-B\" connects A, B { shared: { phenomenon e : event [A -> B] controlledBy A } }\n";
     client.send(json!({
         "jsonrpc": "2.0",
         "method": "textDocument/didOpen",
@@ -208,7 +209,7 @@ fn diagnostics_follow_did_change_buffer_state() {
         "expected non-empty diagnostics for invalid buffer"
     );
 
-    let fixed_text = "problem: P\ndomain A [Machine]\ndomain B [Causal]\ninterface \"A-B\" { shared: { event e [A -> B] } }\n";
+    let fixed_text = "problem: P\ndomain A kind causal role machine\ndomain B kind causal role given\ninterface \"A-B\" connects A, B { shared: { phenomenon e : event [A -> B] controlledBy A } }\n";
     client.send(json!({
         "jsonrpc": "2.0",
         "method": "textDocument/didChange",
@@ -244,12 +245,10 @@ fn definition_uses_unsaved_buffer_content() {
     let uri = file_uri(&path);
 
     // On-disk content intentionally differs from open buffer content.
-    let disk_text =
-        "problem: P\ndomain Old [Machine]\ndomain T [Causal]\ninterface \"I\" { shared: { event e [Old -> T] } }\n";
+    let disk_text = "problem: P\ndomain Old kind causal role machine\ndomain T kind causal role given\ninterface \"I\" connects Old, T { shared: { phenomenon e : event [Old -> T] controlledBy Old } }\n";
     fs::write(&path, disk_text).expect("failed to write test file");
 
-    let live_text =
-        "problem: P\ndomain New [Machine]\ndomain T [Causal]\ninterface \"I\" { shared: { event e [New -> T] } }\n";
+    let live_text = "problem: P\ndomain New kind causal role machine\ndomain T kind causal role given\ninterface \"I\" connects New, T { shared: { phenomenon e : event [New -> T] controlledBy New } }\n";
     let position = position_of(live_text, "New", 1);
 
     let mut client = TestLspClient::spawn();

@@ -1,62 +1,62 @@
 problem: ProblemFramesRoadmapQ1
 
 // 1. Domains
-domain Maintainer [Biddable]
-domain EngineeringTeam [Biddable]
-domain RoadmapBoard [Machine]
-domain CI [Machine]
-domain Repository [Lexical]
-domain ProposalSet [Lexical]
-domain Metrics [Causal]
-domain Users [Biddable]
-domain ReleaseArtifacts [Lexical]
+domain Maintainer kind biddable role given
+domain EngineeringTeam kind biddable role given
+domain RoadmapBoard kind causal role machine
+domain CI kind causal role given
+domain Repository kind lexical role given
+domain ProposalSet kind lexical role given
+domain Metrics kind causal role given
+domain Users kind biddable role given
+domain ReleaseArtifacts kind lexical role given
 
 // 2. Interfaces
 
 // Planning intent and prioritization decisions.
-interface "Maintainer-RoadmapBoard" {
+interface "Maintainer-RoadmapBoard" connects Maintainer, RoadmapBoard {
     shared: {
-        command PrioritizeMilestone [Maintainer -> RoadmapBoard]
-        event MilestoneCommitted [RoadmapBoard -> Maintainer]
+        phenomenon PrioritizeMilestone : command [Maintainer -> RoadmapBoard] controlledBy Maintainer
+        phenomenon MilestoneCommitted : event [RoadmapBoard -> Maintainer] controlledBy RoadmapBoard
     }
 }
 
 // Proposals are prepared by the team and read by planning board.
-interface "Team-Proposals" {
+interface "Team-Proposals" connects EngineeringTeam, ProposalSet, RoadmapBoard {
     shared: {
-        event DraftProposal [EngineeringTeam -> ProposalSet]
-        value ProposalSnapshot [ProposalSet -> RoadmapBoard]
+        phenomenon DraftProposal : event [EngineeringTeam -> ProposalSet] controlledBy EngineeringTeam
+        phenomenon ProposalSnapshot : value [ProposalSet -> RoadmapBoard] controlledBy ProposalSet
     }
 }
 
 // Delivery loop from repository state into CI and team feedback.
-interface "Repository-CI" {
+interface "Repository-CI" connects Repository, CI, EngineeringTeam {
     shared: {
-        value RepositoryState [Repository -> CI]
-        event CheckResult [CI -> EngineeringTeam]
+        phenomenon RepositoryState : value [Repository -> CI] controlledBy Repository
+        phenomenon CheckResult : event [CI -> EngineeringTeam] controlledBy CI
     }
 }
 
 // Quality metrics continuously inform planning.
-interface "Metrics-RoadmapBoard" {
+interface "Metrics-RoadmapBoard" connects Metrics, RoadmapBoard {
     shared: {
-        value QualitySignals [Metrics -> RoadmapBoard]
+        phenomenon QualitySignals : value [Metrics -> RoadmapBoard] controlledBy Metrics
     }
 }
 
 // User feedback closes the planning loop.
-interface "Users-RoadmapBoard" {
+interface "Users-RoadmapBoard" connects Users, RoadmapBoard {
     shared: {
-        event ReportPainPoint [Users -> RoadmapBoard]
-        event PublishRoadmapUpdate [RoadmapBoard -> Users]
+        phenomenon ReportPainPoint : event [Users -> RoadmapBoard] controlledBy Users
+        phenomenon PublishRoadmapUpdate : event [RoadmapBoard -> Users] controlledBy RoadmapBoard
     }
 }
 
 // Release intent and resulting artifacts.
-interface "RoadmapBoard-ReleaseArtifacts" {
+interface "RoadmapBoard-ReleaseArtifacts" connects RoadmapBoard, ReleaseArtifacts, Maintainer {
     shared: {
-        event PlanRelease [RoadmapBoard -> ReleaseArtifacts]
-        value ReleaseDigest [ReleaseArtifacts -> Maintainer]
+        phenomenon PlanRelease : event [RoadmapBoard -> ReleaseArtifacts] controlledBy RoadmapBoard
+        phenomenon ReleaseDigest : value [ReleaseArtifacts -> Maintainer] controlledBy ReleaseArtifacts
     }
 }
 
@@ -75,13 +75,12 @@ requirement "QualityDrivenPlanning" {
     frame: RequiredBehavior
     constraint: "Roadmap uses quality signals when selecting milestones"
     constrains: Metrics
-    reference: RoadmapBoard
 }
 
 // Team must receive fast quality feedback from CI.
 requirement "FastFeedbackLoop" {
     frame: RequiredBehavior
     constraint: "Engineering team gets rapid CI check outcomes"
-    constrains: EngineeringTeam
+    constrains: Metrics
     reference: CI
 }

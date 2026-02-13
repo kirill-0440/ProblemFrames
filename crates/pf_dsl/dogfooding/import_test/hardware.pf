@@ -1,2 +1,2 @@
-domain Sensor [Causal]
-domain Motor [Biddable]
+domain Sensor kind causal role given
+domain Motor kind biddable role given

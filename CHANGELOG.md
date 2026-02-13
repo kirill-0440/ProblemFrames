@@ -8,6 +8,7 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 ## [Unreleased]
 
 ### Added
+- Proposal for PF DSL machine-checkable semantics delivery plan with milestones, invariants, and formalization workstreams (`docs/proposals/006-pf-dsl-machine-checkable-semantics-plan.md`).
 - Engineering metrics report generator script (`scripts/generate_engineering_metrics_report.sh`) with weekly baseline snapshot (lead time, change failure proxy, MTTR proxy, flaky-rate proxy).
 - Weekly engineering triage workflow (`.github/workflows/weekly-engineering-triage.yml`) to publish metrics artifacts and open scheduled triage issues.
 - Weekly engineering triage runbook (`docs/runbooks/weekly-triage.md`).

@@ -1,60 +1,60 @@
 problem: PF_DSL_Tool
 
 // 1. Domains
-domain Developer [Biddable] // The user of the tool
-domain SourceFile [Lexical] // The .pf file on disk
-domain Tool [Machine]       // The CLI/LSP tool
-domain Editor [Causal]      // VS Code or other editor (interacting with LSP)
-domain GeneratedCode [Lexical] // The Rust code or DOT output
+domain Developer kind biddable role given // The user of the tool
+domain SourceFile kind lexical role given // The .pf file on disk
+domain Tool kind causal role machine      // The CLI/LSP tool
+domain Editor kind causal role given      // VS Code or other editor (interacting with LSP)
+domain GeneratedCode kind lexical role given // The Rust code or DOT output
 
 // 2. Interfaces
 
 // Developer edits the SourceFile
-interface "Dev-Source" {
+interface "Dev-Source" connects Developer, SourceFile {
     shared: {
-        event Edit [Developer -> SourceFile]
+        phenomenon Edit : event [Developer -> SourceFile] controlledBy Developer
     }
 }
 
 // Developer invokes tool actions
-interface "Dev-Tool" {
+interface "Dev-Tool" connects Developer, Tool {
     shared: {
-        command RunValidation [Developer -> Tool]
+        phenomenon RunValidation : command [Developer -> Tool] controlledBy Developer
     }
 }
 
 // Tool reads the SourceFile
-interface "Tool-Source" {
+interface "Tool-Source" connects Tool, SourceFile {
     shared: {
-        value FileContent [SourceFile -> Tool]
-        state FileExists [SourceFile -> Tool]
+        phenomenon FileContent : value [SourceFile -> Tool] controlledBy SourceFile
+        phenomenon FileExists : state [SourceFile -> Tool] controlledBy SourceFile
     }
 }
 
 // Tool interacts with Editor via LSP
-interface "Tool-Editor" {
+interface "Tool-Editor" connects Tool, Editor {
     shared: {
-        event DidOpen [Editor -> Tool]
-        event DidChange [Editor -> Tool]
-        event PublishDiagnostics [Tool -> Editor]
-        event Hover [Editor -> Tool]
-        value HoverInfo [Tool -> Editor]
+        phenomenon DidOpen : event [Editor -> Tool] controlledBy Editor
+        phenomenon DidChange : event [Editor -> Tool] controlledBy Editor
+        phenomenon PublishDiagnostics : event [Tool -> Editor] controlledBy Tool
+        phenomenon Hover : event [Editor -> Tool] controlledBy Editor
+        phenomenon HoverInfo : value [Tool -> Editor] controlledBy Tool
     }
 }
 
 // Tool generates output (Code or DOT)
-interface "Tool-Output" {
+interface "Tool-Output" connects Tool, GeneratedCode {
     shared: {
-        event WriteFile [Tool -> GeneratedCode]
-        value CodeStructure [Tool -> GeneratedCode]
+        phenomenon WriteFile : event [Tool -> GeneratedCode] controlledBy Tool
+        phenomenon CodeStructure : value [Tool -> GeneratedCode] controlledBy Tool
     }
 }
 
 // Developer views the Output/Editor
-interface "Dev-View" {
+interface "Dev-View" connects Developer, Editor, GeneratedCode {
     shared: {
-        event SeeSquiggles [Editor -> Developer]
-        value ReadCode [GeneratedCode -> Developer]
+        phenomenon SeeSquiggles : event [Editor -> Developer] controlledBy Editor
+        phenomenon ReadCode : value [GeneratedCode -> Developer] controlledBy GeneratedCode
     }
 }
 
@@ -66,7 +66,6 @@ requirement "ImmediateFeedback" {
     frame: RequiredBehavior
     constraint: "Developer sees errors immediately"
     constrains: Editor
-    reference: Tool
 }
 
 // Requirement 2: Correct Code Generation

@@ -14,20 +14,18 @@ pub fn to_dot(problem: &Problem) -> String {
 
     // 1. Nodes (Domains)
     for domain in &problem.domains {
-        let (shape, color) = match domain.domain_type {
-            DomainType::Machine => ("doublebox", "lightgrey"), // Machine often double striped
-            DomainType::Causal => ("box", "white"),
-            DomainType::Biddable => ("ellipse", "white"), // People as ellipses or ovals
-            DomainType::Lexical => ("parallelogram", "white"), // Data
+        let (shape, color) = match domain.kind {
+            DomainKind::Causal => ("box", "white"),
+            DomainKind::Biddable => ("ellipse", "white"), // People as ellipses or ovals
+            DomainKind::Lexical => ("parallelogram", "white"), // Data
             _ => ("box", "red"),
         };
-        // Jackson notation suggests specific decorations, but standard shapes approximate well for now.
-        // Machine: Double vertical stripe (not standard in graphviz, using box for now)
-        // Causal: Plain box
-        // Biddable: Person icon (using ellipse)
-        // Lexical: Data stripe (using parallelogram)
-
-        let label = format!("{} <<{:?}>>", domain.name, domain.domain_type);
+        let (shape, color) = if domain.role == DomainRole::Machine {
+            ("doublebox", "lightgrey")
+        } else {
+            (shape, color)
+        };
+        let label = format!("{} <<{:?}/{:?}>>", domain.name, domain.kind, domain.role);
         writeln!(
             &mut dot,
             "    \"{}\" [label=\"{}\", shape={}, fillcolor={}];",
@@ -120,10 +118,11 @@ mod tests {
         Span { start: 0, end: 0 }
     }
 
-    fn domain(name: &str, domain_type: DomainType) -> Domain {
+    fn domain(name: &str, kind: DomainKind, role: DomainRole) -> Domain {
         Domain {
             name: name.to_string(),
-            domain_type,
+            kind,
+            role,
             span: span(),
             source_path: None,
         }
@@ -143,19 +142,26 @@ mod tests {
             span: span(),
             imports: vec![],
             domains: vec![
-                domain("A", DomainType::Machine),
-                domain("B", DomainType::Causal),
-                domain("C", DomainType::Causal),
-                domain("D", DomainType::Causal),
+                domain("A", DomainKind::Causal, DomainRole::Machine),
+                domain("B", DomainKind::Causal, DomainRole::Given),
+                domain("C", DomainKind::Causal, DomainRole::Given),
+                domain("D", DomainKind::Causal, DomainRole::Given),
             ],
             interfaces: vec![Interface {
                 name: "mixed".to_string(),
+                connects: vec![
+                    reference("A"),
+                    reference("B"),
+                    reference("C"),
+                    reference("D"),
+                ],
                 shared_phenomena: vec![
                     Phenomenon {
                         name: "e1".to_string(),
                         type_: PhenomenonType::Event,
                         from: reference("A"),
                         to: reference("B"),
+                        controlled_by: reference("A"),
                         span: span(),
                     },
                     Phenomenon {
@@ -163,6 +169,7 @@ mod tests {
                         type_: PhenomenonType::Event,
                         from: reference("C"),
                         to: reference("D"),
+                        controlled_by: reference("C"),
                         span: span(),
                     },
                 ],

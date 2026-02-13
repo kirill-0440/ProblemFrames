@@ -1,13 +1,12 @@
-domain Machine [Machine]
-domain ControlledDomain [Causal]
-interface "Machine-ControlledDomain" {
+domain Machine kind causal role machine
+domain ControlledDomain kind causal role given
+interface "Machine-ControlledDomain" connects Machine, ControlledDomain {
     shared: {
-        event control [Machine -> ControlledDomain]
-        event feedback [ControlledDomain -> Machine]
+        phenomenon control : event [Machine -> ControlledDomain] controlledBy Machine
+        phenomenon feedback : event [ControlledDomain -> Machine] controlledBy ControlledDomain
     }
 }
 requirement "RequiredBehavior" {
     frame: RequiredBehavior
     constrains: ControlledDomain
-    reference: Machine
 }

@@ -7,7 +7,7 @@ pub fn generate_report(problem: &Problem) -> String {
 
     report.push_str("## 1. Domains\n");
     for d in &problem.domains {
-        report.push_str(&format!("- **{}** ({:?})\n", d.name, d.domain_type));
+        report.push_str(&format!("- **{}** ({:?}/{:?})\n", d.name, d.kind, d.role));
     }
     report.push('\n');
 

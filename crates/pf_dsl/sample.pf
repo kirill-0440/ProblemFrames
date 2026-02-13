@@ -1,24 +1,24 @@
 problem: SluiceGateControl
 
 // 1. Define Domains
-domain Controller [Machine]    
-domain Gate      [Causal]     
-domain Operator  [Biddable]   
+domain Controller kind causal role machine
+domain Gate kind causal role given
+domain Operator kind biddable role given
 
 // 2. Define Shared Phenomena (Interfaces)
-interface "Operator-Controller" {
+interface "Operator-Controller" connects Operator, Controller {
     shared: {
-        event OpenCommand   [Operator -> Controller]
-        event CloseCommand  [Operator -> Controller]
+        phenomenon OpenCommand : event [Operator -> Controller] controlledBy Operator
+        phenomenon CloseCommand : event [Operator -> Controller] controlledBy Operator
     }
 }
 
-interface "Controller-Gate" {
+interface "Controller-Gate" connects Controller, Gate {
     shared: {
-        event PulseOpen     [Controller -> Gate]
-        event PulseClose    [Controller -> Gate]
-        state TopPos        [Gate -> Controller]
-        state BottomPos     [Gate -> Controller]
+        phenomenon PulseOpen : event [Controller -> Gate] controlledBy Controller
+        phenomenon PulseClose : event [Controller -> Gate] controlledBy Controller
+        phenomenon TopPos : state [Gate -> Controller] controlledBy Gate
+        phenomenon BottomPos : state [Gate -> Controller] controlledBy Gate
     }
 }
 

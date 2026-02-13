@@ -1,35 +1,30 @@
 WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
-COMMENT = _{ "//" ~ (!"\n" ~ ANY)* ~ "\n" }
+NEWLINE = _{ "\n" | "\r\n" }
+COMMENT = _{ "//" ~ (!NEWLINE ~ ANY)* ~ (NEWLINE | EOI) }
 
-program = { SOI ~ (import_decl | problem_decl | domain_decl | interface_decl | requirement_decl)* ~ EOI }
+program = { SOI ~ declaration* ~ EOI }
+declaration = _{ import_decl | problem_decl | domain_decl | interface_decl | requirement_decl }
 
 import_decl = { "import" ~ string_literal }
-
 identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 string_literal = @{ "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
 
-// 1. Problem Declaration
 problem_decl = { "problem:" ~ identifier }
 
-// 2. Domain Declaration
-// domain Controller [Machine]
-domain_type = { "Machine" | "Causal" | "Biddable" | "Lexical" | "Designed" }
-domain_decl = { "domain" ~ identifier ~ "[" ~ domain_type ~ "]" }
+domain_kind = { "biddable" | "causal" | "lexical" }
+domain_role = { "given" | "designed" | "machine" }
+domain_decl = { "domain" ~ identifier ~ "kind" ~ domain_kind ~ "role" ~ domain_role }
 
-// 3. Interface Declaration
-// interface "Operator-Controller" { ... }
-interface_decl = { "interface" ~ string_literal ~ "{" ~ shared_phenomena ~ "}" }
+interface_decl = { "interface" ~ string_literal ~ "connects" ~ identifier_list ~ "{" ~ shared_phenomena ~ "}" }
+identifier_list = { identifier ~ ("," ~ identifier)+ }
 shared_phenomena = { "shared:" ~ "{" ~ phenomenon* ~ "}" }
 
 phenomenon_type = { "event" | "command" | "state" | "value" }
-phenomenon = { phenomenon_type ~ identifier ~ "[" ~ identifier ~ "->" ~ identifier ~ "]" }
+phenomenon = { "phenomenon" ~ identifier ~ ":" ~ phenomenon_type ~ "[" ~ identifier ~ "->" ~ identifier ~ "]" ~ "controlledBy" ~ identifier }
 
-// 4. Requirement Declaration
-// requirement "SafeOperation" { ... }
 requirement_decl = { "requirement" ~ string_literal ~ "{" ~ req_body ~ "}" }
 req_body = { (frame_type | constraint | constrains | reference)* }
-
 frame_type = { "frame:" ~ identifier }
 constraint = { "constraint:" ~ string_literal }
 constrains = { "constrains:" ~ identifier }
-reference  = { "reference:" ~ identifier }
+reference = { "reference:" ~ identifier }

@@ -30,19 +30,26 @@ pub struct Problem {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum DomainType {
-    Machine,
-    Causal,
+pub enum DomainKind {
     Biddable,
+    Causal,
     Lexical,
+    Unknown(String),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum DomainRole {
+    Given,
     Designed,
+    Machine,
     Unknown(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Domain {
     pub name: String,
-    pub domain_type: DomainType,
+    pub kind: DomainKind,
+    pub role: DomainRole,
     pub span: Span,
     pub source_path: Option<PathBuf>,
 }
@@ -50,6 +57,7 @@ pub struct Domain {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Interface {
     pub name: String,
+    pub connects: Vec<Reference>,
     pub shared_phenomena: Vec<Phenomenon>,
     pub span: Span,
     pub source_path: Option<PathBuf>,
@@ -69,6 +77,7 @@ pub struct Phenomenon {
     pub type_: PhenomenonType,
     pub from: Reference,
     pub to: Reference,
+    pub controlled_by: Reference,
     pub span: Span,
 }
 
