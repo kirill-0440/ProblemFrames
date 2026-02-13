@@ -16,7 +16,7 @@ pub enum ValidationError {
     #[error("Duplicate interface definition: '{0}'")]
     DuplicateInterface(String, Span),
     #[error("Duplicate requirement definition: '{0}'")]
-    DuplicateRequirement(String, Span),
+    DuplicateRequirement(String, Span, usize),
     #[error("Missing connection between '{0}' and '{1}' required by frame '{2}'")]
     MissingConnection(String, String, String, Span),
     #[error("Invalid causality: Phenomenon '{0}' ({1:?}) cannot originate from '{2}' ({3}).")]
@@ -44,7 +44,7 @@ pub enum ValidationError {
     #[error("Subproblem '{0}' is invalid: {1}")]
     InvalidSubproblem(String, String, Span),
     #[error("Duplicate assertion set definition: '{0}'")]
-    DuplicateAssertionSet(String, Span),
+    DuplicateAssertionSet(String, Span, usize),
     #[error("Assertion set '{0}' must contain at least one assertion.")]
     EmptyAssertionSet(String, Span),
     #[error("Correctness argument '{0}' is invalid: {1}")]
@@ -239,11 +239,12 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     }
 
     let mut requirement_names = HashSet::new();
-    for req in &problem.requirements {
+    for (index, req) in problem.requirements.iter().enumerate() {
         if !requirement_names.insert(req.name.clone()) {
             errors.push(ValidationError::DuplicateRequirement(
                 req.name.clone(),
                 req.span,
+                index,
             ));
         }
     }
@@ -383,11 +384,12 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
     }
 
     let mut assertion_set_names = HashSet::new();
-    for assertion_set in &problem.assertion_sets {
+    for (index, assertion_set) in problem.assertion_sets.iter().enumerate() {
         if !assertion_set_names.insert(assertion_set.name.clone()) {
             errors.push(ValidationError::DuplicateAssertionSet(
                 assertion_set.name.clone(),
                 assertion_set.span,
+                index,
             ));
         }
         if assertion_set.assertions.is_empty() {
@@ -777,7 +779,7 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         | ValidationError::InvalidFrameDomain(_, _, _, span)
         | ValidationError::DuplicateDomain(_, span)
         | ValidationError::DuplicateInterface(_, span)
-        | ValidationError::DuplicateRequirement(_, span)
+        | ValidationError::DuplicateRequirement(_, span, _)
         | ValidationError::MissingConnection(_, _, _, span)
         | ValidationError::InvalidCausality(_, _, _, _, span)
         | ValidationError::MissingRequiredField(_, _, span)
@@ -791,7 +793,7 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         | ValidationError::UndefinedDomainInSubproblem(_, _, span)
         | ValidationError::UndefinedRequirementInSubproblem(_, _, span)
         | ValidationError::InvalidSubproblem(_, _, span)
-        | ValidationError::DuplicateAssertionSet(_, span)
+        | ValidationError::DuplicateAssertionSet(_, span, _)
         | ValidationError::EmptyAssertionSet(_, span)
         | ValidationError::InvalidCorrectnessArgument(_, _, span) => *span,
     }
@@ -848,10 +850,9 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
             .iter()
             .find(|interface| interface.name == *interface_name && interface.span == *span)
             .and_then(|interface| interface.source_path.clone()),
-        ValidationError::DuplicateRequirement(requirement_name, span) => problem
+        ValidationError::DuplicateRequirement(_, _, index) => problem
             .requirements
-            .iter()
-            .find(|requirement| requirement.name == *requirement_name && requirement.span == *span)
+            .get(*index)
             .and_then(|requirement| requirement.source_path.clone()),
         ValidationError::InvalidDomainRole(domain_name, _, span) => {
             if domain_name == "<problem>" {
@@ -863,8 +864,11 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
                 .find(|domain| domain.name == *domain_name && domain.span == *span)
                 .and_then(|domain| domain.source_path.clone())
         }
-        ValidationError::DuplicateAssertionSet(name, span)
-        | ValidationError::EmptyAssertionSet(name, span) => problem
+        ValidationError::DuplicateAssertionSet(_, _, index) => problem
+            .assertion_sets
+            .get(*index)
+            .and_then(|set| set.source_path.clone()),
+        ValidationError::EmptyAssertionSet(name, span) => problem
             .assertion_sets
             .iter()
             .find(|set| set.name == *name && set.span == *span)
