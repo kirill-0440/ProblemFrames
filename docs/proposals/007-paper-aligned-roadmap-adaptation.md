@@ -55,6 +55,10 @@ Deliverables:
 - explicit invariant catalog (stable rule IDs, severity, rationale, fixture links)
 - validator-to-spec trace table (`rule_id -> code path -> tests`)
 - canonical fixture suite with `valid` and `invalid` examples per invariant
+- repository anchor:
+  - `docs/metamodel/invariant-catalog.json`
+  - `docs/metamodel/rule-test-matrix.tsv`
+  - `docs/metamodel/README.md`
 
 Exit criteria:
 

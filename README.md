@@ -39,6 +39,7 @@ Guides:
 
 - `docs/pf-mode-guide.md`
 - `docs/migration-v2.md`
+- `docs/metamodel/README.md`
 
 ### CLI Outputs
 
@@ -102,6 +103,7 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --obligations
 - `editors/code`: VS Code extension
 - `models`: repository-level PF models (including the canonical system model)
 - `docs/proposals`: product and engineering roadmap proposals
+- `docs/metamodel`: machine-readable invariant catalog and rule-to-test contract
 - `docs/runbooks`: operational playbooks (release rollback, supply chain, triage)
 - `scripts`: local automation for reports, obligations, metrics, and smoke checks
 
@@ -160,6 +162,8 @@ The roadmap is maintained as proposal documents in `docs/proposals`.
   - paper-driven prioritization (traceability, executable obligations, design bridge)
 - `docs/proposals/007-execution-backlog-m1-m3.md`
   - execution-ready backlog for near-term milestones
+- `docs/metamodel/invariant-catalog.json`
+  - authoritative M1 invariant contract (`rule_id -> validator mapping -> tests`)
 - `docs/proposals/008-pf-ddd-sysmlv2-integration.md`
   - PF -> DDD/SysML v2 integration track (`CIM -> PIM -> PSM`)
 - `docs/proposals/008-execution-backlog-m4-m5.md`
