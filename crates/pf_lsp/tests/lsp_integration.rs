@@ -322,6 +322,184 @@ fn definition_uses_unsaved_buffer_content() {
 }
 
 #[test]
+fn definition_resolves_subproblem_and_requirement_references() {
+    let dir = make_temp_dir("pf-lsp-subproblem-definition");
+    let path = dir.join("problem.pf");
+    let uri = file_uri(&path);
+
+    let text = "problem: P\ndomain M kind causal role machine\ndomain Sensor kind causal role given\nrequirement \"R_sub\" {\n  frame: RequiredBehavior\n  constrains: Sensor\n}\nsubproblem Core {\n  machine: M\n  participants: M, Sensor\n  requirements: \"R_sub\"\n}\n";
+    let participant_position = position_of(text, "Sensor", 2);
+    let requirement_position = position_of(text, "\"R_sub\"", 1);
+
+    let mut client = TestLspClient::spawn();
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": uri,
+                "languageId": "pf",
+                "version": 1,
+                "text": text
+            }
+        }
+    }));
+
+    let _ =
+        client.wait_for(|msg| msg.get("method") == Some(&json!("textDocument/publishDiagnostics")));
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 21,
+        "method": "textDocument/definition",
+        "params": {
+            "textDocument": { "uri": uri },
+            "position": {
+                "line": participant_position.line,
+                "character": participant_position.character
+            }
+        }
+    }));
+
+    let participant_response = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(21)))
+        .expect("did not receive subproblem participant definition response");
+    assert_eq!(
+        participant_response["result"]["uri"].as_str(),
+        Some(uri.as_str()),
+        "participant definition should stay in current file"
+    );
+    assert_eq!(
+        participant_response["result"]["range"]["start"]["line"].as_u64(),
+        Some(2),
+        "participant reference should resolve to domain Sensor declaration"
+    );
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 22,
+        "method": "textDocument/definition",
+        "params": {
+            "textDocument": { "uri": uri },
+            "position": {
+                "line": requirement_position.line,
+                "character": requirement_position.character
+            }
+        }
+    }));
+
+    let requirement_response = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(22)))
+        .expect("did not receive subproblem requirement definition response");
+    assert_eq!(
+        requirement_response["result"]["uri"].as_str(),
+        Some(uri.as_str()),
+        "requirement definition should stay in current file"
+    );
+    assert_eq!(
+        requirement_response["result"]["range"]["start"]["line"].as_u64(),
+        Some(3),
+        "requirement reference should resolve to requirement declaration"
+    );
+
+    let _ = fs::remove_dir_all(dir);
+}
+
+#[test]
+fn definition_resolves_correctness_argument_assertion_sets() {
+    let dir = make_temp_dir("pf-lsp-correctness-definition");
+    let path = dir.join("problem.pf");
+    let uri = file_uri(&path);
+
+    let text = "problem: P\ndomain M kind causal role machine\nworldProperties W_base {\n  assert \"world\"\n}\nspecification S_control {\n  assert \"spec\"\n}\nrequirementAssertions R_goal {\n  assert \"goal\"\n}\ncorrectnessArgument A1 {\n  prove S_control and W_base entail R_goal\n}\n";
+    let spec_position = position_of(text, "S_control", 1);
+    let world_position = position_of(text, "W_base", 1);
+    let req_position = position_of(text, "R_goal", 1);
+
+    let mut client = TestLspClient::spawn();
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": uri,
+                "languageId": "pf",
+                "version": 1,
+                "text": text
+            }
+        }
+    }));
+
+    let _ =
+        client.wait_for(|msg| msg.get("method") == Some(&json!("textDocument/publishDiagnostics")));
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 23,
+        "method": "textDocument/definition",
+        "params": {
+            "textDocument": { "uri": uri },
+            "position": {
+                "line": spec_position.line,
+                "character": spec_position.character
+            }
+        }
+    }));
+    let spec_response = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(23)))
+        .expect("did not receive correctness specification definition response");
+    assert_eq!(
+        spec_response["result"]["range"]["start"]["line"].as_u64(),
+        Some(5),
+        "S reference should resolve to specification declaration"
+    );
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 24,
+        "method": "textDocument/definition",
+        "params": {
+            "textDocument": { "uri": uri },
+            "position": {
+                "line": world_position.line,
+                "character": world_position.character
+            }
+        }
+    }));
+    let world_response = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(24)))
+        .expect("did not receive correctness world definition response");
+    assert_eq!(
+        world_response["result"]["range"]["start"]["line"].as_u64(),
+        Some(2),
+        "W reference should resolve to worldProperties declaration"
+    );
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 25,
+        "method": "textDocument/definition",
+        "params": {
+            "textDocument": { "uri": uri },
+            "position": {
+                "line": req_position.line,
+                "character": req_position.character
+            }
+        }
+    }));
+    let requirement_response = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(25)))
+        .expect("did not receive correctness requirement definition response");
+    assert_eq!(
+        requirement_response["result"]["range"]["start"]["line"].as_u64(),
+        Some(8),
+        "R reference should resolve to requirementAssertions declaration"
+    );
+
+    let _ = fs::remove_dir_all(dir);
+}
+
+#[test]
 fn parse_errors_report_precise_range() {
     let dir = make_temp_dir("pf-lsp-parse-range");
     let path = dir.join("problem.pf");
