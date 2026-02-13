@@ -3,6 +3,7 @@ use crate::language::{
     parse_domain_kind, parse_domain_role, parse_frame_type, parse_phenomenon_type,
 };
 use anyhow::{anyhow, Result};
+use pest::error::InputLocation;
 use pest::iterators::Pair;
 use pest::Parser;
 use pest_derive::Parser;
@@ -23,6 +24,25 @@ fn next_inner<'a>(pair: Pair<'a, Rule>, expected: &str) -> Result<Pair<'a, Rule>
     pair.into_inner()
         .next()
         .ok_or_else(|| anyhow!("missing {expected}"))
+}
+
+pub fn parse_error_diagnostic(input: &str) -> Option<(Span, String)> {
+    match PFParser::parse(Rule::program, input) {
+        Ok(_) => None,
+        Err(err) => {
+            let span = match err.location {
+                InputLocation::Pos(pos) => Span {
+                    start: pos,
+                    end: (pos + 1).min(input.len()),
+                },
+                InputLocation::Span((start, end)) => Span {
+                    start,
+                    end: end.min(input.len()),
+                },
+            };
+            Some((span, err.to_string()))
+        }
+    }
 }
 
 pub fn parse(input: &str) -> Result<Problem> {

@@ -1,5 +1,6 @@
 use crate::ast::*;
 use std::collections::HashSet;
+use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -32,6 +33,12 @@ pub enum ValidationError {
     InterfaceControllerMismatch(String, String, String, Span),
     #[error("Requirement '{0}' cannot reference machine domain '{1}' in strict PF mode.")]
     RequirementReferencesMachine(String, String, Span),
+}
+
+#[derive(Debug)]
+pub struct ValidationIssue {
+    pub error: ValidationError,
+    pub source_path: Option<PathBuf>,
 }
 
 fn is_connected(problem: &Problem, domain1: &str, domain2: &str) -> bool {
@@ -377,5 +384,101 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
         Ok(())
     } else {
         Err(errors)
+    }
+}
+
+pub fn validation_error_span(error: &ValidationError) -> Span {
+    match error {
+        ValidationError::UndefinedDomainInInterface(_, _, span)
+        | ValidationError::UndefinedDomainInRequirement(_, _, span)
+        | ValidationError::InvalidFrameDomain(_, _, _, span)
+        | ValidationError::DuplicateDomain(_, span)
+        | ValidationError::DuplicateInterface(_, span)
+        | ValidationError::MissingConnection(_, _, _, span)
+        | ValidationError::InvalidCausality(_, _, _, _, span)
+        | ValidationError::MissingRequiredField(_, _, span)
+        | ValidationError::UnsupportedFrame(_, _, span)
+        | ValidationError::InvalidDomainRole(_, _, span)
+        | ValidationError::InterfaceInsufficientConnections(_, span)
+        | ValidationError::InterfaceWithoutPhenomena(_, span)
+        | ValidationError::InterfaceControllerMismatch(_, _, _, span)
+        | ValidationError::RequirementReferencesMachine(_, _, span) => *span,
+    }
+}
+
+fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<PathBuf> {
+    match error {
+        ValidationError::UndefinedDomainInInterface(_, interface_name, _)
+        | ValidationError::InterfaceInsufficientConnections(interface_name, _)
+        | ValidationError::InterfaceWithoutPhenomena(interface_name, _) => problem
+            .interfaces
+            .iter()
+            .find(|interface| interface.name == *interface_name)
+            .and_then(|interface| interface.source_path.clone()),
+        ValidationError::InterfaceControllerMismatch(_, interface_name, _, _) => problem
+            .interfaces
+            .iter()
+            .find(|interface| interface.name == *interface_name)
+            .and_then(|interface| interface.source_path.clone()),
+        ValidationError::InvalidCausality(phenomenon_name, _, _, _, span) => problem
+            .interfaces
+            .iter()
+            .find(|interface| {
+                interface.shared_phenomena.iter().any(|phenomenon| {
+                    phenomenon.name == *phenomenon_name && phenomenon.span == *span
+                })
+            })
+            .and_then(|interface| interface.source_path.clone()),
+        ValidationError::UndefinedDomainInRequirement(_, requirement_name, _)
+        | ValidationError::MissingRequiredField(requirement_name, _, _)
+        | ValidationError::UnsupportedFrame(requirement_name, _, _)
+        | ValidationError::RequirementReferencesMachine(requirement_name, _, _) => problem
+            .requirements
+            .iter()
+            .find(|requirement| requirement.name == *requirement_name)
+            .and_then(|requirement| requirement.source_path.clone()),
+        ValidationError::InvalidFrameDomain(requirement_name, _, _, _) => problem
+            .requirements
+            .iter()
+            .find(|requirement| requirement.name == *requirement_name)
+            .and_then(|requirement| requirement.source_path.clone()),
+        ValidationError::MissingConnection(_, _, _, span) => problem
+            .requirements
+            .iter()
+            .find(|requirement| requirement.span == *span)
+            .and_then(|requirement| requirement.source_path.clone()),
+        ValidationError::DuplicateDomain(domain_name, span) => problem
+            .domains
+            .iter()
+            .find(|domain| domain.name == *domain_name && domain.span == *span)
+            .and_then(|domain| domain.source_path.clone()),
+        ValidationError::DuplicateInterface(interface_name, span) => problem
+            .interfaces
+            .iter()
+            .find(|interface| interface.name == *interface_name && interface.span == *span)
+            .and_then(|interface| interface.source_path.clone()),
+        ValidationError::InvalidDomainRole(domain_name, _, span) => {
+            if domain_name == "<problem>" {
+                return None;
+            }
+            problem
+                .domains
+                .iter()
+                .find(|domain| domain.name == *domain_name && domain.span == *span)
+                .and_then(|domain| domain.source_path.clone())
+        }
+    }
+}
+
+pub fn validate_with_sources(problem: &Problem) -> Result<(), Vec<ValidationIssue>> {
+    match validate(problem) {
+        Ok(()) => Ok(()),
+        Err(errors) => Err(errors
+            .into_iter()
+            .map(|error| ValidationIssue {
+                source_path: source_path_for_error(problem, &error),
+                error,
+            })
+            .collect()),
     }
 }

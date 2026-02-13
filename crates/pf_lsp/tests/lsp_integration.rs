@@ -176,6 +176,23 @@ fn position_of(text: &str, needle: &str, nth: usize) -> lsp_types::Position {
     lsp_types::Position { line, character }
 }
 
+fn position_for_offset(text: &str, target: usize) -> lsp_types::Position {
+    let mut line = 0_u32;
+    let mut character = 0_u32;
+    for (byte_idx, ch) in text.char_indices() {
+        if byte_idx >= target {
+            break;
+        }
+        if ch == '\n' {
+            line += 1;
+            character = 0;
+        } else {
+            character += ch.len_utf16() as u32;
+        }
+    }
+    lsp_types::Position { line, character }
+}
+
 #[test]
 fn diagnostics_follow_did_change_buffer_state() {
     let dir = make_temp_dir("pf-lsp-diagnostics");
@@ -299,6 +316,167 @@ fn definition_uses_unsaved_buffer_content() {
         response["result"]["range"]["start"]["line"].as_u64(),
         Some(1),
         "definition should point to 'domain New'"
+    );
+
+    let _ = fs::remove_dir_all(dir);
+}
+
+#[test]
+fn parse_errors_report_precise_range() {
+    let dir = make_temp_dir("pf-lsp-parse-range");
+    let path = dir.join("problem.pf");
+    let uri = file_uri(&path);
+    let mut client = TestLspClient::spawn();
+
+    let invalid_text = "problem: P\ndomain A kind causal role machine\ndomain B kind causal role given\ninterface \"A-B\" connects A, B {\n  shared: {\n    phenomenon e : event [A -> B] controlledBy\n  }\n}\n";
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": uri,
+                "languageId": "pf",
+                "version": 1,
+                "text": invalid_text
+            }
+        }
+    }));
+
+    let open_diag = client
+        .wait_for(|msg| msg.get("method") == Some(&json!("textDocument/publishDiagnostics")))
+        .expect("did not receive diagnostics after didOpen");
+    let diagnostics = open_diag["params"]["diagnostics"]
+        .as_array()
+        .expect("diagnostics must be array");
+    assert!(
+        !diagnostics.is_empty(),
+        "expected non-empty diagnostics for parse error"
+    );
+
+    let start_line = diagnostics[0]["range"]["start"]["line"]
+        .as_u64()
+        .expect("missing range.start.line");
+    let start_character = diagnostics[0]["range"]["start"]["character"]
+        .as_u64()
+        .expect("missing range.start.character");
+    assert!(
+        start_line > 0 || start_character > 0,
+        "parse diagnostic should not default to 0:0"
+    );
+
+    let _ = fs::remove_dir_all(dir);
+}
+
+#[test]
+fn definition_ignores_imported_span_collisions() {
+    let dir = make_temp_dir("pf-lsp-definition-collision");
+    let root_path = dir.join("root.pf");
+    let import_path = dir.join("imp.pf");
+    let root_uri = file_uri(&root_path);
+
+    let imported_text = "problem: Imported\ndomain A kind causal role machine\ndomain B kind causal role given\ninterface \"I\" connects A, B { shared: { phenomenon ev : event [A -> B] controlledBy A } }\n";
+    fs::write(&import_path, imported_text).expect("failed to write imported file");
+
+    let mut root_text = String::from("problem: Root\nimport \"imp.pf\"\n");
+    for idx in 0..40 {
+        let role = if idx == 0 { "machine" } else { "given" };
+        root_text.push_str(&format!("domain D{idx} kind causal role {role}\n"));
+    }
+
+    let probe_offset = 60_usize.min(root_text.len().saturating_sub(1));
+    let probe_position = position_for_offset(&root_text, probe_offset);
+
+    let mut client = TestLspClient::spawn();
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": root_uri,
+                "languageId": "pf",
+                "version": 1,
+                "text": root_text
+            }
+        }
+    }));
+
+    let _ =
+        client.wait_for(|msg| msg.get("method") == Some(&json!("textDocument/publishDiagnostics")));
+
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "textDocument/definition",
+        "params": {
+            "textDocument": { "uri": root_uri },
+            "position": {
+                "line": probe_position.line,
+                "character": probe_position.character
+            }
+        }
+    }));
+
+    let response = client
+        .wait_for(|msg| msg.get("id") == Some(&json!(3)))
+        .expect("did not receive definition response");
+
+    assert_eq!(
+        response.get("result"),
+        Some(&Value::Null),
+        "definition on non-reference offset should not jump to imported file"
+    );
+
+    let _ = fs::remove_dir_all(dir);
+}
+
+#[test]
+fn diagnostics_are_attributed_to_imported_file_uri() {
+    let dir = make_temp_dir("pf-lsp-import-diagnostics");
+    let root_path = dir.join("root.pf");
+    let import_path = dir.join("imp.pf");
+    let root_uri = file_uri(&root_path);
+    let import_uri = file_uri(&import_path);
+
+    let imported_text = "problem: Imported\ndomain M kind causal role machine\nrequirement \"Broken\" {\n  frame: RequiredBehavior\n  constrains: Missing\n}\n";
+    fs::write(&import_path, imported_text).expect("failed to write imported file");
+
+    let root_text =
+        "problem: Root\nimport \"imp.pf\"\ndomain RootMachine kind causal role machine\n";
+
+    let mut client = TestLspClient::spawn();
+    client.send(json!({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": root_uri,
+                "languageId": "pf",
+                "version": 1,
+                "text": root_text
+            }
+        }
+    }));
+
+    let imported_diag = client
+        .wait_for(|msg| {
+            msg.get("method") == Some(&json!("textDocument/publishDiagnostics"))
+                && msg["params"]["uri"] == json!(import_uri)
+        })
+        .expect("did not receive diagnostics for imported file");
+    let diagnostics = imported_diag["params"]["diagnostics"]
+        .as_array()
+        .expect("diagnostics must be array");
+    assert!(
+        !diagnostics.is_empty(),
+        "expected imported file diagnostics to be non-empty"
+    );
+    assert!(
+        diagnostics[0]["message"]
+            .as_str()
+            .unwrap_or_default()
+            .contains("Missing"),
+        "expected message to mention missing domain"
     );
 
     let _ = fs::remove_dir_all(dir);

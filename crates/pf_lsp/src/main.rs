@@ -5,7 +5,7 @@ use lsp_types::{
     ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Uri,
 };
 use pf_dsl::resolver::resolve;
-use pf_dsl::validator::validate;
+use pf_dsl::validator::{validate_with_sources, validation_error_span};
 use pf_lsp::completion::get_completions;
 use serde_json::Value;
 use std::borrow::Cow;
@@ -146,6 +146,7 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                         );
                         if let Err(err) = validate_document(
                             &connection,
+                            &state,
                             params.text_document.uri,
                             &params.text_document.text,
                         ) {
@@ -169,6 +170,7 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                             );
                             if let Err(err) = validate_document(
                                 &connection,
+                                &state,
                                 params.text_document.uri,
                                 &change.text,
                             ) {
@@ -216,7 +218,7 @@ fn resolve_definition(
 
     let offset = offset_at_position(text.as_ref(), position);
     let problem = resolve(&path, Some(text.as_ref())).ok()?;
-    let (source_path_opt, span) = pf_dsl::resolver::find_definition(&problem, offset)?;
+    let (source_path_opt, span) = pf_dsl::resolver::find_definition(&problem, &path, offset)?;
 
     let target_path = source_path_opt.unwrap_or_else(|| path.clone());
     let target_uri = path_to_uri(&target_path).unwrap_or_else(|| uri.clone());
@@ -311,8 +313,53 @@ fn offset_at_position(text: &str, position: Position) -> usize {
     text.len() // Invalid position fallback
 }
 
-fn validate_document(connection: &Connection, uri: Uri, text: &str) -> Result<()> {
-    let mut diagnostics = Vec::new();
+fn parse_error_range(text: &str) -> Option<(Range, String)> {
+    let (span, message) = pf_dsl::parser::parse_error_diagnostic(text)?;
+    Some((span_to_range(text, span), message))
+}
+
+fn text_for_path<'a>(
+    state: &'a ServerState,
+    current_uri: &Uri,
+    current_path: &Path,
+    current_text: &'a str,
+    target_path: &Path,
+) -> Option<(Uri, Cow<'a, str>)> {
+    if target_path == current_path {
+        return Some((current_uri.clone(), Cow::Borrowed(current_text)));
+    }
+    let target_uri = path_to_uri(target_path)?;
+    if let Some(buffer_text) = state.document_text(&target_uri) {
+        return Some((target_uri, Cow::Borrowed(buffer_text)));
+    }
+    Some((
+        target_uri,
+        Cow::Owned(std::fs::read_to_string(target_path).ok()?),
+    ))
+}
+
+fn push_diagnostic_for_uri(
+    diagnostics_by_uri: &mut Vec<(Uri, Vec<Diagnostic>)>,
+    target_uri: Uri,
+    diagnostic: Diagnostic,
+) {
+    if let Some((_, diagnostics)) = diagnostics_by_uri
+        .iter_mut()
+        .find(|(uri, _)| uri == &target_uri)
+    {
+        diagnostics.push(diagnostic);
+        return;
+    }
+    diagnostics_by_uri.push((target_uri, vec![diagnostic]));
+}
+
+fn validate_document(
+    connection: &Connection,
+    state: &ServerState,
+    uri: Uri,
+    text: &str,
+) -> Result<()> {
+    let mut diagnostics_by_uri: Vec<(Uri, Vec<Diagnostic>)> = vec![(uri.clone(), Vec::new())];
 
     // 1. Resolve (Parse + Imports)
     // We need to convert URI to Path
@@ -321,84 +368,48 @@ fn validate_document(connection: &Connection, uri: Uri, text: &str) -> Result<()
     match resolve(&path, Some(text)) {
         Ok(problem) => {
             // 2. Semantic Validate
-            match validate(&problem) {
+            match validate_with_sources(&problem) {
                 Ok(_) => {}
-                Err(errors) => {
-                    for err in errors {
-                        // Extract Span from ValidationError
-                        let span = match &err {
-                            pf_dsl::validator::ValidationError::UndefinedDomainInInterface(
-                                _,
-                                _,
-                                s,
-                            ) => *s,
-                            pf_dsl::validator::ValidationError::UndefinedDomainInRequirement(
-                                _,
-                                _,
-                                s,
-                            ) => *s,
-                            pf_dsl::validator::ValidationError::InvalidFrameDomain(_, _, _, s) => {
-                                *s
-                            }
-                            pf_dsl::validator::ValidationError::DuplicateDomain(_, s) => *s,
-                            pf_dsl::validator::ValidationError::DuplicateInterface(_, s) => *s,
-                            pf_dsl::validator::ValidationError::MissingConnection(_, _, _, s) => *s,
-                            pf_dsl::validator::ValidationError::InvalidCausality(_, _, _, _, s) => {
-                                *s
-                            }
-                            pf_dsl::validator::ValidationError::MissingRequiredField(_, _, s) => *s,
-                            pf_dsl::validator::ValidationError::UnsupportedFrame(_, _, s) => *s,
-                            pf_dsl::validator::ValidationError::InvalidDomainRole(_, _, s) => *s,
-                            pf_dsl::validator::ValidationError::InterfaceInsufficientConnections(
-                                _,
-                                s,
-                            ) => *s,
-                            pf_dsl::validator::ValidationError::InterfaceWithoutPhenomena(_, s) => {
-                                *s
-                            }
-                            pf_dsl::validator::ValidationError::InterfaceControllerMismatch(
-                                _,
-                                _,
-                                _,
-                                s,
-                            ) => *s,
-                            pf_dsl::validator::ValidationError::RequirementReferencesMachine(
-                                _,
-                                _,
-                                s,
-                            ) => *s,
+                Err(issues) => {
+                    for issue in issues {
+                        let span = validation_error_span(&issue.error);
+                        let target_path = issue.source_path.as_deref().unwrap_or(path.as_path());
+                        let Some((target_uri, target_text)) =
+                            text_for_path(state, &uri, path.as_path(), text, target_path)
+                        else {
+                            continue;
                         };
 
                         let diagnostic = Diagnostic {
-                            range: span_to_range(text, span),
+                            range: span_to_range(target_text.as_ref(), span),
                             severity: Some(DiagnosticSeverity::ERROR),
                             code: None,
                             code_description: None,
                             source: Some("pf-lsp".to_string()),
-                            message: err.to_string(),
+                            message: issue.error.to_string(),
                             related_information: None,
                             tags: None,
                             data: None,
                         };
-                        diagnostics.push(diagnostic);
+                        push_diagnostic_for_uri(&mut diagnostics_by_uri, target_uri, diagnostic);
                     }
                 }
             }
         }
         Err(e) => {
-            // Parser error
-            // We can parse generic pest error to get location if we want
-            // For now, default to top of file or try to extract location
-            let range = Range {
-                start: Position {
-                    line: 0,
-                    character: 0,
+            let (range, message) = parse_error_range(text).unwrap_or((
+                Range {
+                    start: Position {
+                        line: 0,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: 0,
+                        character: 1,
+                    },
                 },
-                end: Position {
-                    line: 0,
-                    character: 1,
-                },
-            };
+                e.to_string(),
+            ));
 
             let diagnostic = Diagnostic {
                 range,
@@ -406,16 +417,18 @@ fn validate_document(connection: &Connection, uri: Uri, text: &str) -> Result<()
                 code: None,
                 code_description: None,
                 source: Some("pf-lsp".to_string()),
-                message: e.to_string(),
+                message,
                 related_information: None,
                 tags: None,
                 data: None,
             };
-            diagnostics.push(diagnostic);
+            push_diagnostic_for_uri(&mut diagnostics_by_uri, uri.clone(), diagnostic);
         }
     }
 
-    publish_diagnostics(connection, uri, diagnostics)?;
+    for (target_uri, diagnostics) in diagnostics_by_uri {
+        publish_diagnostics(connection, target_uri, diagnostics)?;
+    }
 
     Ok(())
 }
