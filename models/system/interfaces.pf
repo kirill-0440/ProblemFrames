@@ -1,0 +1,50 @@
+// 2. Interfaces
+
+// Developer edits the SourceFile
+interface "Dev-Source" connects Developer, SourceFile {
+    shared: {
+        phenomenon Edit : event [Developer -> SourceFile] controlledBy Developer
+    }
+}
+
+// Developer invokes tool actions
+interface "Dev-Tool" connects Developer, Tool {
+    shared: {
+        phenomenon RunValidation : command [Developer -> Tool] controlledBy Developer
+    }
+}
+
+// Tool reads the SourceFile
+interface "Tool-Source" connects Tool, SourceFile {
+    shared: {
+        phenomenon FileContent : value [SourceFile -> Tool] controlledBy SourceFile
+        phenomenon FileExists : state [SourceFile -> Tool] controlledBy SourceFile
+    }
+}
+
+// Tool interacts with Editor via LSP
+interface "Tool-Editor" connects Tool, Editor {
+    shared: {
+        phenomenon DidOpen : event [Editor -> Tool] controlledBy Editor
+        phenomenon DidChange : event [Editor -> Tool] controlledBy Editor
+        phenomenon PublishDiagnostics : event [Tool -> Editor] controlledBy Tool
+        phenomenon Hover : event [Editor -> Tool] controlledBy Editor
+        phenomenon HoverInfo : value [Tool -> Editor] controlledBy Tool
+    }
+}
+
+// Tool generates output (Code or DOT)
+interface "Tool-Output" connects Tool, GeneratedCode {
+    shared: {
+        phenomenon WriteFile : event [Tool -> GeneratedCode] controlledBy Tool
+        phenomenon CodeStructure : value [Tool -> GeneratedCode] controlledBy Tool
+    }
+}
+
+// Developer views the Output/Editor
+interface "Dev-View" connects Developer, Editor, GeneratedCode {
+    shared: {
+        phenomenon SeeSquiggles : event [Editor -> Developer] controlledBy Editor
+        phenomenon ReadCode : value [GeneratedCode -> Developer] controlledBy GeneratedCode
+    }
+}

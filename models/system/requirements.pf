@@ -1,0 +1,18 @@
+// 3. Requirements
+
+// Requirement 1: Feedback on Validity
+// Frame: RequiredBehavior
+requirement "ImmediateFeedback" {
+    frame: RequiredBehavior
+    constraint: "Developer sees errors immediately"
+    constrains: Editor
+}
+
+// Requirement 2: Correct Code Generation
+// Frame: CommandedBehavior
+requirement "ScaffoldGeneration" {
+    frame: CommandedBehavior
+    constraint: "Generated code matches domain definitions"
+    constrains: GeneratedCode
+    reference: Developer
+}

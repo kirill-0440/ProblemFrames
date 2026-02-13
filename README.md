@@ -183,6 +183,7 @@ Canonical model of this toolchain:
 
 ```bash
 cargo run -p pf_dsl -- models/system/tool_spec.pf --report
+bash ./scripts/check_system_model.sh
 ```
 
 Generate engineering metrics:

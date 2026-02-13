@@ -65,6 +65,16 @@ jobs:
           path: .ci-artifacts/dogfooding-obligations
           if-no-files-found: error
 
+      - name: Run canonical system model quality gate
+        run: bash ./scripts/check_system_model.sh .ci-artifacts/system-model
+
+      - name: Upload system model gate artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: system-model
+          path: .ci-artifacts/system-model
+          if-no-files-found: error
+
       - name: Run formal backend check (non-blocking)
         continue-on-error: true
         run: bash ./scripts/run_formal_backend_check.sh .ci-artifacts/formal-backend

@@ -1,0 +1,11 @@
+subproblem FeedbackLoop {
+    machine: Tool
+    participants: Tool, Developer, Editor
+    requirements: "ImmediateFeedback"
+}
+
+subproblem CodeScaffolding {
+    machine: Tool
+    participants: Tool, Developer, GeneratedCode
+    requirements: "ScaffoldGeneration"
+}
