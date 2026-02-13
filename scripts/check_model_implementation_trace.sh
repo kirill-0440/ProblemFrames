@@ -520,11 +520,31 @@ fi
 echo "Generated ${output_path} (status: ${overall_status})"
 
 if [[ "${enforce_pass}" -eq 1 && "${overall_status}" != "PASS" ]]; then
+  echo "Implementation trace open requirements:" >&2
+  for row in "${rows[@]}"; do
+    IFS='|' read -r requirement evidence status note <<<"${row}"
+    if [[ "${status}" != "implemented" ]]; then
+      echo "  - ${requirement}: ${status} (${evidence}; ${note})" >&2
+    fi
+  done
   echo "Implementation trace status is ${overall_status}; expected PASS." >&2
   exit 1
 fi
 
 if [[ "${enforce_policy}" -eq 1 && "${policy_status}" != "PASS" ]]; then
+  echo "Implementation trace policy-open requirements:" >&2
+  for row in "${rows[@]}"; do
+    IFS='|' read -r requirement evidence status note <<<"${row}"
+    if [[ "${status}" != "implemented" ]]; then
+      echo "  - ${requirement}: ${status} (${evidence}; ${note})" >&2
+    fi
+  done
+  if [[ "${#policy_notes[@]}" -gt 0 ]]; then
+    echo "Policy notes:" >&2
+    for note in "${policy_notes[@]}"; do
+      echo "  - ${note}" >&2
+    done
+  fi
   echo "Implementation trace policy status is ${policy_status}; expected PASS." >&2
   exit 1
 fi
