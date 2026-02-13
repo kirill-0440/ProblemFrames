@@ -25,7 +25,14 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
     ```
-7.  **Generate an image** (requires Graphviz):
+7.  **Generate PIM outputs**:
+    ```bash
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --ddd-pim
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --sysml2-text
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --sysml2-json
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --trace-map-json
+    ```
+8.  **Generate an image** (requires Graphviz):
     ```bash
     dot -Tpng output.dot -o output.png
     ```
@@ -77,6 +84,7 @@ validator rejects unknown references.
 
 - `docs/pf-mode-guide.md`
 - `docs/migration-v2.md`
+- `docs/runbooks/pf-marks-ddd-sysml-guide.md`
 
 ## Import Collision Policy
 

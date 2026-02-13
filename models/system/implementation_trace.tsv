@@ -21,11 +21,25 @@ R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/traceability.r
 R007-M3-ExecutableObligationCheck|file_contains|scripts/run_formal_backend_check.sh|--alloy|formal backend check script exists
 R007-M3-ExecutableObligationCheck|file_contains|crates/pf_dsl/src/formal_alloy.rs|generate_alloy|alloy backend generator exists
 
-R008-M4A-MarkValidationContract|file_contains|models/system/requirements.pf|R008-M4A-MarkValidationContract|requirement is modeled
-R008-M4A-MarkValidationContract|manual_pending|||mark parsing/validation contract hardening is partially implemented and remains open
+R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/ast.rs|pub struct Mark|mark metadata is represented in AST
+R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/problem_frames.pest|marks_block|mark syntax is supported in grammar
+R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/validator.rs|InvalidDomainMark|domain mark contract validator rules exist
+R008-M4A-MarkValidationContract|file_contains|metamodel/invariant-catalog.json|PF-VAL-026|mark validation rules are versioned in metamodel contract
 
-R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/traceability.rs|generate_traceability_csv|traceability export engine exists
-R008-M4C-TraceCoverageContract|manual_pending|||source-to-target trace coverage thresholding remains open
+R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/main.rs|--ddd-pim|DDD PIM mode is exposed in CLI
+R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/main.rs|--sysml2-text|SysML text mode is exposed in CLI
+R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/main.rs|--sysml2-json|SysML JSON mode is exposed in CLI
+R008-M4B-FileBasedPIMGeneration|file_contains|crates/pf_dsl/src/pim.rs|generate_ddd_pim_markdown|PIM generator implementation exists
+
+R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/main.rs|--trace-map-json|source-to-target trace-map mode is exposed in CLI
+R008-M4C-TraceCoverageContract|file_contains|crates/pf_dsl/src/trace_map.rs|TraceMapCoverage|trace-map coverage model is implemented
+R008-M4C-TraceCoverageContract|file_contains|scripts/run_pf_quality_gate.sh|Trace-map coverage status|quality gate evaluates trace-map coverage status
+R008-M4C-TraceCoverageContract|command_passes|cargo run -p pf_dsl -- models/system/tool_spec.pf --trace-map-json||trace-map generation command executes successfully
+
+R008-M5A-ControlledAPIBridgeSpike|file_exists|crates/pf_sysml_api/Cargo.toml||pf_sysml_api crate scaffold exists
+R008-M5A-ControlledAPIBridgeSpike|file_contains|crates/pf_sysml_api/src/main.rs|Usage: pf_sysml_api smoke|controlled API smoke entrypoint exists
+R008-M5A-ControlledAPIBridgeSpike|file_exists|scripts/run_sysml_api_smoke.sh||non-blocking smoke script exists
+R008-M5A-ControlledAPIBridgeSpike|command_passes|bash ./scripts/run_sysml_api_smoke.sh||controlled API smoke script executes safely
 
 R009-A1-ExplicitPFViews|file_contains|crates/pf_dsl/src/main.rs|--dot-context|context view export mode exists
 R009-A1-ExplicitPFViews|file_contains|crates/pf_dsl/src/main.rs|--dot-problem|problem view export mode exists
@@ -51,3 +65,14 @@ R010-M6-SVocabularyDiscipline|file_contains|metamodel/invariant-catalog.json|PF-
 
 R010-M6-WRSPMReportModes|file_contains|crates/pf_dsl/src/main.rs|--wrspm-report|WRSPM markdown mode exists
 R010-M6-WRSPMReportModes|file_contains|crates/pf_dsl/src/main.rs|--wrspm-json|WRSPM JSON mode exists
+
+R010-M7-ObligationSelectionControl|file_exists|docs/formal-backend/adequacy-obligation-selection.md||obligation-class selection memo is documented
+R010-M7-ObligationSelectionControl|file_contains|models/system/adequacy_selection.env|ADEQUACY_CLASS_ID|selected adequacy obligation class is explicitly configured
+
+R010-M7-ExecutableAdequacyEvidence|file_exists|crates/pf_dsl/dogfooding/adequacy/pass.pf||expected-pass adequacy fixture exists
+R010-M7-ExecutableAdequacyEvidence|file_exists|crates/pf_dsl/dogfooding/adequacy/fail.pf||expected-fail adequacy fixture exists
+R010-M7-ExecutableAdequacyEvidence|command_passes|bash ./scripts/run_adequacy_evidence.sh||executable adequacy evidence generation runs end-to-end
+
+R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/run_adequacy_evidence.sh|adequacy-differential.md|differential verdict artifact generation is implemented
+R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/run_pf_quality_gate.sh|adequacy-differential.md|quality gate publishes adequacy differential artifacts
+R010-M7-DifferentialVerdictArtifacts|file_contains|scripts/check_system_model.sh|tool_spec.adequacy-differential.md|system-model gate publishes adequacy differential artifacts

@@ -18,6 +18,10 @@ This directory contains product and engineering proposals for Problem Frames.
 - `010-pf-wrspm-contract-bridge.md`: WRSPM (`W/R/S/P/M`) bridge track that operationalizes PF outputs into explicit contract evidence and adequacy-oriented checks.
 - `010-execution-backlog-m6-m7.md`: execution-ready backlog for proposal `010` milestones (`M6-M7`) across WRSPM mapping, coverage rules, and executable adequacy evidence.
 
+## Companion Guides
+
+- `docs/runbooks/pf-marks-ddd-sysml-guide.md`: mark syntax, validation contract, and anti-patterns for DDD/SysML bridge annotations.
+
 ## Proposal Status
 
 Each proposal includes:

@@ -383,6 +383,87 @@ subproblem Core {
 }
 
 #[test]
+fn dogfooding_cli_generates_pim_and_trace_map_outputs() {
+    let dir = make_temp_dir("pf-cli-pim");
+    let path = dir.join("pim.pf");
+    fs::write(
+        &path,
+        r#"
+problem: PimCli
+domain Tool kind causal role machine
+domain Payments kind causal role given marks: {
+  @ddd.bounded_context("Payments")
+  @ddd.aggregate_root
+  @sysml.block
+}
+domain User kind biddable role given
+interface "User-Tool" connects User, Tool {
+  shared: {
+    phenomenon Command : command [User -> Tool] controlledBy User
+  }
+}
+interface "Tool-Payments" connects Tool, Payments {
+  shared: {
+    phenomenon Execute : event [Tool -> Payments] controlledBy Tool
+    phenomenon Updated : event [Payments -> Tool] controlledBy Payments
+  }
+}
+requirement "R1" {
+  frame: CommandedBehavior
+  reference: User
+  constrains: Payments
+  marks: {
+    @sysml.requirement
+    @ddd.application_service("ExecutePayment")
+  }
+}
+"#,
+    )
+    .expect("failed to write model");
+
+    let ddd = run_pf_dsl(&path, "--ddd-pim");
+    assert!(
+        ddd.status.success(),
+        "{}",
+        String::from_utf8_lossy(&ddd.stderr)
+    );
+    let ddd_stdout = String::from_utf8_lossy(&ddd.stdout);
+    assert!(ddd_stdout.contains("# DDD PIM Report: PimCli"));
+    assert!(ddd_stdout.contains("ExecutePayment (R1)"));
+
+    let sysml_text = run_pf_dsl(&path, "--sysml2-text");
+    assert!(
+        sysml_text.status.success(),
+        "{}",
+        String::from_utf8_lossy(&sysml_text.stderr)
+    );
+    let sysml_text_stdout = String::from_utf8_lossy(&sysml_text.stdout);
+    assert!(sysml_text_stdout.contains("package PimCli"));
+    assert!(sysml_text_stdout.contains("requirement R1"));
+
+    let sysml_json = run_pf_dsl(&path, "--sysml2-json");
+    assert!(
+        sysml_json.status.success(),
+        "{}",
+        String::from_utf8_lossy(&sysml_json.stderr)
+    );
+    let sysml_json_stdout = String::from_utf8_lossy(&sysml_json.stdout);
+    assert!(sysml_json_stdout.contains("\"target\": \"sysml-v2-json\""));
+
+    let trace_map = run_pf_dsl(&path, "--trace-map-json");
+    assert!(
+        trace_map.status.success(),
+        "{}",
+        String::from_utf8_lossy(&trace_map.stderr)
+    );
+    let trace_map_stdout = String::from_utf8_lossy(&trace_map.stdout);
+    assert!(trace_map_stdout.contains("\"status\": \"PASS\""));
+    assert!(trace_map_stdout.contains("ddd.application_service.executepayment"));
+
+    let _ = fs::remove_dir_all(dir);
+}
+
+#[test]
 fn dogfooding_cli_generates_decomposition_closure_report() {
     let dir = make_temp_dir("pf-cli-decomposition-closure");
     let path = dir.join("closure.pf");

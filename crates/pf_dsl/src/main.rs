@@ -7,7 +7,7 @@ use std::env;
 const DEFAULT_IMPACT_HOPS: usize = 2;
 
 fn usage() -> &'static str {
-    "Usage: pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv | --decomposition-closure | --concern-coverage | --wrspm-report | --wrspm-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]"
+    "Usage: pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv | --decomposition-closure | --concern-coverage | --wrspm-report | --wrspm-json | --ddd-pim | --sysml2-text | --sysml2-json | --trace-map-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]"
 }
 
 fn parse_impact_seeds(raw: &str) -> Result<Vec<TraceEntity>> {
@@ -206,6 +206,26 @@ fn main() -> Result<()> {
                     Ok(json) => println!("{}", json),
                     Err(error) => {
                         eprintln!("Error generating WRSPM JSON: {}", error);
+                        std::process::exit(1);
+                    }
+                },
+                "--ddd-pim" => {
+                    println!("{}", pf_dsl::pim::generate_ddd_pim_markdown(&problem));
+                }
+                "--sysml2-text" => {
+                    println!("{}", pf_dsl::pim::generate_sysml2_text(&problem));
+                }
+                "--sysml2-json" => match pf_dsl::pim::generate_sysml2_json(&problem) {
+                    Ok(json) => println!("{}", json),
+                    Err(error) => {
+                        eprintln!("Error generating SysML v2 JSON: {}", error);
+                        std::process::exit(1);
+                    }
+                },
+                "--trace-map-json" => match pf_dsl::trace_map::generate_trace_map_json(&problem) {
+                    Ok(json) => println!("{}", json),
+                    Err(error) => {
+                        eprintln!("Error generating trace map JSON: {}", error);
                         std::process::exit(1);
                     }
                 },

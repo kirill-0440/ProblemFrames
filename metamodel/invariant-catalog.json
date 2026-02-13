@@ -11,9 +11,7 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (interface connects and shared phenomena domain checks)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
       "invalid_tests": [
         "test_undefined_domain_in_interface_uses_matching_source_path"
       ]
@@ -27,9 +25,7 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (requirement reference/constrains existence checks)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
       "invalid_tests": [
         "test_undefined_domain_in_requirement_uses_matching_source_path"
       ]
@@ -43,12 +39,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (frame-specific domain checks)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_information_display_reference_must_be_biddable"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_information_display_reference_must_be_biddable"]
     },
     {
       "rule_id": "PF-VAL-004",
@@ -59,12 +51,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (domain uniqueness pass)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_duplicate_domain_detection"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_duplicate_domain_detection"]
     },
     {
       "rule_id": "PF-VAL-005",
@@ -75,12 +63,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (interface uniqueness pass)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_duplicate_interface_uses_duplicate_source_path"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_duplicate_interface_uses_duplicate_source_path"]
     },
     {
       "rule_id": "PF-VAL-006",
@@ -91,12 +75,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (requirement uniqueness pass)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_duplicate_requirement_detection"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_duplicate_requirement_detection"]
     },
     {
       "rule_id": "PF-VAL-007",
@@ -107,12 +87,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (connected_to_machine checks per frame)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_missing_connection_required"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_missing_connection_required"]
     },
     {
       "rule_id": "PF-VAL-008",
@@ -123,12 +99,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (phenomenon type/origin causality checks)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_invalid_causality"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_invalid_causality"]
     },
     {
       "rule_id": "PF-VAL-009",
@@ -139,12 +111,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (missing frame/reference/constrains checks)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_missing_reference_for_commanded_behavior"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_missing_reference_for_commanded_behavior"]
     },
     {
       "rule_id": "PF-VAL-010",
@@ -155,12 +123,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (custom frame handling)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_unsupported_frame"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_unsupported_frame"]
     },
     {
       "rule_id": "PF-VAL-011",
@@ -171,9 +135,7 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (machine_count and lexical-machine checks)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
       "invalid_tests": [
         "test_invalid_domain_role_lexical_machine_uses_domain_source_path"
       ]
@@ -187,12 +149,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (interface minimum connections check)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_interface_requires_at_least_two_connections"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_interface_requires_at_least_two_connections"]
     },
     {
       "rule_id": "PF-VAL-013",
@@ -203,12 +161,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (interface non-empty shared_phenomena check)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_interface_requires_at_least_one_phenomenon"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_interface_requires_at_least_one_phenomenon"]
     },
     {
       "rule_id": "PF-VAL-014",
@@ -219,9 +173,7 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (controlledBy checks)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
       "invalid_tests": [
         "test_interface_controller_mismatch_uses_matching_source_path"
       ]
@@ -235,12 +187,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (machine reference prohibition in requirements)"
       ],
-      "valid_tests": [
-        "test_additional_frames_valid_when_fit"
-      ],
-      "invalid_tests": [
-        "test_requirement_cannot_reference_machine"
-      ]
+      "valid_tests": ["test_additional_frames_valid_when_fit"],
+      "invalid_tests": ["test_requirement_cannot_reference_machine"]
     },
     {
       "rule_id": "PF-VAL-016",
@@ -251,12 +199,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (subproblem required-field checks)"
       ],
-      "valid_tests": [
-        "test_subproblem_valid_decomposition"
-      ],
-      "invalid_tests": [
-        "test_subproblem_missing_machine_is_invalid"
-      ]
+      "valid_tests": ["test_subproblem_valid_decomposition"],
+      "invalid_tests": ["test_subproblem_missing_machine_is_invalid"]
     },
     {
       "rule_id": "PF-VAL-017",
@@ -267,9 +211,7 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (subproblem machine/participant existence checks)"
       ],
-      "valid_tests": [
-        "test_subproblem_valid_decomposition"
-      ],
+      "valid_tests": ["test_subproblem_valid_decomposition"],
       "invalid_tests": [
         "test_undefined_domain_in_subproblem_uses_matching_source_path"
       ]
@@ -283,9 +225,7 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (subproblem requirement existence checks)"
       ],
-      "valid_tests": [
-        "test_subproblem_valid_decomposition"
-      ],
+      "valid_tests": ["test_subproblem_valid_decomposition"],
       "invalid_tests": [
         "test_undefined_requirement_in_subproblem_uses_matching_source_path"
       ]
@@ -299,12 +239,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (subproblem uniqueness pass)"
       ],
-      "valid_tests": [
-        "test_subproblem_valid_decomposition"
-      ],
-      "invalid_tests": [
-        "test_duplicate_subproblem_uses_duplicate_source_path"
-      ]
+      "valid_tests": ["test_subproblem_valid_decomposition"],
+      "invalid_tests": ["test_duplicate_subproblem_uses_duplicate_source_path"]
     },
     {
       "rule_id": "PF-VAL-020",
@@ -315,9 +251,7 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (subproblem machine-role and boundary checks)"
       ],
-      "valid_tests": [
-        "test_subproblem_valid_decomposition"
-      ],
+      "valid_tests": ["test_subproblem_valid_decomposition"],
       "invalid_tests": [
         "test_subproblem_rejects_requirement_outside_participants"
       ]
@@ -331,12 +265,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (assertion set uniqueness pass)"
       ],
-      "valid_tests": [
-        "test_correctness_argument_valid_contract"
-      ],
-      "invalid_tests": [
-        "test_duplicate_assertion_set_detection"
-      ]
+      "valid_tests": ["test_correctness_argument_valid_contract"],
+      "invalid_tests": ["test_duplicate_assertion_set_detection"]
     },
     {
       "rule_id": "PF-VAL-022",
@@ -347,12 +277,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (assertion set non-empty check)"
       ],
-      "valid_tests": [
-        "test_correctness_argument_valid_contract"
-      ],
-      "invalid_tests": [
-        "test_empty_assertion_set_is_invalid"
-      ]
+      "valid_tests": ["test_correctness_argument_valid_contract"],
+      "invalid_tests": ["test_empty_assertion_set_is_invalid"]
     },
     {
       "rule_id": "PF-VAL-023",
@@ -363,12 +289,8 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (correctness argument existence and scope checks)"
       ],
-      "valid_tests": [
-        "test_correctness_argument_valid_contract"
-      ],
-      "invalid_tests": [
-        "test_correctness_argument_references_must_exist"
-      ]
+      "valid_tests": ["test_correctness_argument_valid_contract"],
+      "invalid_tests": ["test_correctness_argument_references_must_exist"]
     },
     {
       "rule_id": "PF-VAL-024",
@@ -379,9 +301,7 @@
       "validator_paths": [
         "crates/pf_dsl/src/validator.rs::validate (correctness argument uniqueness pass)"
       ],
-      "valid_tests": [
-        "test_correctness_argument_valid_contract"
-      ],
+      "valid_tests": ["test_correctness_argument_valid_contract"],
       "invalid_tests": [
         "test_duplicate_correctness_argument_uses_duplicate_source_path"
       ]
@@ -400,6 +320,36 @@
       ],
       "invalid_tests": [
         "test_specification_vocabulary_rejects_non_interface_ref_uses_assertion_set_source_path"
+      ]
+    },
+    {
+      "rule_id": "PF-VAL-026",
+      "error_variant": "InvalidDomainMark",
+      "severity": "error",
+      "title": "Domain mark contract is structurally consistent",
+      "rationale": "DDD/SysML domain marks must use supported names, satisfy prerequisites, and avoid conflicting combinations.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate_domain_marks (domain mark contract checks)"
+      ],
+      "valid_tests": [
+        "test_mark_contract_accepts_valid_domain_and_requirement_marks"
+      ],
+      "invalid_tests": ["test_mark_contract_rejects_conflicting_domain_marks"]
+    },
+    {
+      "rule_id": "PF-VAL-027",
+      "error_variant": "InvalidRequirementMark",
+      "severity": "error",
+      "title": "Requirement mark contract is structurally consistent",
+      "rationale": "Requirement-level marks must use supported names and satisfy value arity constraints.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate_requirement_marks (requirement mark contract checks)"
+      ],
+      "valid_tests": [
+        "test_mark_contract_accepts_valid_domain_and_requirement_marks"
+      ],
+      "invalid_tests": [
+        "test_mark_contract_rejects_requirement_mark_with_missing_value"
       ]
     }
   ]

@@ -532,6 +532,7 @@ mod tests {
             name: name.to_string(),
             kind,
             role,
+            marks: vec![],
             span: span(),
             source_path: None,
         }
@@ -615,6 +616,7 @@ mod tests {
                     name: "DisplayState".to_string(),
                     frame: FrameType::InformationDisplay,
                     phenomena: vec![],
+                    marks: vec![],
                     constraint: "show data".to_string(),
                     constrains: Some(reference("Sensor")),
                     reference: Some(reference("Operator")),
@@ -625,6 +627,7 @@ mod tests {
                     name: "StoreRecord".to_string(),
                     frame: FrameType::Transformation,
                     phenomena: vec!["PersistRecord".to_string()],
+                    marks: vec![],
                     constraint: "store transformed record".to_string(),
                     constrains: Some(reference("Ledger")),
                     reference: None,

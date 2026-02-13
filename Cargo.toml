@@ -1,3 +1,3 @@
 [workspace]
 resolver = "2"
-members = ["crates/pf_dsl", "crates/pf_lsp"]
+members = ["crates/pf_dsl", "crates/pf_lsp", "crates/pf_sysml_api"]

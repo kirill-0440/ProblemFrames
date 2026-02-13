@@ -20,6 +20,13 @@ impl fmt::Display for Reference {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct Mark {
+    pub name: String,
+    pub value: Option<String>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Problem {
     pub name: String,
     pub span: Span,
@@ -53,6 +60,7 @@ pub struct Domain {
     pub name: String,
     pub kind: DomainKind,
     pub role: DomainRole,
+    pub marks: Vec<Mark>,
     pub span: Span,
     pub source_path: Option<PathBuf>,
 }
@@ -99,6 +107,7 @@ pub struct Requirement {
     pub name: String,
     pub frame: FrameType,
     pub phenomena: Vec<String>,
+    pub marks: Vec<Mark>,
     // constraint is just text, not a reference to a domain
     pub constraint: String,
     // these refer to domains

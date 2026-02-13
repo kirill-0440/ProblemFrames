@@ -1,0 +1,15 @@
+problem: AdequacyFail
+
+domain Machine kind causal role machine
+domain Device kind causal role given
+
+interface "Machine-Device" connects Machine, Device {
+  shared: {
+    phenomenon Actuate : event [Machine -> Device] controlledBy Machine
+  }
+}
+
+requirement "R_required" {
+  frame: RequiredBehavior
+  constrains: Device
+}

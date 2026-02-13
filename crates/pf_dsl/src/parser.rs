@@ -103,6 +103,40 @@ fn parse_assertion_set(
     })
 }
 
+fn parse_mark_decl(mark_pair: Pair<'_, Rule>) -> std::result::Result<Mark, ParseDiagnostic> {
+    let span = pair_to_span(&mark_pair);
+    let mut inner = mark_pair.into_inner();
+    let name_pair = inner
+        .next()
+        .ok_or_else(|| ParseDiagnostic::new(span, "missing mark name"))?;
+    let value = inner.next().map(|value_pair| {
+        value_pair
+            .into_inner()
+            .next()
+            .map(|token| token.as_str().trim_matches('"').to_string())
+            .unwrap_or_default()
+    });
+
+    Ok(Mark {
+        name: name_pair.as_str().to_string(),
+        value,
+        span,
+    })
+}
+
+fn parse_marks_block(
+    marks_pair: Pair<'_, Rule>,
+) -> std::result::Result<Vec<Mark>, ParseDiagnostic> {
+    let mut marks = Vec::new();
+    for mark_pair in marks_pair.into_inner() {
+        if mark_pair.as_rule() != Rule::mark_decl {
+            continue;
+        }
+        marks.push(parse_mark_decl(mark_pair)?);
+    }
+    Ok(marks)
+}
+
 pub fn parse_error_diagnostic(input: &str) -> Option<(Span, String)> {
     match parse_internal(input) {
         Ok(_) => None,
@@ -171,11 +205,16 @@ fn parse_internal(input: &str) -> std::result::Result<Problem, ParseDiagnostic> 
                 let role_pair = inner
                     .next()
                     .ok_or_else(|| ParseDiagnostic::new(span, "missing domain role"))?;
+                let marks = match inner.next() {
+                    Some(marks_pair) => parse_marks_block(marks_pair)?,
+                    None => vec![],
+                };
 
                 problem.domains.push(Domain {
                     name,
                     kind: parse_domain_kind(kind_pair.as_str()),
                     role: parse_domain_role(role_pair.as_str()),
+                    marks,
                     span,
                     source_path: None,
                 });
@@ -277,6 +316,7 @@ fn parse_internal(input: &str) -> std::result::Result<Problem, ParseDiagnostic> 
                     name,
                     frame: FrameType::Custom(String::new()),
                     phenomena: vec![],
+                    marks: vec![],
                     constraint: String::new(),
                     constrains: None,
                     reference: None,
@@ -292,6 +332,7 @@ fn parse_internal(input: &str) -> std::result::Result<Problem, ParseDiagnostic> 
                         Rule::constraint => "constraint",
                         Rule::constrains => "constrains",
                         Rule::reference => "reference",
+                        Rule::marks_block => "marks",
                         _ => "unknown",
                     };
 
@@ -343,6 +384,9 @@ fn parse_internal(input: &str) -> std::result::Result<Problem, ParseDiagnostic> 
                                 name: ident_pair.as_str().to_string(),
                                 span: pair_to_span(&ident_pair),
                             });
+                        }
+                        Rule::marks_block => {
+                            req.marks = parse_marks_block(field)?;
                         }
                         _ => {}
                     }

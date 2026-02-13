@@ -18,6 +18,7 @@ bash "${REPO_ROOT}/scripts/run_pf_quality_gate.sh" \
   --impact requirement:R009-A5-AgentAssistedModelExecution \
   --impact-hops 2 \
   "${REPO_ROOT}/models/system/tool_spec.pf"
+bash "${REPO_ROOT}/scripts/run_sysml_api_smoke.sh" "${tmp_dir}/sysml-api"
 bash "${REPO_ROOT}/scripts/check_system_model.sh" "${tmp_dir}/system-model"
 bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
 bash "${REPO_ROOT}/scripts/run_formal_backend_check.sh" "${tmp_dir}/formal-backend"

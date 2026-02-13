@@ -13,9 +13,12 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 3. Verify decomposition closure (no uncovered requirements, no orphan subproblems, no boundary mismatches).
 4. Verify frame concern coverage (`requirement -> correctness argument`) with explicit uncovered/deferred entries.
 5. Generate correctness evidence (`obligations`, `alloy`) from the validated model.
-6. Generate traceability artifacts (relationship matrix + optional impact analysis).
-7. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
-8. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
+6. Generate PIM artifacts (`ddd-pim`, `sysml2-text`, `sysml2-json`) from the same validated source model.
+7. Generate source-to-target trace map and enforce coverage (`trace-map.json` status must be `PASS`).
+8. Generate traceability artifacts (relationship matrix + optional impact analysis).
+9. Generate adequacy differential evidence (`rust_verdict` vs `formal_verdict` proxy) for selected obligation class.
+10. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
+11. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
 
 ## One-command Gate
 
@@ -33,9 +36,15 @@ Generated artifacts per model:
 - `decomposition-closure.md`
 - `obligations.md`
 - `concern-coverage.md`
+- `ddd-pim.md`
+- `sysml2.txt`
+- `sysml2.json`
+- `trace-map.json`
 - `model.als`
 - `traceability.md`
 - `traceability.csv`
+- `adequacy-differential.md`
+- `adequacy-evidence.json`
 - `implementation-trace.md`
 - `wrspm.md`
 - `wrspm.json`
@@ -82,7 +91,7 @@ CI publishes equivalent evidence through dogfooding artifacts:
 
 - `dogfooding-reports`
 - `dogfooding-obligations`
-- `system-model` (includes decomposition closure, concern coverage, implementation trace, and WRSPM outputs)
+- `system-model` (includes decomposition closure, concern coverage, PIM artifacts, trace-map coverage, adequacy evidence, implementation trace, and WRSPM outputs)
 - `formal-backend`
 
 For agent-assisted model execution, run:

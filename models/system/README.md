@@ -14,6 +14,7 @@ roadmap alignment.
 - `subproblems.pf`: decomposition into delivery-sized concerns.
 - `arguments.pf`: W/S/R assertion sets and correctness argument.
 - `implementation_trace.tsv`: requirement-to-implementation evidence map (`implemented/partial/planned`).
+- `adequacy_selection.env`: selected M7 adequacy obligation class and pass/fail fixture bindings.
 - `roadmap_alignment.md`: mapping from system-model requirement IDs to proposal/backlog items (`005` through `010`).
 
 ## Development Workflow
@@ -30,8 +31,14 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --obligations
 cargo run -p pf_dsl -- models/system/tool_spec.pf --decomposition-closure
 cargo run -p pf_dsl -- models/system/tool_spec.pf --concern-coverage
 cargo run -p pf_dsl -- models/system/tool_spec.pf --wrspm-report
+cargo run -p pf_dsl -- models/system/tool_spec.pf --ddd-pim
+cargo run -p pf_dsl -- models/system/tool_spec.pf --sysml2-text
+cargo run -p pf_dsl -- models/system/tool_spec.pf --sysml2-json
+cargo run -p pf_dsl -- models/system/tool_spec.pf --trace-map-json
 cargo run -p pf_dsl -- models/system/tool_spec.pf --traceability-md --impact=requirement:R009-A4-OneCommandPFQualityGate --impact-hops=2
 cargo run -p pf_dsl -- models/system/tool_spec.pf --alloy > system_model.als
+bash ./scripts/run_adequacy_evidence.sh
+bash ./scripts/run_sysml_api_smoke.sh
 bash ./scripts/check_model_implementation_trace.sh models/system/tool_spec.pf
 bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh

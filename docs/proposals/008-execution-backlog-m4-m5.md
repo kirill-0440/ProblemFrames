@@ -30,9 +30,9 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `DSL Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Introduce optional marks metadata in AST nodes.
-- [ ] Extend parser grammar for annotation/mark syntax.
-- [ ] Add parser fixtures for valid and malformed marks.
+- [x] Introduce optional marks metadata in AST nodes.
+- [x] Extend parser grammar for annotation/mark syntax.
+- [x] Add parser fixtures for valid and malformed marks.
 
 #### R008-M4A-02 - Add Mark Consistency Validation
 
@@ -40,9 +40,9 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `DSL Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add validator rule IDs for conflicting/missing mark prerequisites.
-- [ ] Add invalid fixtures for each new rule.
-- [ ] Keep strict PF semantics unchanged for unmarked models.
+- [x] Add validator rule IDs for conflicting/missing mark prerequisites.
+- [x] Add invalid fixtures for each new rule.
+- [x] Keep strict PF semantics unchanged for unmarked models.
 
 #### R008-M4A-03 - Document Marking Guide
 
@@ -50,8 +50,8 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `DSL Maintainer`
 - Priority: `P2`
 - Definition of Done:
-- [ ] Add concise guide with examples and anti-patterns.
-- [ ] Link guide from `crates/pf_dsl/README.md` and proposals index docs.
+- [x] Add concise guide with examples and anti-patterns.
+- [x] Link guide from `crates/pf_dsl/README.md` and proposals index docs.
 
 ### M4b - File-Based PIM Generation
 
@@ -61,9 +61,9 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `Codegen Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add CLI mode `--ddd-pim`.
-- [ ] Generate bounded-context map, command/event inventory, and aggregate candidates.
-- [ ] Add deterministic output tests.
+- [x] Add CLI mode `--ddd-pim`.
+- [x] Generate bounded-context map, command/event inventory, and aggregate candidates.
+- [x] Add deterministic output tests.
 
 #### R008-M4B-02 - Implement SysML v2 Text Generator
 
@@ -71,9 +71,9 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `Codegen Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add CLI mode `--sysml2-text`.
-- [ ] Map PF requirements/interfaces to SysML textual elements.
-- [ ] Add fixture-based output snapshots.
+- [x] Add CLI mode `--sysml2-text`.
+- [x] Map PF requirements/interfaces to SysML textual elements.
+- [x] Add fixture-based output snapshots.
 
 #### R008-M4B-03 - Implement SysML v2 JSON Generator
 
@@ -81,9 +81,9 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `Codegen Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add CLI mode `--sysml2-json`.
-- [ ] Align output with targeted SysML JSON schema version.
-- [ ] Add schema validation job or test hook.
+- [x] Add CLI mode `--sysml2-json`.
+- [x] Align output with targeted SysML JSON schema version.
+- [x] Add schema validation job or test hook.
 
 ### M4c - Trace Contract and CI Publication
 
@@ -93,9 +93,9 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `Traceability Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Generate stable `trace-map.json` containing PF IDs and generated target IDs.
-- [ ] Ensure all generated elements are mapped.
-- [ ] Fail CI on unmapped generated elements.
+- [x] Generate stable `trace-map.json` containing PF IDs and generated target IDs.
+- [x] Ensure all generated elements are mapped.
+- [x] Fail CI on unmapped generated elements.
 
 #### R008-M4C-02 - Integrate with Existing Impact Exports
 
@@ -112,8 +112,8 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `Platform Maintainer`
 - Priority: `P2`
 - Definition of Done:
-- [ ] Upload generation outputs and trace bundles in CI artifacts.
-- [ ] Add artifact naming/versioning convention.
+- [x] Upload generation outputs and trace bundles in CI artifacts.
+- [x] Add artifact naming/versioning convention.
 
 ### M5a - Controlled API Bridge Spike
 
@@ -123,8 +123,8 @@ Execution backlog for milestones from `docs/proposals/008-pf-ddd-sysmlv2-integra
 - Owner: `Platform Maintainer`
 - Priority: `P2`
 - Definition of Done:
-- [ ] Add crate with basic client abstractions and config wiring.
-- [ ] Include smoke command for push/pull test path.
+- [x] Add crate with basic client abstractions and config wiring.
+- [x] Include smoke command for push/pull test path.
 
 #### R008-M5A-02 - Non-Blocking API Smoke Job
 

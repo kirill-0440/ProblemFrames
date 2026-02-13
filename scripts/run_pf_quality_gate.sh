@@ -109,9 +109,16 @@ for model in "${models[@]}"; do
   decomposition_file="${model_output_dir}/decomposition-closure.md"
   obligations_file="${model_output_dir}/obligations.md"
   concern_coverage_file="${model_output_dir}/concern-coverage.md"
+  ddd_pim_file="${model_output_dir}/ddd-pim.md"
+  sysml2_text_file="${model_output_dir}/sysml2.txt"
+  sysml2_json_file="${model_output_dir}/sysml2.json"
+  trace_map_json_file="${model_output_dir}/trace-map.json"
   alloy_file="${model_output_dir}/model.als"
   traceability_md_file="${model_output_dir}/traceability.md"
   traceability_csv_file="${model_output_dir}/traceability.csv"
+  adequacy_differential_file="${model_output_dir}/adequacy-differential.md"
+  adequacy_json_file="${model_output_dir}/adequacy-evidence.json"
+  adequacy_status_file="${model_output_dir}/adequacy.status"
   implementation_trace_file="${model_output_dir}/implementation-trace.md"
   implementation_trace_status_file="${model_output_dir}/implementation-trace.status"
   wrspm_file="${model_output_dir}/wrspm.md"
@@ -130,9 +137,17 @@ for model in "${models[@]}"; do
   cargo run -p pf_dsl -- "${model}" --decomposition-closure > "${decomposition_file}"
   cargo run -p pf_dsl -- "${model}" --obligations > "${obligations_file}"
   cargo run -p pf_dsl -- "${model}" --concern-coverage > "${concern_coverage_file}"
+  cargo run -p pf_dsl -- "${model}" --ddd-pim > "${ddd_pim_file}"
+  cargo run -p pf_dsl -- "${model}" --sysml2-text > "${sysml2_text_file}"
+  cargo run -p pf_dsl -- "${model}" --sysml2-json > "${sysml2_json_file}"
+  cargo run -p pf_dsl -- "${model}" --trace-map-json > "${trace_map_json_file}"
   cargo run -p pf_dsl -- "${model}" --alloy > "${alloy_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-md "${traceability_args[@]}" > "${traceability_md_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-csv "${traceability_args[@]}" > "${traceability_csv_file}"
+  bash "${REPO_ROOT}/scripts/run_adequacy_evidence.sh" \
+    --output "${adequacy_differential_file}" \
+    --json "${adequacy_json_file}" \
+    --status-file "${adequacy_status_file}"
   bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
     --traceability-csv "${traceability_csv_file}" \
     --output "${implementation_trace_file}" \
@@ -151,6 +166,14 @@ for model in "${models[@]}"; do
       | sed -e 's/^- Concern coverage status: //'
   )"
   concern_coverage_status="${concern_coverage_status:-UNKNOWN}"
+  trace_map_coverage_status="$(
+    grep -E '"status": "' "${trace_map_json_file}" \
+      | head -n 1 \
+      | sed -E 's/.*"status": "([^"]+)".*/\1/'
+  )"
+  trace_map_coverage_status="${trace_map_coverage_status:-UNKNOWN}"
+  adequacy_status="$(cat "${adequacy_status_file}" 2>/dev/null || true)"
+  adequacy_status="${adequacy_status:-UNKNOWN}"
   implementation_trace_status="$(cat "${implementation_trace_status_file}" 2>/dev/null || true)"
   implementation_trace_status="${implementation_trace_status:-UNKNOWN}"
 
@@ -161,6 +184,8 @@ for model in "${models[@]}"; do
     echo "- Model: \`${model}\`"
     echo "- Decomposition closure status: \`${closure_status}\`"
     echo "- Concern coverage status: \`${concern_coverage_status}\`"
+    echo "- Trace-map coverage status: \`${trace_map_coverage_status}\`"
+    echo "- Adequacy evidence status: \`${adequacy_status}\`"
     echo "- Implementation trace status: \`${implementation_trace_status}\`"
     echo
     echo "## Artifacts"
@@ -169,9 +194,15 @@ for model in "${models[@]}"; do
     echo "- \`decomposition-closure.md\`"
     echo "- \`obligations.md\`"
     echo "- \`concern-coverage.md\`"
+    echo "- \`ddd-pim.md\`"
+    echo "- \`sysml2.txt\`"
+    echo "- \`sysml2.json\`"
+    echo "- \`trace-map.json\`"
     echo "- \`model.als\`"
     echo "- \`traceability.md\`"
     echo "- \`traceability.csv\`"
+    echo "- \`adequacy-differential.md\`"
+    echo "- \`adequacy-evidence.json\`"
     echo "- \`implementation-trace.md\`"
     echo "- \`wrspm.md\`"
     echo "- \`wrspm.json\`"
@@ -185,6 +216,10 @@ for model in "${models[@]}"; do
   fi
   if [[ "${concern_coverage_status}" != "PASS" && "${allow_open_concern_coverage}" -eq 0 ]]; then
     echo "Concern coverage failed for ${model}; re-run with --allow-open-concern-coverage to override." >&2
+    failure_count=$((failure_count + 1))
+  fi
+  if [[ "${trace_map_coverage_status}" != "PASS" ]]; then
+    echo "Trace-map coverage failed for ${model}; generated targets are not fully mapped." >&2
     failure_count=$((failure_count + 1))
   fi
   if [[ "${implementation_trace_status}" != "PASS" && "${enforce_implementation_trace}" -eq 1 ]]; then

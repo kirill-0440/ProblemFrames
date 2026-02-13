@@ -258,6 +258,7 @@ mod tests {
             name: name.to_string(),
             kind,
             role,
+            marks: vec![],
             span: span(),
             source_path: None,
         }
@@ -286,6 +287,7 @@ mod tests {
                 name: "req".to_string(),
                 frame: FrameType::RequiredBehavior,
                 phenomena: vec![],
+                marks: vec![],
                 constraint: "ok".to_string(),
                 constrains: None,
                 reference: None,
@@ -379,6 +381,7 @@ mod tests {
                 name: "R1".to_string(),
                 frame: FrameType::RequiredBehavior,
                 phenomena: vec![],
+                marks: vec![],
                 constraint: "maintain room".to_string(),
                 constrains: Some(reference("Room")),
                 reference: None,

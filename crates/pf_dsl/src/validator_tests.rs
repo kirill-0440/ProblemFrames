@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::ast::*;
+    use crate::parser::parse;
     use crate::validator::{validate, validate_with_sources, ValidationError};
     use std::path::PathBuf;
 
@@ -27,6 +28,7 @@ mod tests {
             name: name.to_string(),
             kind,
             role,
+            marks: vec![],
             span: mock_span(),
             source_path: None,
         }
@@ -95,6 +97,7 @@ mod tests {
                 name: "M".to_string(),
                 kind: DomainKind::Lexical,
                 role: DomainRole::Machine,
+                marks: vec![],
                 span: mock_span(),
                 source_path: Some(PathBuf::from("domain.pf")),
             }],
@@ -132,6 +135,7 @@ mod tests {
                     name: "D1".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("a.pf")),
                 },
@@ -139,6 +143,7 @@ mod tests {
                     name: "D1".to_string(),
                     kind: DomainKind::Causal,
                     role: DomainRole::Given,
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("b.pf")),
                 },
@@ -477,6 +482,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -487,6 +493,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -572,6 +579,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("a.pf")),
                 },
@@ -582,6 +590,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("b.pf")),
                 },
@@ -622,6 +631,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: Some(PathBuf::from("req.pf")),
             }],
@@ -670,6 +680,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: Span { start: 1, end: 2 },
                     source_path: Some(PathBuf::from("a.pf")),
                 },
@@ -680,6 +691,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: Span { start: 10, end: 11 },
                     source_path: Some(PathBuf::from("b.pf")),
                 },
@@ -725,6 +737,7 @@ mod tests {
                 reference: Some(mock_ref("Op")),
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -759,6 +772,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -805,6 +819,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("a.pf")),
                 },
@@ -815,6 +830,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: Some(PathBuf::from("b.pf")),
                 },
@@ -917,6 +933,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -952,6 +969,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -990,6 +1008,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1028,6 +1047,7 @@ mod tests {
                 reference: Some(mock_ref("M")),
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1084,6 +1104,7 @@ mod tests {
                 reference: Some(mock_ref("Ops")),
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1146,6 +1167,7 @@ mod tests {
                 reference: Some(mock_ref("User")),
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1184,6 +1206,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1271,6 +1294,7 @@ mod tests {
                     reference: Some(mock_ref("Viewer")),
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -1281,6 +1305,7 @@ mod tests {
                     reference: Some(mock_ref("Viewer")),
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -1291,6 +1316,7 @@ mod tests {
                     reference: None,
                     constraint: "".to_string(),
                     phenomena: vec![],
+                    marks: vec![],
                     span: mock_span(),
                     source_path: None,
                 },
@@ -1901,6 +1927,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -1964,6 +1991,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -2028,6 +2056,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -2131,6 +2160,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -2180,6 +2210,7 @@ mod tests {
                 reference: None,
                 constraint: "".to_string(),
                 phenomena: vec![],
+                marks: vec![],
                 span: mock_span(),
                 source_path: None,
             }],
@@ -2197,5 +2228,116 @@ mod tests {
 
         let result = validate(&problem);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_mark_contract_accepts_valid_domain_and_requirement_marks() {
+        let input = r#"
+            problem: MarkContractValid
+            domain Tool kind causal role machine
+            domain Payments kind causal role given marks: {
+                @ddd.bounded_context("Payments")
+                @ddd.aggregate_root
+                @sysml.block
+            }
+            domain Console kind biddable role given
+            interface "Tool-Payments" connects Tool, Payments {
+                shared: {
+                    phenomenon Sync : event [Tool -> Payments] controlledBy Tool
+                }
+            }
+            interface "Tool-Console" connects Tool, Console {
+                shared: {
+                    phenomenon Render : event [Tool -> Console] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: InformationDisplay
+                reference: Console
+                constrains: Payments
+                marks: {
+                    @sysml.requirement
+                    @ddd.application_service("RenderPaymentState")
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_conflicting_domain_marks() {
+        let input = r#"
+            problem: MarkContractConflict
+            domain Tool kind causal role machine
+            domain Ledger kind causal role given marks: {
+                @ddd.bounded_context("Accounting")
+                @ddd.aggregate_root
+                @ddd.value_object
+            }
+            interface "Tool-Ledger" connects Tool, Ledger {
+                shared: {
+                    phenomenon Sync : event [Tool -> Ledger] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: RequiredBehavior
+                constrains: Ledger
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidDomainMark(domain, message, _)
+                    if domain == "Ledger" && message.contains("mutually exclusive")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_requirement_mark_with_missing_value() {
+        let input = r#"
+            problem: MarkContractRequirementMissingValue
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            domain User kind biddable role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            interface "Tool-User" connects Tool, User {
+                shared: {
+                    phenomenon Show : event [Tool -> User] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                reference: User
+                constrains: Store
+                marks: {
+                    @ddd.application_service
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1" && message.contains("requires non-empty string value")
+            )
+        }));
     }
 }

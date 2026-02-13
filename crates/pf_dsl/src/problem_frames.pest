@@ -24,7 +24,12 @@ problem_decl = { "problem:" ~ identifier }
 
 domain_kind = { "biddable" | "causal" | "lexical" }
 domain_role = { "given" | "designed" | "machine" }
-domain_decl = { "domain" ~ identifier ~ "kind" ~ domain_kind ~ "role" ~ domain_role }
+domain_decl = { "domain" ~ identifier ~ "kind" ~ domain_kind ~ "role" ~ domain_role ~ marks_block? }
+
+marks_block = { "marks:" ~ "{" ~ mark_decl* ~ "}" }
+mark_decl = { "@" ~ mark_name ~ mark_value? }
+mark_name = @{ identifier ~ ("." ~ identifier)* }
+mark_value = { "(" ~ string_literal ~ ")" }
 
 interface_decl = { "interface" ~ string_literal ~ "connects" ~ identifier_list ~ "{" ~ shared_phenomena ~ "}" }
 identifier_list = { identifier ~ ("," ~ identifier)+ }
@@ -34,7 +39,7 @@ phenomenon_type = { "event" | "command" | "state" | "value" }
 phenomenon = { "phenomenon" ~ identifier ~ ":" ~ phenomenon_type ~ "[" ~ identifier ~ "->" ~ identifier ~ "]" ~ "controlledBy" ~ identifier }
 
 requirement_decl = { "requirement" ~ string_literal ~ "{" ~ req_body ~ "}" }
-req_body = { (frame_type | constraint | constrains | reference)* }
+req_body = { (frame_type | constraint | constrains | reference | marks_block)* }
 frame_type = { "frame:" ~ (identifier | string_literal) }
 constraint = { "constraint:" ~ string_literal }
 constrains = { "constrains:" ~ identifier }

@@ -70,9 +70,9 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - Owner: `Formal Track Owner`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Write short rationale memo for selected obligation class and assumptions.
-- [ ] Tie selection explicitly to `R007-M3-01` outputs.
-- [ ] Define expected-pass and expected-fail fixture templates.
+- [x] Write short rationale memo for selected obligation class and assumptions.
+- [x] Tie selection explicitly to `R007-M3-01` outputs.
+- [x] Define expected-pass and expected-fail fixture templates.
 
 #### R010-M7-02 - Implement Formal Check Path
 
@@ -80,9 +80,9 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - Owner: `Formal Track Owner`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Implement executable check path (Alloy-first unless decision memo changes).
-- [ ] Add one passing and one failing fixture with deterministic verdict.
-- [ ] Publish check output as machine-readable artifact.
+- [x] Implement executable check path (Alloy-first unless decision memo changes).
+- [x] Add one passing and one failing fixture with deterministic verdict.
+- [x] Publish check output as machine-readable artifact.
 
 #### R010-M7-03 - Add Differential Verdict Report
 
@@ -90,9 +90,9 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - Owner: `Formal Track Owner`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Generate differential report per model/obligation with mismatch categories.
-- [ ] Include clear triage keys (model ID, obligation ID, verdict pair).
-- [ ] Keep report generation non-blocking in initial rollout.
+- [x] Generate differential report per model/obligation with mismatch categories.
+- [x] Include clear triage keys (model ID, obligation ID, verdict pair).
+- [x] Keep report generation non-blocking in initial rollout.
 
 #### R010-M7-04 - CI Artifact and Governance Wiring
 
@@ -100,8 +100,8 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - Owner: `Platform Maintainer`
 - Priority: `P2`
 - Definition of Done:
-- [ ] Upload WRSPM and adequacy artifacts with stable naming in CI.
-- [ ] Add runbook update describing rerun and triage procedure.
+- [x] Upload WRSPM and adequacy artifacts with stable naming in CI.
+- [x] Add runbook update describing rerun and triage procedure.
 - [ ] Record go/no-go checkpoint criteria for future blocking gate decision.
 
 ## Sequencing and Dependencies
