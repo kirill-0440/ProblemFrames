@@ -218,7 +218,7 @@ mod tests {
 
         assert!(!message.is_empty());
         assert!(span.start <= expected.start);
-        assert!(span.end >= expected.start + 1);
+        assert!(span.end > expected.start);
     }
 
     #[test]
