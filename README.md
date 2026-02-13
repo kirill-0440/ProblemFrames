@@ -47,7 +47,7 @@ Guides:
 Available modes:
 
 ```bash
-pf_dsl <file.pf> [--dot | --report | --gen-rust | --obligations | --alloy]
+pf_dsl <file.pf> [--dot | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv]
 ```
 
 Artifact generation currently includes:
@@ -57,6 +57,8 @@ Artifact generation currently includes:
 - proof-obligation markdown (`--obligations`)
 - Alloy model export (`--alloy`)
 - Rust code skeleton generation (`--gen-rust`)
+- traceability relationship report (`--traceability-md`)
+- traceability edge/matrix CSV (`--traceability-csv`)
 
 ### LSP and VS Code
 
@@ -87,6 +89,8 @@ cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --alloy > model.als
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > model.dot
+cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --traceability-md --impact=requirement:SafeOperation,domain:Controller
+cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --traceability-csv --impact=domain:Controller --impact-hops=2
 ```
 
 ### Install VS Code extension

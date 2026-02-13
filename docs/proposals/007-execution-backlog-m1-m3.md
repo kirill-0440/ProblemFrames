@@ -72,9 +72,9 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - Owner: `Tooling Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add CLI modes `--traceability-md` and `--traceability-csv`.
-- [ ] Emit impact report for changed requirement/domain input list.
-- [ ] Document command usage in `crates/pf_dsl/README.md`.
+- [x] Add CLI modes `--traceability-md` and `--traceability-csv`.
+- [x] Emit impact report for changed requirement/domain input list.
+- [x] Document command usage in `crates/pf_dsl/README.md`.
 
 #### R007-M2-03 - LSP/UX Hook for Impact Navigation
 

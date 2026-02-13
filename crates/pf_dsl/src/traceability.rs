@@ -1,5 +1,6 @@
 use crate::ast::*;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TraceEntity {
@@ -8,6 +9,34 @@ pub enum TraceEntity {
     Interface(String),
     Phenomenon { interface: String, name: String },
     Subproblem(String),
+}
+
+impl TraceEntity {
+    pub fn kind(&self) -> &'static str {
+        match self {
+            TraceEntity::Requirement(_) => "requirement",
+            TraceEntity::Domain(_) => "domain",
+            TraceEntity::Interface(_) => "interface",
+            TraceEntity::Phenomenon { .. } => "phenomenon",
+            TraceEntity::Subproblem(_) => "subproblem",
+        }
+    }
+
+    pub fn id(&self) -> String {
+        match self {
+            TraceEntity::Requirement(name)
+            | TraceEntity::Domain(name)
+            | TraceEntity::Interface(name)
+            | TraceEntity::Subproblem(name) => name.clone(),
+            TraceEntity::Phenomenon { interface, name } => format!("{interface}::{name}"),
+        }
+    }
+}
+
+impl fmt::Display for TraceEntity {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.kind(), self.id())
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -24,6 +53,31 @@ pub enum TraceRelation {
     SubproblemMachineDomain,
     SubproblemParticipantDomain,
     SubproblemIncludesRequirement,
+}
+
+impl TraceRelation {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            TraceRelation::RequirementConstrainsDomain => "requirement_constrains_domain",
+            TraceRelation::RequirementReferencesDomain => "requirement_references_domain",
+            TraceRelation::RequirementTouchesInterface => "requirement_touches_interface",
+            TraceRelation::RequirementTouchesPhenomenon => "requirement_touches_phenomenon",
+            TraceRelation::InterfaceConnectsDomain => "interface_connects_domain",
+            TraceRelation::InterfaceHasPhenomenon => "interface_has_phenomenon",
+            TraceRelation::PhenomenonFromDomain => "phenomenon_from_domain",
+            TraceRelation::PhenomenonToDomain => "phenomenon_to_domain",
+            TraceRelation::PhenomenonControlledByDomain => "phenomenon_controlled_by_domain",
+            TraceRelation::SubproblemMachineDomain => "subproblem_machine_domain",
+            TraceRelation::SubproblemParticipantDomain => "subproblem_participant_domain",
+            TraceRelation::SubproblemIncludesRequirement => "subproblem_includes_requirement",
+        }
+    }
+}
+
+impl fmt::Display for TraceRelation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -308,6 +362,156 @@ pub fn build_traceability_graph(problem: &Problem) -> TraceabilityGraph {
     graph
 }
 
+fn csv_escape(value: &str) -> String {
+    if value.contains(',') || value.contains('"') || value.contains('\n') {
+        format!("\"{}\"", value.replace('"', "\"\""))
+    } else {
+        value.to_string()
+    }
+}
+
+fn sorted_join(values: BTreeSet<String>) -> String {
+    if values.is_empty() {
+        "-".to_string()
+    } else {
+        values.into_iter().collect::<Vec<_>>().join(", ")
+    }
+}
+
+pub fn generate_traceability_markdown(
+    problem: &Problem,
+    impact_seeds: &[TraceEntity],
+    max_hops: usize,
+) -> String {
+    let graph = build_traceability_graph(problem);
+    let mut output = String::new();
+
+    output.push_str(&format!("# Traceability Report: {}\n\n", problem.name));
+    output.push_str("## Relationship Summary\n");
+    output.push_str(&format!("- Nodes: {}\n", graph.nodes().len()));
+    output.push_str(&format!("- Edges: {}\n\n", graph.edges().len()));
+
+    output.push_str("## Requirement Relationship Matrix\n");
+    output.push_str(
+        "| Requirement | Constrains | References | Interfaces | Phenomena | Subproblems |\n",
+    );
+    output.push_str("| --- | --- | --- | --- | --- | --- |\n");
+
+    for requirement in &problem.requirements {
+        let requirement_entity = TraceEntity::Requirement(requirement.name.clone());
+
+        let mut constrains = BTreeSet::new();
+        let mut references = BTreeSet::new();
+        let mut interfaces = BTreeSet::new();
+        let mut phenomena = BTreeSet::new();
+        let mut subproblems = BTreeSet::new();
+
+        for edge in graph.edges() {
+            match edge.relation {
+                TraceRelation::RequirementConstrainsDomain if edge.from == requirement_entity => {
+                    constrains.insert(edge.to.id());
+                }
+                TraceRelation::RequirementReferencesDomain if edge.from == requirement_entity => {
+                    references.insert(edge.to.id());
+                }
+                TraceRelation::RequirementTouchesInterface if edge.from == requirement_entity => {
+                    interfaces.insert(edge.to.id());
+                }
+                TraceRelation::RequirementTouchesPhenomenon if edge.from == requirement_entity => {
+                    phenomena.insert(edge.to.id());
+                }
+                TraceRelation::SubproblemIncludesRequirement
+                    if edge.to == requirement_entity
+                        && matches!(edge.from, TraceEntity::Subproblem(_)) =>
+                {
+                    subproblems.insert(edge.from.id());
+                }
+                _ => {}
+            }
+        }
+
+        output.push_str(&format!(
+            "| {} | {} | {} | {} | {} | {} |\n",
+            requirement.name,
+            sorted_join(constrains),
+            sorted_join(references),
+            sorted_join(interfaces),
+            sorted_join(phenomena),
+            sorted_join(subproblems)
+        ));
+    }
+    output.push('\n');
+
+    output.push_str("## Impact Analysis\n");
+    output.push_str(&format!("- Max hops: {}\n", max_hops));
+    if impact_seeds.is_empty() {
+        output.push_str(
+            "- No impact seeds provided. Use `--impact=requirement:<name>,domain:<name>`.\n",
+        );
+    } else {
+        for seed in impact_seeds {
+            let impacted = graph.impacted_requirements_within_hops(seed, max_hops);
+            if impacted.is_empty() {
+                output.push_str(&format!("- `{}` -> (no impacted requirements)\n", seed));
+            } else {
+                output.push_str(&format!(
+                    "- `{}` -> {}\n",
+                    seed,
+                    impacted.into_iter().collect::<Vec<_>>().join(", ")
+                ));
+            }
+        }
+    }
+
+    output
+}
+
+pub fn generate_traceability_csv(
+    problem: &Problem,
+    impact_seeds: &[TraceEntity],
+    max_hops: usize,
+) -> String {
+    let graph = build_traceability_graph(problem);
+    let mut output = String::new();
+
+    output.push_str("record_type,from_kind,from_id,relation,to_kind,to_id,seed_kind,seed_id,impacted_requirement,max_hops\n");
+    for edge in graph.edges() {
+        output.push_str(&format!(
+            "edge,{},{},{},{},{},,,,\n",
+            csv_escape(edge.from.kind()),
+            csv_escape(&edge.from.id()),
+            csv_escape(edge.relation.as_str()),
+            csv_escape(edge.to.kind()),
+            csv_escape(&edge.to.id())
+        ));
+    }
+
+    for seed in impact_seeds {
+        let impacted = graph.impacted_requirements_within_hops(seed, max_hops);
+        if impacted.is_empty() {
+            output.push_str(&format!(
+                "impact,,,,,,{},{},,{}\n",
+                csv_escape(seed.kind()),
+                csv_escape(&seed.id()),
+                max_hops
+            ));
+            continue;
+        }
+
+        for requirement_name in impacted {
+            output.push_str(&format!(
+                "impact,,,,,,{},{},{},{}\n",
+                csv_escape(seed.kind()),
+                csv_escape(&seed.id()),
+                csv_escape(&requirement_name),
+                max_hops
+            ));
+        }
+    }
+
+    output
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -360,9 +564,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn builds_relationship_graph_for_multi_subproblem_model() {
-        let problem = Problem {
+    fn sample_problem() -> Problem {
+        Problem {
             name: "TraceabilityDogfood".to_string(),
             span: span(),
             imports: vec![],
@@ -453,7 +656,12 @@ mod tests {
             ],
             assertion_sets: vec![],
             correctness_arguments: vec![],
-        };
+        }
+    }
+
+    #[test]
+    fn builds_relationship_graph_for_multi_subproblem_model() {
+        let problem = sample_problem();
 
         let graph = build_traceability_graph(&problem);
 
@@ -499,5 +707,39 @@ mod tests {
             graph.impacted_requirements(&TraceEntity::Domain("Sensor".to_string()));
         assert!(impacted_from_sensor.contains("DisplayState"));
         assert!(!impacted_from_sensor.contains("StoreRecord"));
+    }
+
+    #[test]
+    fn renders_traceability_markdown_with_impact_section() {
+        let problem = sample_problem();
+        let markdown = generate_traceability_markdown(
+            &problem,
+            &[TraceEntity::Domain("Sensor".to_string())],
+            2,
+        );
+
+        assert!(markdown.contains("# Traceability Report: TraceabilityDogfood"));
+        assert!(markdown.contains("## Requirement Relationship Matrix"));
+        assert!(markdown.contains("| DisplayState | Sensor | Operator |"));
+        assert!(markdown.contains("## Impact Analysis"));
+        assert!(markdown.contains("`domain:Sensor` -> DisplayState"));
+    }
+
+    #[test]
+    fn renders_traceability_csv_with_edges_and_impact_rows() {
+        let problem = sample_problem();
+        let csv = generate_traceability_csv(
+            &problem,
+            &[TraceEntity::Requirement("StoreRecord".into())],
+            2,
+        );
+
+        assert!(csv.starts_with(
+            "record_type,from_kind,from_id,relation,to_kind,to_id,seed_kind,seed_id,impacted_requirement,max_hops"
+        ));
+        assert!(csv.contains(
+            "edge,requirement,StoreRecord,requirement_constrains_domain,domain,Ledger,,,,"
+        ));
+        assert!(csv.contains("impact,,,,,,requirement,StoreRecord,StoreRecord,2"));
     }
 }
