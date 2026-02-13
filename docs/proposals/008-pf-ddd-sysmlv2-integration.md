@@ -189,6 +189,7 @@ Exit criteria:
 ## Dependencies
 
 - Proposal `007` (traceability and design bridge foundation)
+- Proposal `009` (PF canonical alignment addendum for concern/decomposition gates)
 - Proposal `006` (validator semantics baseline)
 
 ## Decision Needed

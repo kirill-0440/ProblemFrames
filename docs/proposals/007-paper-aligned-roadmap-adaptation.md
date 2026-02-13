@@ -15,6 +15,8 @@ Draft
 `006-pf-dsl-machine-checkable-semantics-plan.md` already defines the semantics hardening track.
 This proposal adapts that track using the papers in `docs/papers` and the current implementation baseline, so execution focuses on the highest-value gaps instead of re-planning already delivered work.
 
+Canonical PF retro constraints are captured in `009-pf-canonical-retro-addendum.md`.
+
 ## Input Papers (Repository Set)
 
 - `docs/papers/A_Formal_Metamodel_for_Problem_Frames.pdf`
@@ -169,6 +171,7 @@ Exit criteria:
 - `005-v0.2.0-scope-and-exit-criteria.md` remains the release gate for near-term scope.
 - `006-pf-dsl-machine-checkable-semantics-plan.md` remains the semantic execution backbone.
 - `007-execution-backlog-m1-m3.md` is the execution-ready backlog for near-term milestone delivery.
+- `009-pf-canonical-retro-addendum.md` captures retrospective PF-method alignment constraints for execution quality gates.
 - `008-pf-ddd-sysmlv2-integration.md` defines the follow-on integration track for DDD/SysML v2 after M1-M3 foundation.
 - this proposal defines the paper-aligned prioritization order on top of `005/006`:
   - near-term: M1, M2, M3
