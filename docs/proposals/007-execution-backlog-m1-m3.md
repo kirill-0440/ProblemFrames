@@ -93,9 +93,9 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - Owner: `Tooling Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add deterministic outputs for context-only, problem-only, and decomposition views (CLI mode or equivalent export selectors).
-- [ ] Ensure context view excludes requirement nodes and frame concern argument blocks.
-- [ ] Add tests proving view-specific include/exclude behavior.
+- [x] Add deterministic outputs for context-only, problem-only, and decomposition views (CLI mode or equivalent export selectors).
+- [x] Ensure context view excludes requirement nodes and frame concern argument blocks.
+- [x] Add tests proving view-specific include/exclude behavior.
 
 #### R007-M2-05 - Decomposition Closure Report
 

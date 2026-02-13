@@ -7,7 +7,7 @@ use std::env;
 const DEFAULT_IMPACT_HOPS: usize = 2;
 
 fn usage() -> &'static str {
-    "Usage: pf_dsl <file.pf> [--dot | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]"
+    "Usage: pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]"
 }
 
 fn parse_impact_seeds(raw: &str) -> Result<Vec<TraceEntity>> {
@@ -141,6 +141,12 @@ fn main() -> Result<()> {
                             impact_hops,
                         )
                     );
+                } else if mode == "--dot-context" {
+                    println!("{}", pf_dsl::dot_export::to_context_dot(&problem));
+                } else if mode == "--dot-problem" {
+                    println!("{}", pf_dsl::dot_export::to_problem_dot(&problem));
+                } else if mode == "--dot-decomposition" {
+                    println!("{}", pf_dsl::dot_export::to_decomposition_dot(&problem));
                 } else if mode == "--gen-rust" {
                     match pf_dsl::codegen::generate_rust(&problem) {
                         Ok(code) => println!("{}", code),

@@ -256,3 +256,69 @@ requirement "R1" {
 
     let _ = fs::remove_dir_all(dir);
 }
+
+#[test]
+fn dogfooding_cli_generates_view_specific_dot_exports() {
+    let dir = make_temp_dir("pf-cli-dot-views");
+    let path = dir.join("views.pf");
+    fs::write(
+        &path,
+        r#"
+problem: Views
+domain M kind causal role machine
+domain User kind biddable role given
+domain Ledger kind lexical role given
+interface "User-M" connects User, M {
+  shared: {
+    phenomenon Command : event [User -> M] controlledBy User
+  }
+}
+interface "M-Ledger" connects M, Ledger {
+  shared: {
+    phenomenon Persist : value [M -> Ledger] controlledBy M
+  }
+}
+requirement "R1" {
+  frame: SimpleWorkpieces
+  constrains: Ledger
+  reference: User
+}
+subproblem Core {
+  machine: M
+  participants: M, User, Ledger
+  requirements: "R1"
+}
+"#,
+    )
+    .expect("failed to write model");
+
+    let context = run_pf_dsl(&path, "--dot-context");
+    assert!(
+        context.status.success(),
+        "context dot export should succeed"
+    );
+    let context_stdout = String::from_utf8_lossy(&context.stdout);
+    assert!(context_stdout.contains("Persist [V]"));
+    assert!(!context_stdout.contains("R1\\n[SimpleWorkpieces]"));
+
+    let problem = run_pf_dsl(&path, "--dot-problem");
+    assert!(
+        problem.status.success(),
+        "problem dot export should succeed"
+    );
+    let problem_stdout = String::from_utf8_lossy(&problem.stdout);
+    assert!(problem_stdout.contains("\"R1\" [shape=note"));
+    assert!(problem_stdout.contains("label=\"constrains\""));
+
+    let decomposition = run_pf_dsl(&path, "--dot-decomposition");
+    assert!(
+        decomposition.status.success(),
+        "decomposition dot export should succeed"
+    );
+    let decomposition_stdout = String::from_utf8_lossy(&decomposition.stdout);
+    assert!(decomposition_stdout.contains("\"subproblem:Core\""));
+    assert!(decomposition_stdout.contains("label=\"includes\""));
+    assert!(!decomposition_stdout.contains("[dir=both"));
+
+    let _ = fs::remove_dir_all(dir);
+}

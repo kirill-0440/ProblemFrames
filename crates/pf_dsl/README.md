@@ -9,6 +9,12 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > output.dot
     ```
+    View-specific exports:
+    ```bash
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot-context > context.dot
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot-problem > problem.dot
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot-decomposition > decomposition.dot
+    ```
 3.  **Generate a planning report**:
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
