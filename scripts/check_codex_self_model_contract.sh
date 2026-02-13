@@ -45,6 +45,11 @@ grep -q '^requirement "R011-H2-DiffBasedModelFirstGate"' "${REQUIREMENTS_FILE}" 
   exit 1
 }
 
+grep -q '^requirement "R011-H3-CommandLevelAdequacyCoverage"' "${REQUIREMENTS_FILE}" || {
+  echo "R011-H3 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
 grep -q '@mda.layer("CIM")' "${REQUIREMENTS_FILE}" || {
   echo "CIM requirement layer marks are missing in ${REQUIREMENTS_FILE}" >&2
   exit 1
@@ -87,6 +92,25 @@ grep -q 'requirements: .*"R011-H1-SolverBackedAdequacyEvidence"' "${SUBPROBLEMS_
 
 grep -q 'requirements: .*"R011-H2-DiffBasedModelFirstGate"' "${SUBPROBLEMS_FILE}" || {
   echo "R011-H2 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+grep -q 'requirements: .*"R011-H3-CommandLevelAdequacyCoverage"' "${SUBPROBLEMS_FILE}" || {
+  echo "R011-H3 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+ADEQUACY_EXPECTATIONS_FILE="${REPO_ROOT}/models/system/adequacy_expectations.tsv"
+if [[ ! -f "${ADEQUACY_EXPECTATIONS_FILE}" ]]; then
+  echo "Adequacy expectations manifest is missing: ${ADEQUACY_EXPECTATIONS_FILE}" >&2
+  exit 1
+fi
+grep -q '^models/dogfooding/adequacy/pass.pf|Obl_A_exec|SAT|.*|required$' "${ADEQUACY_EXPECTATIONS_FILE}" || {
+  echo "Adequacy expectations manifest is missing required pass obligation rule" >&2
+  exit 1
+}
+grep -q '^models/dogfooding/adequacy/fail.pf|Obl_\*|SAT|.*|required$' "${ADEQUACY_EXPECTATIONS_FILE}" || {
+  echo "Adequacy expectations manifest is missing required fail coverage rule" >&2
   exit 1
 }
 

@@ -217,11 +217,19 @@ R010-M7-FormalTrackPolicySwitch|command_passes|PF_FORMAL_TRACK_BLOCKING=1 bash .
 
 R011-H1-SolverBackedAdequacyEvidence|file_contains|models/system/requirements.pf|R011-H1-SolverBackedAdequacyEvidence|solver-backed adequacy requirement is modeled
 R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_adequacy_evidence.sh|run_alloy_solver_check.sh|adequacy evidence formal verdict is backed by Alloy solver checks
-R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_adequacy_evidence.sh|expected_solver="UNSAT"|adequacy evidence defines explicit UNSAT expectation for failing fixture class
+R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_adequacy_evidence.sh|formal_solver_status|adequacy evidence stores solver-backed status per fixture
 R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/check_system_model.sh|--enforce-pass|canonical system-model gate fails closed on non-PASS adequacy status
 R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_pf_quality_gate.sh|adequacy_args+=(--enforce-pass)|formal-track blocking mode enforces PASS adequacy status
 R011-H1-SolverBackedAdequacyEvidence|file_contains|models/system/subproblems.pf|R011-H1-SolverBackedAdequacyEvidence|solver-backed adequacy requirement is mapped in canonical PF decomposition
 R011-H1-SolverBackedAdequacyEvidence|command_passes|bash ./scripts/run_adequacy_evidence.sh||solver-backed adequacy evidence generation executes end-to-end
+
+R011-H3-CommandLevelAdequacyCoverage|file_contains|models/system/requirements.pf|R011-H3-CommandLevelAdequacyCoverage|command-level adequacy coverage requirement is modeled
+R011-H3-CommandLevelAdequacyCoverage|file_exists|models/system/adequacy_expectations.tsv||command-level adequacy expectations manifest exists
+R011-H3-CommandLevelAdequacyCoverage|file_contains|scripts/run_alloy_solver_check.sh|required_expectation_rules_missing|required expectation-rule coverage is enforced in solver check
+R011-H3-CommandLevelAdequacyCoverage|file_contains|scripts/run_adequacy_evidence.sh|required_expectation_rules_missing|adequacy differential captures missing required command coverage
+R011-H3-CommandLevelAdequacyCoverage|file_contains|scripts/check_codex_self_model_contract.sh|adequacy_expectations.tsv|self-model contract validates command-level adequacy manifest anchors
+R011-H3-CommandLevelAdequacyCoverage|file_contains|models/system/subproblems.pf|R011-H3-CommandLevelAdequacyCoverage|command-level adequacy coverage requirement is mapped in canonical PF decomposition
+R011-H3-CommandLevelAdequacyCoverage|command_passes|tmp_dir="$(mktemp -d)" && bash ./scripts/run_alloy_solver_check.sh --model models/dogfooding/adequacy/pass.pf --expectations models/system/adequacy_expectations.tsv --output-dir "${tmp_dir}/pass" --report "${tmp_dir}/pass.md" --json "${tmp_dir}/pass.json" --status-file "${tmp_dir}/pass.status" && test "$(cat "${tmp_dir}/pass.status")" = "PASS"||pass fixture satisfies required command-level adequacy expectation rules
 
 R011-H2-DiffBasedModelFirstGate|file_contains|models/system/requirements.pf|R011-H2-DiffBasedModelFirstGate|diff-based model-first requirement is modeled
 R011-H2-DiffBasedModelFirstGate|file_contains|scripts/check_codex_self_model_contract.sh|git -C "${REPO_ROOT}" diff --name-only --diff-filter=ACMR|model-first contract evaluates changed artifacts from git diff

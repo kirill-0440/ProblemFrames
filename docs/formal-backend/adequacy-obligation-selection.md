@@ -18,6 +18,7 @@ This preserves alignment with existing PF quality artifacts while keeping the ex
 
 - Expected pass fixture: `models/dogfooding/adequacy/pass.pf`
 - Expected fail fixture: `models/dogfooding/adequacy/fail.pf`
+- Command-level expectations: `models/system/adequacy_expectations.tsv`
 
 ## Differential Contract
 
@@ -28,3 +29,5 @@ This preserves alignment with existing PF quality artifacts while keeping the ex
 - `adequacy.status` (`PASS`/`OPEN`)
 
 The generic rollout is non-blocking by default; `--enforce-pass` turns it into a blocking gate. Canonical system-model checks run in blocking mode and require `adequacy.status=PASS`.
+
+Command-level coverage is enforced through required expectation rules. If a required command rule is not matched by executed Alloy commands, solver status remains `OPEN` and adequacy gating fails in blocking mode.

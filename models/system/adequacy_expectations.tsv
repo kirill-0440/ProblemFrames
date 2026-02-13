@@ -1,0 +1,7 @@
+# model_pattern|command_pattern|expected|note|required
+# First matching rule wins. Keep specific rules above wildcard defaults.
+
+models/dogfooding/adequacy/pass.pf|Obl_A_exec|SAT|Pass fixture must expose and satisfy the selected adequacy obligation command|required
+models/dogfooding/adequacy/fail.pf|Obl_*|SAT|Fail fixture is expected to miss required obligation command coverage|required
+
+*|*|SAT|Default fallback for commands outside the selected adequacy fixture contract|optional

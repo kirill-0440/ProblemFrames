@@ -18,8 +18,9 @@ roadmap alignment.
 - `implementation_trace.tsv`: requirement-to-implementation evidence map (`implemented/partial/planned`).
 - `implementation_trace_policy.env`: staged policy thresholds for implementation-trace gating.
 - `adequacy_selection.env`: selected M7 adequacy obligation class and pass/fail fixture bindings.
+- `adequacy_expectations.tsv`: command-level adequacy expectation manifest with required-rule coverage.
 - `alloy_expectations.tsv`: SAT/UNSAT expectation contract for Alloy command verdicts.
-- `roadmap_alignment.md`: mapping from system-model requirement IDs to proposal/backlog items (`001` through `010`).
+- `roadmap_alignment.md`: mapping from system-model requirement IDs to proposal/backlog items (`001` through `011`).
 
 ## Development Workflow
 

@@ -20,7 +20,7 @@ Options:
   --solver <name>       Alloy solver id for `exec` (default: sat4j)
   --command <pattern>   Optional command selector for Alloy `exec`
   --repeat <n>          Number of solutions per command (default: 1)
-  --expectations <path> Expectation manifest (model|command|SAT/UNSAT)
+  --expectations <path> Expectation manifest (model|command|SAT/UNSAT|note|required?)
   --enforce-pass        Exit non-zero when status is not PASS
   -h, --help            Show this help
 
@@ -166,7 +166,19 @@ expectation_mismatch_count=0
 expectation_mismatch_commands=""
 expectation_rules_used=0
 expectation_summary=""
+required_expectation_rules=0
+required_expectation_rules_matched=0
+required_expectation_rules_missing=0
+required_expectation_missing_rules=""
 model_rel_path=""
+expectation_rule_count=0
+
+declare -a expectation_models=()
+declare -a expectation_commands=()
+declare -a expectation_verdicts=()
+declare -a expectation_required=()
+declare -a expectation_notes=()
+declare -a expectation_matched=()
 
 exec_dir="${OUTPUT_DIR}/exec"
 exec_stdout="${OUTPUT_DIR}/alloy-exec.stdout.log"
@@ -179,23 +191,49 @@ trim_field() {
   printf '%s' "${value}"
 }
 
-resolve_expected_verdict() {
-  local command_name="$1"
+normalize_required_flag() {
+  local raw_flag="$1"
+  local normalized
+  normalized="$(trim_field "${raw_flag}")"
+  normalized="${normalized,,}"
+  case "${normalized}" in
+    ""|"optional"|"false"|"0"|"no")
+      printf '0'
+      ;;
+    "required"|"true"|"1"|"yes")
+      printf '1'
+      ;;
+    *)
+      printf 'invalid'
+      ;;
+  esac
+}
+
+expectation_model_matches_index() {
+  local index="$1"
+  local rule_model="${expectation_models[$index]}"
+  [[ "${model_rel_path}" == ${rule_model} || "${MODEL_FILE}" == ${rule_model} ]]
+}
+
+load_expectation_rules() {
   local row_model
   local row_command
   local row_expected
   local row_note
+  local row_required
   local expected_upper
+  local required_flag
 
   if [[ -z "${EXPECTATIONS_FILE}" ]]; then
-    printf '%s' ""
     return 0
   fi
 
-  while IFS='|' read -r row_model row_command row_expected row_note; do
+  while IFS='|' read -r row_model row_command row_expected row_note row_required _; do
     row_model="$(trim_field "${row_model:-}")"
     row_command="$(trim_field "${row_command:-}")"
     row_expected="$(trim_field "${row_expected:-}")"
+    row_note="$(trim_field "${row_note:-}")"
+    row_required="$(trim_field "${row_required:-}")"
 
     if [[ -z "${row_model}" ]]; then
       continue
@@ -213,17 +251,44 @@ resolve_expected_verdict() {
     expected_upper="${row_expected^^}"
     if [[ "${expected_upper}" != "SAT" && "${expected_upper}" != "UNSAT" ]]; then
       reason="invalid expectation verdict '${row_expected}' for rule ${row_model}|${row_command}"
-      printf '%s' ""
       return 0
     fi
 
-    if [[ "${model_rel_path}" == ${row_model} || "${MODEL_FILE}" == ${row_model} ]]; then
-      if [[ "${command_name}" == ${row_command} ]]; then
-        printf '%s' "${expected_upper}"
-        return 0
-      fi
+    required_flag="$(normalize_required_flag "${row_required}")"
+    if [[ "${required_flag}" == "invalid" ]]; then
+      reason="invalid required flag '${row_required}' for rule ${row_model}|${row_command}"
+      return 0
     fi
+
+    expectation_models+=("${row_model}")
+    expectation_commands+=("${row_command}")
+    expectation_verdicts+=("${expected_upper}")
+    expectation_required+=("${required_flag}")
+    expectation_notes+=("${row_note}")
+    expectation_matched+=("0")
   done < "${EXPECTATIONS_FILE}"
+
+  expectation_rule_count="${#expectation_models[@]}"
+}
+
+resolve_expected_rule() {
+  local command_name="$1"
+  local idx
+
+  if [[ -z "${EXPECTATIONS_FILE}" ]]; then
+    printf '%s' ""
+    return 0
+  fi
+
+  for idx in "${!expectation_models[@]}"; do
+    if ! expectation_model_matches_index "${idx}"; then
+      continue
+    fi
+    if [[ "${command_name}" == ${expectation_commands[$idx]} ]]; then
+      printf '%s' "${idx}|${expectation_verdicts[$idx]}"
+      return 0
+    fi
+  done
 
   printf '%s' ""
 }
@@ -254,13 +319,20 @@ write_outputs() {
     fi
     if [[ -n "${EXPECTATIONS_FILE}" ]]; then
       echo "- Expectations file: \`${EXPECTATIONS_FILE}\`"
+      echo "- Expectation rules total: \`${expectation_rule_count}\`"
       echo "- Expectation rules used: \`${expectation_rules_used}\`"
       echo "- Expectation mismatches: \`${expectation_mismatch_count}\`"
+      echo "- Required expectation rules: \`${required_expectation_rules}\`"
+      echo "- Required rules matched: \`${required_expectation_rules_matched}\`"
+      echo "- Required rules missing: \`${required_expectation_rules_missing}\`"
       if [[ -n "${expectation_summary}" ]]; then
         echo "- Expectation summary: ${expectation_summary}"
       fi
       if [[ -n "${expectation_mismatch_commands}" ]]; then
         echo "- Expectation mismatch commands: \`${expectation_mismatch_commands}\`"
+      fi
+      if [[ -n "${required_expectation_missing_rules}" ]]; then
+        echo "- Missing required rules: \`${required_expectation_missing_rules}\`"
       fi
     fi
     echo "- Commands total: \`${command_count}\`"
@@ -298,8 +370,12 @@ write_outputs() {
     fi
     echo "  \"repeat\": ${REPEAT_COUNT},"
     echo "  \"solver_exit_code\": ${solver_exit_code},"
+    echo "  \"expectation_rule_count\": ${expectation_rule_count},"
     echo "  \"expectation_rules_used\": ${expectation_rules_used},"
     echo "  \"expectation_mismatch_count\": ${expectation_mismatch_count},"
+    echo "  \"required_expectation_rules\": ${required_expectation_rules},"
+    echo "  \"required_expectation_rules_matched\": ${required_expectation_rules_matched},"
+    echo "  \"required_expectation_rules_missing\": ${required_expectation_rules_missing},"
     if [[ -n "${expectation_summary}" ]]; then
       echo "  \"expectation_summary\": \"${expectation_summary}\","
     else
@@ -309,6 +385,11 @@ write_outputs() {
       echo "  \"expectation_mismatch_commands\": \"${expectation_mismatch_commands}\","
     else
       echo "  \"expectation_mismatch_commands\": \"\","
+    fi
+    if [[ -n "${required_expectation_missing_rules}" ]]; then
+      echo "  \"required_expectation_missing_rules\": \"${required_expectation_missing_rules}\","
+    else
+      echo "  \"required_expectation_missing_rules\": \"\","
     fi
     echo "  \"command_count\": ${command_count},"
     echo "  \"solved_count\": ${solved_count},"
@@ -343,6 +424,15 @@ fi
 
 if [[ -n "${EXPECTATIONS_FILE}" && ! -f "${EXPECTATIONS_FILE}" ]]; then
   reason="expectations file is missing"
+  write_outputs
+  if [[ "${ENFORCE_PASS}" -eq 1 ]]; then
+    exit 1
+  fi
+  exit 0
+fi
+
+load_expectation_rules
+if [[ -n "${reason}" ]]; then
   write_outputs
   if [[ "${ENFORCE_PASS}" -eq 1 ]]; then
     exit 1
@@ -445,13 +535,13 @@ else
 
       expected_verdict="SAT"
       if [[ -n "${EXPECTATIONS_FILE}" ]]; then
-        resolved_verdict="$(resolve_expected_verdict "${command_name}")"
-        if [[ -n "${reason}" ]]; then
-          break
-        fi
-        if [[ -n "${resolved_verdict}" ]]; then
-          expected_verdict="${resolved_verdict}"
+        resolved_rule="$(resolve_expected_rule "${command_name}")"
+        if [[ -n "${resolved_rule}" ]]; then
+          resolved_rule_index="${resolved_rule%%|*}"
+          resolved_rule_verdict="${resolved_rule#*|}"
+          expected_verdict="${resolved_rule_verdict}"
           expectation_rules_used=$((expectation_rules_used + 1))
+          expectation_matched[$resolved_rule_index]="1"
         fi
       fi
 
@@ -478,7 +568,32 @@ else
     done
 
     if [[ -n "${EXPECTATIONS_FILE}" ]]; then
-      expectation_summary="default=SAT; matched_rules=${expectation_rules_used}"
+      required_expectation_rules=0
+      required_expectation_rules_matched=0
+      required_expectation_rules_missing=0
+      required_expectation_missing_rules=""
+
+      for idx in "${!expectation_models[@]}"; do
+        if ! expectation_model_matches_index "${idx}"; then
+          continue
+        fi
+        if [[ "${expectation_required[$idx]}" == "1" ]]; then
+          required_expectation_rules=$((required_expectation_rules + 1))
+          if [[ "${expectation_matched[$idx]}" == "1" ]]; then
+            required_expectation_rules_matched=$((required_expectation_rules_matched + 1))
+          else
+            required_expectation_rules_missing=$((required_expectation_rules_missing + 1))
+            missing_label="${expectation_models[$idx]}::${expectation_commands[$idx]}"
+            if [[ -z "${required_expectation_missing_rules}" ]]; then
+              required_expectation_missing_rules="${missing_label}"
+            else
+              required_expectation_missing_rules="${required_expectation_missing_rules},${missing_label}"
+            fi
+          fi
+        fi
+      done
+
+      expectation_summary="default=SAT; matched_rules=${expectation_rules_used}; required=${required_expectation_rules}; required_matched=${required_expectation_rules_matched}"
     fi
   else
     command_count="$(
@@ -512,6 +627,8 @@ else
       reason="no executable Alloy commands were found"
     elif [[ "${expectation_mismatch_count}" -gt 0 ]]; then
       reason="${expectation_mismatch_count} command(s) violated SAT/UNSAT expectations"
+    elif [[ "${required_expectation_rules_missing}" -gt 0 ]]; then
+      reason="${required_expectation_rules_missing} required expectation rule(s) were not matched by executed commands"
     else
       status="PASS"
       if [[ "${unsolved_count}" -gt 0 ]]; then

@@ -523,6 +523,17 @@ requirement "R011-H1-SolverBackedAdequacyEvidence" {
     constrains: AdequacyEvidence
 }
 
+requirement "R011-H3-CommandLevelAdequacyCoverage" {
+    frame: Transformation
+    constraint: "Adequacy and canonical Alloy checks use command-level expectation manifests with required-rule coverage, and unmatched required rules fail the gate"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+        @mda.layer("PSM")
+    }
+    constrains: AdequacyEvidence
+    reference: CI
+}
+
 requirement "R011-H2-DiffBasedModelFirstGate" {
     frame: RequiredBehavior
     constraint: "When implementation artifacts change, the same git diff must include canonical self-model updates under models/system/*.pf before the change is accepted"
