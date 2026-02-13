@@ -80,7 +80,7 @@ R006-S5-WSRObligationArtifactPipeline|file_contains|crates/pf_dsl/src/main.rs|--
 R006-S5-WSRObligationArtifactPipeline|file_contains|models/system/arguments.pf|prove S_roadmap_execution and W_roadmap_context entail R_roadmap_outcomes|self-model includes explicit W/S/R correctness argument
 
 R006-S6-NonBlockingFormalBackendStage|file_contains|.github/workflows/ci.yml|Run formal backend check (non-blocking)|formal backend stage is configured as non-blocking
-R006-S6-NonBlockingFormalBackendStage|file_contains|scripts/run_formal_backend_check.sh|Solver execution: skipped (informational translator stage only)|formal stage is explicitly informational in current rollout
+R006-S6-NonBlockingFormalBackendStage|file_contains|scripts/run_formal_backend_check.sh|run_alloy_solver_check.sh|formal backend stage executes solver checks while remaining policy-controlled non-blocking by default
 
 R007-M1-MetamodelContract|file_exists|metamodel/invariant-catalog.json||metamodel invariant catalog is versioned
 R007-M1-MetamodelContract|file_exists|metamodel/rule-test-matrix.tsv||rule-test matrix is versioned
@@ -94,8 +94,9 @@ R007-M2-TraceabilityImpactExports|file_contains|editors/code/src/extension.ts|sh
 R007-M2-TraceabilityImpactExports|file_contains|crates/pf_lsp/tests/lsp_integration.rs|impact_request_resolves_cross_file_import_model|cross-file import impact integration test exists
 R007-M2-TraceabilityImpactExports|file_contains|crates/pf_lsp/tests/lsp_integration.rs|impact_request_large_model_stays_under_timeout|impact request performance guard exists
 
-R007-M3-ExecutableObligationCheck|file_contains|scripts/run_formal_backend_check.sh|--alloy|formal backend check script exists
+R007-M3-ExecutableObligationCheck|file_contains|scripts/run_formal_backend_check.sh|run_alloy_solver_check.sh|formal backend check executes generated obligations with real Alloy solver
 R007-M3-ExecutableObligationCheck|file_contains|crates/pf_dsl/src/formal_alloy.rs|generate_alloy|alloy backend generator exists
+R007-M3-ExecutableObligationCheck|file_contains|scripts/check_system_model.sh|tool_spec.alloy-solver.md|canonical CI gate publishes reproducible solver evidence artifacts
 
 R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/ast.rs|pub struct Mark|mark metadata is represented in AST
 R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/problem_frames.pest|marks_block|mark syntax is supported in grammar
