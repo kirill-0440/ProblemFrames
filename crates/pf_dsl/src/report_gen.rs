@@ -1,4 +1,7 @@
 use crate::ast::*;
+use crate::decomposition_closure::{
+    analyze_decomposition_closure, render_decomposition_closure_section,
+};
 
 pub fn generate_report(problem: &Problem) -> String {
     let mut report = String::new();
@@ -11,7 +14,7 @@ pub fn generate_report(problem: &Problem) -> String {
     }
     report.push('\n');
 
-    report.push_str("## 2. Intefaces\n");
+    report.push_str("## 2. Interfaces\n");
     for i in &problem.interfaces {
         report.push_str(&format!("- **Interface**: {}\n", i.name));
         for p in &i.shared_phenomena {
@@ -71,6 +74,11 @@ pub fn generate_report(problem: &Problem) -> String {
             report.push('\n');
         }
     }
+
+    let closure = analyze_decomposition_closure(problem);
+    report.push_str("## 5. Decomposition Closure\n");
+    report.push_str(&render_decomposition_closure_section(&closure));
+    report.push('\n');
 
     report
 }

@@ -55,6 +55,16 @@ jobs:
           path: .ci-artifacts/dogfooding-reports
           if-no-files-found: error
 
+      - name: Generate decomposition closure reports
+        run: bash ./scripts/generate_decomposition_reports.sh .ci-artifacts/dogfooding-decomposition
+
+      - name: Upload decomposition closure reports
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: dogfooding-decomposition
+          path: .ci-artifacts/dogfooding-decomposition
+          if-no-files-found: error
+
       - name: Generate dogfooding obligation reports
         run: bash ./scripts/generate_obligation_reports.sh .ci-artifacts/dogfooding-obligations
 

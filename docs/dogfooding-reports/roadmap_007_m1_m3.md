@@ -10,7 +10,7 @@
 - **TraceabilityStore** (Lexical/Given)
 - **CI** (Causal/Given)
 
-## 2. Intefaces
+## 2. Interfaces
 - **Interface**: Maintainer-RoadmapEngine
   - [Command] PrioritizeM1M3 (Maintainer -> RoadmapEngine)
   - [Event] PublishExecutionPlan (RoadmapEngine -> Maintainer)
@@ -59,5 +59,22 @@
 - **Machine**: RoadmapEngine
 - **Participants**: RoadmapEngine, CI
 - **Requirements**: M3ExecutableObligationCheck
+
+## 5. Decomposition Closure
+### Requirement Coverage
+| Requirement | Covered By | Status |
+| --- | --- | --- |
+| M1InvariantCatalogContract | MetamodelContract | covered |
+| M2TraceabilityImpactLoop | TraceabilityImpact | covered |
+| M3ExecutableObligationCheck | FormalCheckPath | covered |
+
+### Uncovered Requirements
+- None.
+
+### Orphan Subproblems
+- None.
+
+### Boundary Mismatches
+- None.
 
 

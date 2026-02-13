@@ -13,7 +13,7 @@
 - **Users** (Biddable/Given)
 - **ReleaseArtifacts** (Lexical/Given)
 
-## 2. Intefaces
+## 2. Interfaces
 - **Interface**: Maintainer-RoadmapBoard
   - [Command] PrioritizeMilestone (Maintainer -> RoadmapBoard)
   - [Event] MilestoneCommitted (RoadmapBoard -> Maintainer)
@@ -60,5 +60,22 @@
 - **Machine**: RoadmapBoard
 - **Participants**: RoadmapBoard, Metrics, CI
 - **Requirements**: QualityDrivenPlanning, FastFeedbackLoop
+
+## 5. Decomposition Closure
+### Requirement Coverage
+| Requirement | Covered By | Status |
+| --- | --- | --- |
+| FastFeedbackLoop | QualityAndFeedback | covered |
+| QualityDrivenPlanning | QualityAndFeedback | covered |
+| RoadmapPrioritization | PlanningControl | covered |
+
+### Uncovered Requirements
+- None.
+
+### Orphan Subproblems
+- None.
+
+### Boundary Mismatches
+- None.
 
 

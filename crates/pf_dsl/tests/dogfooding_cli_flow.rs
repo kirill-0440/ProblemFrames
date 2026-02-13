@@ -75,6 +75,10 @@ correctnessArgument A1 {
         String::from_utf8_lossy(&report.stdout).contains("# Problem Report: Root"),
         "report output should contain root report header"
     );
+    assert!(
+        String::from_utf8_lossy(&report.stdout).contains("## 5. Decomposition Closure"),
+        "report output should include decomposition closure section"
+    );
 
     let obligations = run_pf_dsl(&root_path, "--obligations");
     assert!(
@@ -319,6 +323,61 @@ subproblem Core {
     assert!(decomposition_stdout.contains("\"subproblem:Core\""));
     assert!(decomposition_stdout.contains("label=\"includes\""));
     assert!(!decomposition_stdout.contains("[dir=both"));
+
+    let _ = fs::remove_dir_all(dir);
+}
+
+#[test]
+fn dogfooding_cli_generates_decomposition_closure_report() {
+    let dir = make_temp_dir("pf-cli-decomposition-closure");
+    let path = dir.join("closure.pf");
+    fs::write(
+        &path,
+        r#"
+problem: Closure
+domain M kind causal role machine
+domain Operator kind biddable role given
+domain Device kind causal role given
+interface "Operator-M" connects Operator, M {
+  shared: {
+    phenomenon Command : command [Operator -> M] controlledBy Operator
+  }
+}
+interface "M-Device" connects M, Device {
+  shared: {
+    phenomenon Actuate : event [M -> Device] controlledBy M
+  }
+}
+requirement "R_covered" {
+  frame: CommandedBehavior
+  constrains: Device
+  reference: Operator
+}
+requirement "R_uncovered" {
+  frame: RequiredBehavior
+  constrains: Device
+}
+subproblem Execution {
+  machine: M
+  participants: M, Operator, Device
+  requirements: "R_covered"
+}
+"#,
+    )
+    .expect("failed to write model");
+
+    let output = run_pf_dsl(&path, "--decomposition-closure");
+    assert!(
+        output.status.success(),
+        "decomposition closure mode should succeed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("# Decomposition Closure Report: Closure"));
+    assert!(stdout.contains("| R_uncovered | - | uncovered |"));
+    assert!(stdout.contains("### Orphan Subproblems"));
+    assert!(stdout.contains("- None."));
 
     let _ = fs::remove_dir_all(dir);
 }

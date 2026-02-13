@@ -47,7 +47,7 @@ Guides:
 Available modes:
 
 ```bash
-pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv]
+pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --decomposition-closure | --report | --gen-rust | --obligations | --alloy | --traceability-md | --traceability-csv]
 ```
 
 Artifact generation currently includes:
@@ -58,6 +58,7 @@ Artifact generation currently includes:
   - problem (`--dot-problem`)
   - decomposition (`--dot-decomposition`)
 - structured model report (`--report`)
+- decomposition closure report (`--decomposition-closure`)
 - proof-obligation markdown (`--obligations`)
 - Alloy model export (`--alloy`)
 - Rust code skeleton generation (`--gen-rust`)
@@ -96,6 +97,7 @@ cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > model.dot
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot-context > context.dot
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot-problem > problem.dot
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot-decomposition > decomposition.dot
+cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --decomposition-closure
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --traceability-md --impact=requirement:SafeOperation,domain:Controller
 cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --traceability-csv --impact=domain:Controller --impact-hops=2
 ```

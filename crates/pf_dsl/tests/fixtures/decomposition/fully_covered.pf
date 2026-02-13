@@ -1,0 +1,41 @@
+problem: FullyCovered
+
+domain Machine kind causal role machine
+domain Operator kind biddable role given
+domain Ledger kind lexical role given
+
+interface "Operator-Machine" connects Operator, Machine {
+  shared: {
+    phenomenon Command : command [Operator -> Machine] controlledBy Operator
+  }
+}
+
+interface "Machine-Ledger" connects Machine, Ledger {
+  shared: {
+    phenomenon Persist : value [Machine -> Ledger] controlledBy Machine
+  }
+}
+
+requirement "R_display" {
+  frame: InformationDisplay
+  constrains: Ledger
+  reference: Operator
+}
+
+requirement "R_store" {
+  frame: SimpleWorkpieces
+  constrains: Ledger
+  reference: Operator
+}
+
+subproblem DisplayFlow {
+  machine: Machine
+  participants: Machine, Operator, Ledger
+  requirements: "R_display"
+}
+
+subproblem StorageFlow {
+  machine: Machine
+  participants: Machine, Operator, Ledger
+  requirements: "R_store"
+}

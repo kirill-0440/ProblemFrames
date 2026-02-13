@@ -12,6 +12,7 @@ bash "${REPO_ROOT}/scripts/verify_release_workflow_guardrails.sh"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "${tmp_dir}"' EXIT
 bash "${REPO_ROOT}/scripts/generate_dogfooding_reports.sh" "${tmp_dir}"
+bash "${REPO_ROOT}/scripts/generate_decomposition_reports.sh" "${tmp_dir}"
 bash "${REPO_ROOT}/scripts/generate_dogfooding_triage_report.sh" "${tmp_dir}"
 bash "${REPO_ROOT}/scripts/generate_obligation_reports.sh" "${tmp_dir}"
 bash "${REPO_ROOT}/scripts/run_formal_backend_check.sh" "${tmp_dir}/formal-backend"

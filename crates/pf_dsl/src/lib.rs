@@ -1,5 +1,6 @@
 pub mod ast;
 pub mod codegen;
+pub mod decomposition_closure;
 pub mod dot_export;
 pub mod formal_alloy;
 pub mod language;

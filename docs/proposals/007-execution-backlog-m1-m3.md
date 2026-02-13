@@ -103,9 +103,9 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - Owner: `Tooling Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add report section for uncovered requirements, orphan subproblems, and boundary mismatches.
-- [ ] Publish decomposition closure output for at least one dogfooding model in CI artifacts.
-- [ ] Add fixtures for fully covered and intentionally uncovered decomposition cases.
+- [x] Add report section for uncovered requirements, orphan subproblems, and boundary mismatches.
+- [x] Publish decomposition closure output for at least one dogfooding model in CI artifacts.
+- [x] Add fixtures for fully covered and intentionally uncovered decomposition cases.
 
 ### M3 - Executable Obligation Check
 

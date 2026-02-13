@@ -1,0 +1,34 @@
+problem: IntentionallyUncovered
+
+domain Machine kind causal role machine
+domain Operator kind biddable role given
+domain Device kind causal role given
+
+interface "Operator-Machine" connects Operator, Machine {
+  shared: {
+    phenomenon Command : command [Operator -> Machine] controlledBy Operator
+  }
+}
+
+interface "Machine-Device" connects Machine, Device {
+  shared: {
+    phenomenon Actuate : event [Machine -> Device] controlledBy Machine
+  }
+}
+
+requirement "R_covered" {
+  frame: CommandedBehavior
+  constrains: Device
+  reference: Operator
+}
+
+requirement "R_uncovered" {
+  frame: RequiredBehavior
+  constrains: Device
+}
+
+subproblem ExecutionFlow {
+  machine: Machine
+  participants: Machine, Operator, Device
+  requirements: "R_covered"
+}
