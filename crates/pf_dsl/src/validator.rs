@@ -15,6 +15,8 @@ pub enum ValidationError {
     DuplicateDomain(String, Span),
     #[error("Duplicate interface definition: '{0}'")]
     DuplicateInterface(String, Span),
+    #[error("Duplicate requirement definition: '{0}'")]
+    DuplicateRequirement(String, Span),
     #[error("Missing connection between '{0}' and '{1}' required by frame '{2}'")]
     MissingConnection(String, String, String, Span),
     #[error("Invalid causality: Phenomenon '{0}' ({1:?}) cannot originate from '{2}' ({3}).")]
@@ -233,6 +235,16 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                     _ => {}
                 }
             }
+        }
+    }
+
+    let mut requirement_names = HashSet::new();
+    for req in &problem.requirements {
+        if !requirement_names.insert(req.name.clone()) {
+            errors.push(ValidationError::DuplicateRequirement(
+                req.name.clone(),
+                req.span,
+            ));
         }
     }
 
@@ -765,6 +777,7 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         | ValidationError::InvalidFrameDomain(_, _, _, span)
         | ValidationError::DuplicateDomain(_, span)
         | ValidationError::DuplicateInterface(_, span)
+        | ValidationError::DuplicateRequirement(_, span)
         | ValidationError::MissingConnection(_, _, _, span)
         | ValidationError::InvalidCausality(_, _, _, _, span)
         | ValidationError::MissingRequiredField(_, _, span)
@@ -835,6 +848,11 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
             .iter()
             .find(|interface| interface.name == *interface_name && interface.span == *span)
             .and_then(|interface| interface.source_path.clone()),
+        ValidationError::DuplicateRequirement(requirement_name, span) => problem
+            .requirements
+            .iter()
+            .find(|requirement| requirement.name == *requirement_name && requirement.span == *span)
+            .and_then(|requirement| requirement.source_path.clone()),
         ValidationError::InvalidDomainRole(domain_name, _, span) => {
             if domain_name == "<problem>" {
                 return None;

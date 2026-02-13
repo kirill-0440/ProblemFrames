@@ -78,6 +78,101 @@ mod tests {
     }
 
     #[test]
+    fn test_duplicate_requirement_detection() {
+        let problem = Problem {
+            name: "DuplicateRequirement".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-C",
+                &["M", "C"],
+                vec![phenomenon("Observe", PhenomenonType::Event, "C", "M", "C")],
+            )],
+            requirements: vec![
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::DuplicateRequirement(name, _) if name == "R1")));
+    }
+
+    #[test]
+    fn test_duplicate_assertion_set_detection() {
+        let problem = Problem {
+            name: "DuplicateAssertionSet".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world fact 1".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world fact 2".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors
+            .iter()
+            .any(|e| matches!(e, ValidationError::DuplicateAssertionSet(name, _) if name == "W")));
+    }
+
+    #[test]
     fn test_missing_connection_commanded() {
         let problem = Problem {
             name: "Test".to_string(),
