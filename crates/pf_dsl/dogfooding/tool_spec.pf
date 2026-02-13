@@ -76,3 +76,19 @@ requirement "ScaffoldGeneration" {
     constrains: GeneratedCode
     reference: Developer
 }
+
+worldProperties W_tooling {
+    assert "SourceFile content can be read after each Edit event" @LTL
+}
+
+specification S_tooling {
+    assert "RunValidation eventually triggers PublishDiagnostics for open files" @LTL
+}
+
+requirementAssertions R_feedback {
+    assert "Developer sees validation feedback without leaving the editor flow" @LTL
+}
+
+correctnessArgument A_feedback_loop {
+    prove S_tooling and W_tooling entail R_feedback
+}

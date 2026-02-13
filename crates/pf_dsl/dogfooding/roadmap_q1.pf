@@ -84,3 +84,19 @@ requirement "FastFeedbackLoop" {
     constrains: Metrics
     reference: CI
 }
+
+worldProperties W_roadmap {
+    assert "QualitySignals eventually reflects current CI and user feedback state" @LTL
+}
+
+specification S_roadmap {
+    assert "PrioritizeMilestone leads to PlanRelease for selected milestone set" @LTL
+}
+
+requirementAssertions R_roadmap {
+    assert "RoadmapBoard publishes updates that reflect prioritized milestones" @LTL
+}
+
+correctnessArgument A_roadmap {
+    prove S_roadmap and W_roadmap entail R_roadmap
+}

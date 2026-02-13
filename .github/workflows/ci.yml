@@ -55,6 +55,16 @@ jobs:
           path: .ci-artifacts/dogfooding-reports
           if-no-files-found: error
 
+      - name: Generate dogfooding obligation reports
+        run: bash ./scripts/generate_obligation_reports.sh .ci-artifacts/dogfooding-obligations
+
+      - name: Upload dogfooding obligation reports
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: dogfooding-obligations
+          path: .ci-artifacts/dogfooding-obligations
+          if-no-files-found: error
+
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked
 

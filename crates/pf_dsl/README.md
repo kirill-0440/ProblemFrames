@@ -9,7 +9,15 @@ A Rust-based CLI tool for defining and visualizing Problem Frames.
     ```bash
     cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --dot > output.dot
     ```
-3.  **Generate an image** (requires Graphviz):
+3.  **Generate a planning report**:
+    ```bash
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --report
+    ```
+4.  **Generate proof obligations**:
+    ```bash
+    cargo run -p pf_dsl -- crates/pf_dsl/sample.pf --obligations
+    ```
+5.  **Generate an image** (requires Graphviz):
     ```bash
     dot -Tpng output.dot -o output.png
     ```
@@ -34,5 +42,21 @@ requirement "SafeOperation" {
     constraint: "..."
     constrains: Gate
     reference: Operator
+}
+
+worldProperties W_base {
+    assert "gate hardware responds to commands" @LTL
+}
+
+specification S_controller {
+    assert "operator command eventually triggers control output" @LTL
+}
+
+requirementAssertions R_safe {
+    assert "gate remains in safe operating envelope" @LTL
+}
+
+correctnessArgument A1 {
+    prove S_controller and W_base entail R_safe
 }
 ```
