@@ -31,7 +31,7 @@
       "patterns": [
         {
           "name": "keyword.control.pf",
-          "match": "\\b(problem|domain|interface|requirement|shared|frame|constraint|constrains|reference)\\b"
+          "match": "\\b(problem|domain|kind|role|interface|connects|phenomenon|controlledBy|requirement|shared|subproblem|machine|participants|requirements|frame|constraint|constrains|reference|worldProperties|specification|requirementAssertions|correctnessArgument|assert|prove|and|entail)\\b"
         }
       ]
     },
@@ -50,7 +50,7 @@
       "patterns": [
         {
           "name": "storage.type.pf",
-          "match": "\\b(Machine|Causal|Biddable|Lexical|Designed)\\b"
+          "match": "\\b(biddable|causal|lexical|given|designed|machine)\\b"
         },
         {
           "name": "support.class.pf",

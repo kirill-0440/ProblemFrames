@@ -46,6 +46,11 @@ fn resolve_recursive(
             let content = match import_path_str.as_str() {
                 "std/RequiredBehavior.pf" => include_str!("std/RequiredBehavior.pf").to_string(),
                 "std/CommandedBehavior.pf" => include_str!("std/CommandedBehavior.pf").to_string(),
+                "std/InformationDisplay.pf" => {
+                    include_str!("std/InformationDisplay.pf").to_string()
+                }
+                "std/SimpleWorkpieces.pf" => include_str!("std/SimpleWorkpieces.pf").to_string(),
+                "std/Transformation.pf" => include_str!("std/Transformation.pf").to_string(),
                 _ => anyhow::bail!("Standard library file not found: {}", import_path_str),
             };
             // For std imports, we use the import string itself as a unique identifier
@@ -85,12 +90,28 @@ fn resolve_recursive(
         for requirement in &mut imported_problem.requirements {
             requirement.source_path = Some(import_source_path.clone());
         }
+        for subproblem in &mut imported_problem.subproblems {
+            subproblem.source_path = Some(import_source_path.clone());
+        }
+        for assertion_set in &mut imported_problem.assertion_sets {
+            assertion_set.source_path = Some(import_source_path.clone());
+        }
+        for correctness_argument in &mut imported_problem.correctness_arguments {
+            correctness_argument.source_path = Some(import_source_path.clone());
+        }
 
-        // Append domains, interfaces, requirements to the main problem
+        // Append domains, interfaces, requirements, assertions to the main problem
         // Note: This is a simple merge. Name collisions are not checked here (Validator handles that).
         problem.domains.extend(imported_problem.domains);
         problem.interfaces.extend(imported_problem.interfaces);
         problem.requirements.extend(imported_problem.requirements);
+        problem.subproblems.extend(imported_problem.subproblems);
+        problem
+            .assertion_sets
+            .extend(imported_problem.assertion_sets);
+        problem
+            .correctness_arguments
+            .extend(imported_problem.correctness_arguments);
 
         // We effectively "flatten" the user's problem into one big struct.
     }
@@ -98,7 +119,21 @@ fn resolve_recursive(
     Ok(())
 }
 
-pub fn find_definition(problem: &Problem, offset: usize) -> Option<(Option<PathBuf>, Span)> {
+fn path_eq(left: &Path, right: &Path) -> bool {
+    if left == right {
+        return true;
+    }
+    match (fs::canonicalize(left), fs::canonicalize(right)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => false,
+    }
+}
+
+pub fn find_definition(
+    problem: &Problem,
+    source_file: &Path,
+    offset: usize,
+) -> Option<(Option<PathBuf>, Span)> {
     // Helper to find domain definition
     let find_domain = |name: &str| -> Option<(Option<PathBuf>, Span)> {
         problem
@@ -110,6 +145,17 @@ pub fn find_definition(problem: &Problem, offset: usize) -> Option<(Option<PathB
 
     // 1. Check Interfaces (Phenomena)
     for interface in &problem.interfaces {
+        if let Some(source_path) = interface.source_path.as_deref() {
+            if !path_eq(source_path, source_file) {
+                continue;
+            }
+        }
+
+        for domain_ref in &interface.connects {
+            if offset >= domain_ref.span.start && offset < domain_ref.span.end {
+                return find_domain(&domain_ref.name);
+            }
+        }
         for phen in &interface.shared_phenomena {
             if offset >= phen.from.span.start && offset < phen.from.span.end {
                 return find_domain(&phen.from.name);
@@ -117,11 +163,20 @@ pub fn find_definition(problem: &Problem, offset: usize) -> Option<(Option<PathB
             if offset >= phen.to.span.start && offset < phen.to.span.end {
                 return find_domain(&phen.to.name);
             }
+            if offset >= phen.controlled_by.span.start && offset < phen.controlled_by.span.end {
+                return find_domain(&phen.controlled_by.name);
+            }
         }
     }
 
     // 2. Check Requirements
     for req in &problem.requirements {
+        if let Some(source_path) = req.source_path.as_deref() {
+            if !path_eq(source_path, source_file) {
+                continue;
+            }
+        }
+
         if let Some(ref c) = req.constrains {
             if offset >= c.span.start && offset < c.span.end {
                 return find_domain(&c.name);
@@ -162,38 +217,44 @@ mod tests {
             imports: vec![],
             domains: vec![Domain {
                 name: "D".to_string(),
-                domain_type: DomainType::Machine,
+                kind: DomainKind::Causal,
+                role: DomainRole::Machine,
                 span: mock_span(10, 20),
                 source_path: None,
             }],
             interfaces: vec![Interface {
                 name: "I".to_string(),
+                connects: vec![mock_ref("D", 32, 33), mock_ref("X", 34, 35)],
                 shared_phenomena: vec![Phenomenon {
                     name: "E".to_string(),
                     type_: PhenomenonType::Event,
                     from: mock_ref("D", 50, 55),
                     to: mock_ref("X", 60, 65), // X not defined
+                    controlled_by: mock_ref("D", 66, 71),
                     span: mock_span(40, 70),
                 }],
                 span: mock_span(30, 80),
                 source_path: None,
             }],
             requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         // Click on "D" in "from D" (offset 52)
-        let result = find_definition(&problem, 52);
+        let result = find_definition(&problem, Path::new("root.pf"), 52);
         assert!(result.is_some());
         let (_, span) = result.unwrap();
         assert_eq!(span.start, 10);
         assert_eq!(span.end, 20);
 
         // Click on "X" (offset 62) -> should be None as X is not in domains
-        let result = find_definition(&problem, 62);
+        let result = find_definition(&problem, Path::new("root.pf"), 62);
         assert!(result.is_none());
 
         // Click nowhere (offset 0)
-        let result = find_definition(&problem, 0);
+        let result = find_definition(&problem, Path::new("root.pf"), 0);
         assert!(result.is_none());
     }
 
@@ -205,7 +266,8 @@ mod tests {
             imports: vec![],
             domains: vec![Domain {
                 name: "C".to_string(),
-                domain_type: DomainType::Causal,
+                kind: DomainKind::Causal,
+                role: DomainRole::Given,
                 span: mock_span(10, 20),
                 source_path: None,
             }],
@@ -220,12 +282,61 @@ mod tests {
                 span: mock_span(70, 90),
                 source_path: None,
             }],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
         };
 
         // Click on "C" in "constrains: C" (offset 82)
-        let result = find_definition(&problem, 82);
+        let result = find_definition(&problem, Path::new("root.pf"), 82);
         assert!(result.is_some());
         let (_, span) = result.unwrap();
         assert_eq!(span.start, 10);
+    }
+
+    #[test]
+    fn test_find_definition_ignores_other_source_files() {
+        let problem = Problem {
+            name: "Test".to_string(),
+            span: mock_span(0, 200),
+            imports: vec![],
+            domains: vec![
+                Domain {
+                    name: "A".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Machine,
+                    span: mock_span(10, 20),
+                    source_path: None,
+                },
+                Domain {
+                    name: "B".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Given,
+                    span: mock_span(21, 30),
+                    source_path: None,
+                },
+            ],
+            interfaces: vec![Interface {
+                name: "Imported".to_string(),
+                connects: vec![mock_ref("A", 40, 41), mock_ref("B", 42, 43)],
+                shared_phenomena: vec![Phenomenon {
+                    name: "ev".to_string(),
+                    type_: PhenomenonType::Event,
+                    from: mock_ref("A", 50, 55),
+                    to: mock_ref("B", 56, 61),
+                    controlled_by: mock_ref("A", 62, 67),
+                    span: mock_span(44, 70),
+                }],
+                span: mock_span(30, 80),
+                source_path: Some(PathBuf::from("/tmp/imported.pf")),
+            }],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = find_definition(&problem, Path::new("/tmp/root.pf"), 52);
+        assert!(result.is_none());
     }
 }

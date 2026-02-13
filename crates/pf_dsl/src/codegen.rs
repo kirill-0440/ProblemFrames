@@ -49,8 +49,8 @@ pub fn generate_rust(problem: &Problem) -> Result<String> {
     for domain in &problem.domains {
         writeln!(
             code,
-            "/// Domain: {} [{:?}]",
-            domain.name, domain.domain_type
+            "/// Domain: {} [{:?}/{:?}]",
+            domain.name, domain.kind, domain.role
         )?;
         writeln!(code, "#[derive(Debug)]")?;
         writeln!(code, "pub struct {} {{", sanitize_name(&domain.name))?;

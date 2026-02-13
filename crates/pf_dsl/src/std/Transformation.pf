@@ -1,0 +1,13 @@
+domain Machine kind causal role machine
+domain OutputArtifact kind lexical role given
+
+interface "Machine-OutputArtifact" connects Machine, OutputArtifact {
+    shared: {
+        phenomenon produced : value [Machine -> OutputArtifact] controlledBy Machine
+    }
+}
+
+requirement "Transformation" {
+    frame: Transformation
+    constrains: OutputArtifact
+}

@@ -1,5 +1,6 @@
 use pf_dsl::language::{
-    DOMAIN_TYPES, FRAME_TYPES, PHENOMENON_TYPES, REQUIREMENT_FIELDS, STATEMENT_KEYWORDS,
+    DOMAIN_KINDS, DOMAIN_ROLES, FRAME_TYPES, PHENOMENON_TYPES, REQUIREMENT_FIELDS,
+    STATEMENT_KEYWORDS,
 };
 use pf_lsp::completion::get_completions;
 use serde_json::Value;
@@ -25,7 +26,7 @@ fn completion_items_cover_language_spec() {
     for field in REQUIREMENT_FIELDS {
         assert!(labels.contains(field), "missing completion field: {field}");
     }
-    for domain in DOMAIN_TYPES {
+    for domain in DOMAIN_KINDS.iter().chain(DOMAIN_ROLES.iter()) {
         assert!(
             labels.contains(domain),
             "missing domain completion: {domain}"
@@ -63,7 +64,7 @@ fn vscode_syntax_contains_language_tokens() {
     let storage_match = json["repository"]["types"]["patterns"][0]["match"]
         .as_str()
         .expect("missing storage type regex");
-    for domain in DOMAIN_TYPES {
+    for domain in DOMAIN_KINDS.iter().chain(DOMAIN_ROLES.iter()) {
         assert!(
             storage_match.contains(domain),
             "domain type regex does not contain token: {domain}"

@@ -2,10 +2,10 @@ problem: StdTest
 import "std/RequiredBehavior.pf"
 
 // "Machine" and "ControlledDomain" should be available from std lib
-interface "Operator-Machine" {
+interface "Operator-Machine" connects Operator, Machine {
     shared: {
-        event start [Operator -> Machine]
+        phenomenon start : event [Operator -> Machine] controlledBy Operator
     }
 }
 
-domain Operator [Biddable]
+domain Operator kind biddable role given

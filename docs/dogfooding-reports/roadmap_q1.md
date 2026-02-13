@@ -3,15 +3,15 @@
 # Problem Report: ProblemFramesRoadmapQ1
 
 ## 1. Domains
-- **Maintainer** (Biddable)
-- **EngineeringTeam** (Biddable)
-- **RoadmapBoard** (Machine)
-- **CI** (Machine)
-- **Repository** (Lexical)
-- **ProposalSet** (Lexical)
-- **Metrics** (Causal)
-- **Users** (Biddable)
-- **ReleaseArtifacts** (Lexical)
+- **Maintainer** (Biddable/Given)
+- **EngineeringTeam** (Biddable/Given)
+- **RoadmapBoard** (Causal/Machine)
+- **CI** (Causal/Given)
+- **Repository** (Lexical/Given)
+- **ProposalSet** (Lexical/Given)
+- **Metrics** (Causal/Given)
+- **Users** (Biddable/Given)
+- **ReleaseArtifacts** (Lexical/Given)
 
 ## 2. Intefaces
 - **Interface**: Maintainer-RoadmapBoard
@@ -43,12 +43,22 @@
 - **Frame**: RequiredBehavior
 - **Constraint**: Roadmap uses quality signals when selecting milestones
 - **Constrains**: Metrics
-- **Reference**: RoadmapBoard
 
 ### FastFeedbackLoop
 - **Frame**: RequiredBehavior
 - **Constraint**: Engineering team gets rapid CI check outcomes
-- **Constrains**: EngineeringTeam
+- **Constrains**: Metrics
 - **Reference**: CI
+
+## 4. Subproblems
+### PlanningControl
+- **Machine**: RoadmapBoard
+- **Participants**: RoadmapBoard, Maintainer, Repository
+- **Requirements**: RoadmapPrioritization
+
+### QualityAndFeedback
+- **Machine**: RoadmapBoard
+- **Participants**: RoadmapBoard, Metrics, CI
+- **Requirements**: QualityDrivenPlanning, FastFeedbackLoop
 
 

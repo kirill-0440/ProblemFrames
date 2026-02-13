@@ -1,6 +1,7 @@
 use lsp_types::{CompletionItem, CompletionItemKind, CompletionList};
 use pf_dsl::language::{
-    DOMAIN_TYPES, FRAME_TYPES, PHENOMENON_TYPES, REQUIREMENT_FIELDS, STATEMENT_KEYWORDS,
+    DOMAIN_KINDS, DOMAIN_ROLES, FRAME_TYPES, PHENOMENON_TYPES, REQUIREMENT_FIELDS,
+    STATEMENT_KEYWORDS,
 };
 
 pub fn get_completions() -> CompletionList {
@@ -12,8 +13,11 @@ pub fn get_completions() -> CompletionList {
     for field in REQUIREMENT_FIELDS {
         keywords.push((*field, requirement_field_detail(field).to_string()));
     }
-    for domain in DOMAIN_TYPES {
-        keywords.push((*domain, format!("Domain type: {domain}")));
+    for kind in DOMAIN_KINDS {
+        keywords.push((*kind, format!("Domain kind: {kind}")));
+    }
+    for role in DOMAIN_ROLES {
+        keywords.push((*role, format!("Domain role: {role}")));
     }
     for phenomenon in PHENOMENON_TYPES {
         keywords.push((

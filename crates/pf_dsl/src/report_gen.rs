@@ -7,7 +7,7 @@ pub fn generate_report(problem: &Problem) -> String {
 
     report.push_str("## 1. Domains\n");
     for d in &problem.domains {
-        report.push_str(&format!("- **{}** ({:?})\n", d.name, d.domain_type));
+        report.push_str(&format!("- **{}** ({:?}/{:?})\n", d.name, d.kind, d.role));
     }
     report.push('\n');
 
@@ -41,6 +41,35 @@ pub fn generate_report(problem: &Problem) -> String {
             report.push_str(&format!("- **Reference**: {}\n", rf.name));
         }
         report.push('\n');
+    }
+
+    if !problem.subproblems.is_empty() {
+        report.push_str("## 4. Subproblems\n");
+        for subproblem in &problem.subproblems {
+            report.push_str(&format!("### {}\n", subproblem.name));
+            if let Some(machine) = &subproblem.machine {
+                report.push_str(&format!("- **Machine**: {}\n", machine.name));
+            }
+            if !subproblem.participants.is_empty() {
+                let participants = subproblem
+                    .participants
+                    .iter()
+                    .map(|participant| participant.name.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                report.push_str(&format!("- **Participants**: {}\n", participants));
+            }
+            if !subproblem.requirements.is_empty() {
+                let requirements = subproblem
+                    .requirements
+                    .iter()
+                    .map(|requirement| requirement.name.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                report.push_str(&format!("- **Requirements**: {}\n", requirements));
+            }
+            report.push('\n');
+        }
     }
 
     report

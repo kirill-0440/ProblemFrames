@@ -1,11 +1,35 @@
-use crate::ast::{DomainType, FrameType, PhenomenonType};
+use crate::ast::{DomainKind, DomainRole, FrameType, PhenomenonType};
 
-pub const STATEMENT_KEYWORDS: &[&str] =
-    &["problem:", "domain", "interface", "requirement", "shared:"];
+pub const STATEMENT_KEYWORDS: &[&str] = &[
+    "problem:",
+    "domain",
+    "kind",
+    "role",
+    "interface",
+    "connects",
+    "phenomenon",
+    "controlledBy",
+    "requirement",
+    "shared:",
+    "subproblem",
+    "machine:",
+    "participants:",
+    "requirements:",
+    "worldProperties",
+    "specification",
+    "requirementAssertions",
+    "correctnessArgument",
+    "assert",
+    "prove",
+    "and",
+    "entail",
+];
 
 pub const REQUIREMENT_FIELDS: &[&str] = &["frame:", "constraint:", "constrains:", "reference:"];
 
-pub const DOMAIN_TYPES: &[&str] = &["Machine", "Causal", "Biddable", "Lexical", "Designed"];
+pub const DOMAIN_KINDS: &[&str] = &["biddable", "causal", "lexical"];
+
+pub const DOMAIN_ROLES: &[&str] = &["given", "designed", "machine"];
 
 pub const PHENOMENON_TYPES: &[&str] = &["event", "command", "state", "value"];
 
@@ -17,14 +41,21 @@ pub const FRAME_TYPES: &[&str] = &[
     "Transformation",
 ];
 
-pub fn parse_domain_type(value: &str) -> DomainType {
+pub fn parse_domain_kind(value: &str) -> DomainKind {
     match value {
-        "Machine" => DomainType::Machine,
-        "Causal" => DomainType::Causal,
-        "Biddable" => DomainType::Biddable,
-        "Lexical" => DomainType::Lexical,
-        "Designed" => DomainType::Designed,
-        _ => DomainType::Unknown(value.to_string()),
+        "biddable" => DomainKind::Biddable,
+        "causal" => DomainKind::Causal,
+        "lexical" => DomainKind::Lexical,
+        _ => DomainKind::Unknown(value.to_string()),
+    }
+}
+
+pub fn parse_domain_role(value: &str) -> DomainRole {
+    match value {
+        "given" => DomainRole::Given,
+        "designed" => DomainRole::Designed,
+        "machine" => DomainRole::Machine,
+        _ => DomainRole::Unknown(value.to_string()),
     }
 }
 

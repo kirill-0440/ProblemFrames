@@ -1,0 +1,22 @@
+domain Machine kind causal role machine
+domain Workpiece kind lexical role given
+domain User kind biddable role given
+
+interface "Machine-Workpiece" connects Machine, Workpiece {
+    shared: {
+        phenomenon update : value [Machine -> Workpiece] controlledBy Machine
+        phenomenon currentState : value [Workpiece -> Machine] controlledBy Workpiece
+    }
+}
+
+interface "User-Machine" connects User, Machine {
+    shared: {
+        phenomenon edit : command [User -> Machine] controlledBy User
+    }
+}
+
+requirement "SimpleWorkpieces" {
+    frame: SimpleWorkpieces
+    constrains: Workpiece
+    reference: User
+}

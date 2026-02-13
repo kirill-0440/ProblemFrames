@@ -27,22 +27,32 @@ pub struct Problem {
     pub domains: Vec<Domain>,
     pub interfaces: Vec<Interface>,
     pub requirements: Vec<Requirement>,
+    pub subproblems: Vec<Subproblem>,
+    pub assertion_sets: Vec<AssertionSet>,
+    pub correctness_arguments: Vec<CorrectnessArgument>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum DomainType {
-    Machine,
-    Causal,
+pub enum DomainKind {
     Biddable,
+    Causal,
     Lexical,
+    Unknown(String),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum DomainRole {
+    Given,
     Designed,
+    Machine,
     Unknown(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Domain {
     pub name: String,
-    pub domain_type: DomainType,
+    pub kind: DomainKind,
+    pub role: DomainRole,
     pub span: Span,
     pub source_path: Option<PathBuf>,
 }
@@ -50,6 +60,7 @@ pub struct Domain {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Interface {
     pub name: String,
+    pub connects: Vec<Reference>,
     pub shared_phenomena: Vec<Phenomenon>,
     pub span: Span,
     pub source_path: Option<PathBuf>,
@@ -69,6 +80,7 @@ pub struct Phenomenon {
     pub type_: PhenomenonType,
     pub from: Reference,
     pub to: Reference,
+    pub controlled_by: Reference,
     pub span: Span,
 }
 
@@ -92,6 +104,49 @@ pub struct Requirement {
     // these refer to domains
     pub constrains: Option<Reference>,
     pub reference: Option<Reference>,
+    pub span: Span,
+    pub source_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Subproblem {
+    pub name: String,
+    pub machine: Option<Reference>,
+    pub participants: Vec<Reference>,
+    pub requirements: Vec<Reference>,
+    pub span: Span,
+    pub source_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum AssertionScope {
+    WorldProperties,
+    Specification,
+    RequirementAssertions,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Assertion {
+    pub text: String,
+    pub language: Option<String>,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct AssertionSet {
+    pub name: String,
+    pub scope: AssertionScope,
+    pub assertions: Vec<Assertion>,
+    pub span: Span,
+    pub source_path: Option<PathBuf>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CorrectnessArgument {
+    pub name: String,
+    pub specification_set: String,
+    pub world_set: String,
+    pub requirement_set: String,
     pub span: Span,
     pub source_path: Option<PathBuf>,
 }
