@@ -94,6 +94,13 @@ requirement "R009-A4-OneCommandPFQualityGate" {
     reference: Developer
 }
 
+requirement "R009-A5-AgentAssistedModelExecution" {
+    frame: SimpleWorkpieces
+    constraint: "Developer can delegate implementation work to Codex while preserving the same deterministic PF quality gate outputs"
+    constrains: SourceFile
+    reference: Codex
+}
+
 // Proposal 010: WRSPM contract bridge (M6-M7).
 requirement "R010-M6-WRSPMBridgeCoverage" {
     frame: Transformation

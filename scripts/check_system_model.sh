@@ -34,6 +34,7 @@ cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-md > "${TRACEABILITY_MD_FI
 cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-csv > "${TRACEABILITY_CSV_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-report > "${WRSPM_REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-json > "${WRSPM_JSON_FILE}"
+bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
 
 closure_status="$(
   grep -E "^- Closure status: " "${DECOMPOSITION_FILE}" \

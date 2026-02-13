@@ -1,5 +1,6 @@
 // 1. Domains
 domain Developer kind biddable role given // The user of the tool
+domain Codex kind biddable role given // Coding agent operating on behalf of the developer
 domain SourceFile kind lexical role given // The .pf file on disk
 domain Tool kind causal role machine      // The CLI/LSP tool
 domain Editor kind causal role given      // VS Code or other editor (interacting with LSP)

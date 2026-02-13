@@ -32,4 +32,5 @@ cargo run -p pf_dsl -- models/system/tool_spec.pf --traceability-md --impact=req
 cargo run -p pf_dsl -- models/system/tool_spec.pf --alloy > system_model.als
 bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh
+bash ./scripts/check_codex_self_model_contract.sh
 ```

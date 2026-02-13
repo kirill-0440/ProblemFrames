@@ -67,3 +67,9 @@ CI publishes equivalent evidence through dogfooding artifacts:
 - `dogfooding-obligations`
 - `system-model` (includes decomposition closure and WRSPM outputs)
 - `formal-backend`
+
+For agent-assisted model execution, run:
+
+```bash
+bash ./scripts/check_codex_self_model_contract.sh
+```

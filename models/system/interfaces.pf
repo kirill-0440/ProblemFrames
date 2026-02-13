@@ -7,6 +7,14 @@ interface "Dev-Source" connects Developer, SourceFile {
     }
 }
 
+// Developer delegates tasks to Codex and receives reviewed outputs.
+interface "Dev-Codex" connects Developer, Codex {
+    shared: {
+        phenomenon RequestImplementation : command [Developer -> Codex] controlledBy Developer
+        phenomenon ReceiveWorkSummary : value [Codex -> Developer] controlledBy Codex
+    }
+}
+
 // Developer invokes tool actions
 interface "Dev-Tool" connects Developer, Tool {
     shared: {
@@ -17,11 +25,28 @@ interface "Dev-Tool" connects Developer, Tool {
     }
 }
 
+// Codex invokes the same toolchain commands while implementing requested work.
+interface "Codex-Tool" connects Codex, Tool {
+    shared: {
+        phenomenon RunValidationByAgent : command [Codex -> Tool] controlledBy Codex
+        phenomenon RunGenerationByAgent : command [Codex -> Tool] controlledBy Codex
+        phenomenon RunPFQualityGateByAgent : command [Codex -> Tool] controlledBy Codex
+    }
+}
+
 // Tool reads the SourceFile
 interface "Tool-Source" connects Tool, SourceFile {
     shared: {
         phenomenon FileContent : value [SourceFile -> Tool] controlledBy SourceFile
         phenomenon FileExists : state [SourceFile -> Tool] controlledBy SourceFile
+    }
+}
+
+// Codex reads and applies patches to SourceFile while operating in the modeling loop.
+interface "Codex-Source" connects Codex, SourceFile {
+    shared: {
+        phenomenon ReadModelText : value [SourceFile -> Codex] controlledBy SourceFile
+        phenomenon ApplyModelPatch : event [Codex -> SourceFile] controlledBy Codex
     }
 }
 

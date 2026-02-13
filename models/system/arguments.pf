@@ -7,6 +7,7 @@ worldProperties W_roadmap_context {
 specification S_roadmap_execution {
     assert "Tool consumes the canonical system model and produces deterministic quality gate artifacts" @LTL
     assert "RunPFQualityGate triggers report, decomposition closure, obligations, alloy, and WRSPM outputs" @LTL
+    assert "Codex executes delegated model updates and toolchain commands under the same quality gate contract as Developer" @LTL
     assert "RunGeneration eventually emits PIM artifacts and trace outputs for roadmap-aligned requirements" @LTL
     assert "WRSPM bridge outputs and adequacy evidence artifacts are generated and published in CI" @LTL
 }
