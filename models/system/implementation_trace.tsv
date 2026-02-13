@@ -97,6 +97,10 @@ R007-M2-TraceabilityImpactExports|file_contains|crates/pf_lsp/tests/lsp_integrat
 R007-M3-ExecutableObligationCheck|file_contains|scripts/run_formal_backend_check.sh|run_alloy_solver_check.sh|formal backend check executes generated obligations with real Alloy solver
 R007-M3-ExecutableObligationCheck|file_contains|crates/pf_dsl/src/formal_alloy.rs|generate_alloy|alloy backend generator exists
 R007-M3-ExecutableObligationCheck|file_contains|scripts/check_system_model.sh|tool_spec.alloy-solver.md|canonical CI gate publishes reproducible solver evidence artifacts
+R007-M3-ExecutableObligationCheck|file_exists|models/system/alloy_expectations.tsv||canonical SAT/UNSAT expectation contract is versioned in the self-model
+R007-M3-ExecutableObligationCheck|file_contains|scripts/check_system_model.sh|--expectations|canonical gate enforces solver verdicts against expectation contract
+R007-M3-ExecutableObligationCheck|file_contains|scripts/run_alloy_solver_check.sh|--expectations <path>|solver check supports explicit SAT/UNSAT expectation manifests
+R007-M3-ExecutableObligationCheck|command_passes|tmp_dir="$(mktemp -d)" && bash ./scripts/run_alloy_solver_check.sh --model models/system/tool_spec.pf --expectations models/system/alloy_expectations.tsv --output-dir "${tmp_dir}/alloy-solver" --report "${tmp_dir}/alloy-solver.md" --json "${tmp_dir}/alloy-solver.json" --status-file "${tmp_dir}/alloy-solver.status" && test "$(cat "${tmp_dir}/alloy-solver.status")" = "PASS"||canonical Alloy solver check matches SAT/UNSAT expectation contract
 
 R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/ast.rs|pub struct Mark|mark metadata is represented in AST
 R008-M4A-MarkValidationContract|file_contains|crates/pf_dsl/src/problem_frames.pest|marks_block|mark syntax is supported in grammar

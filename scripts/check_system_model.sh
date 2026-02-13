@@ -7,9 +7,14 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 MODEL_FILE="${REPO_ROOT}/models/system/tool_spec.pf"
 OUTPUT_DIR="${1:-${REPO_ROOT}/.ci-artifacts/system-model}"
 SUMMARY_FILE="${OUTPUT_DIR}/summary.md"
+ALLOY_EXPECTATIONS_FILE="${PF_ALLOY_EXPECTATIONS_FILE:-${REPO_ROOT}/models/system/alloy_expectations.tsv}"
 
 if [[ ! -f "${MODEL_FILE}" ]]; then
   echo "System model not found: ${MODEL_FILE}" >&2
+  exit 1
+fi
+if [[ ! -f "${ALLOY_EXPECTATIONS_FILE}" ]]; then
+  echo "Alloy expectations file not found: ${ALLOY_EXPECTATIONS_FILE}" >&2
   exit 1
 fi
 
@@ -103,6 +108,7 @@ bash "${REPO_ROOT}/scripts/generate_formal_gap_report.sh" \
 bash "${REPO_ROOT}/scripts/run_alloy_solver_check.sh" \
   --model "${MODEL_FILE}" \
   --alloy-file "${ALLOY_FILE}" \
+  --expectations "${ALLOY_EXPECTATIONS_FILE}" \
   --output-dir "${ALLOY_SOLVER_DIR}" \
   --report "${ALLOY_SOLVER_REPORT_FILE}" \
   --json "${ALLOY_SOLVER_JSON_FILE}" \

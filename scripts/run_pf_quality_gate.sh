@@ -41,6 +41,7 @@ min_lean_formalized_args=0
 impact_selectors=""
 impact_hops=""
 models=()
+alloy_expectations_file="${PF_ALLOY_EXPECTATIONS_FILE:-${REPO_ROOT}/models/system/alloy_expectations.tsv}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -127,6 +128,13 @@ fi
 
 if [[ "${enforce_implementation_policy}" -eq 1 && -z "${implementation_policy_path}" ]]; then
   echo "--enforce-implementation-policy requires --implementation-policy <path>" >&2
+  exit 1
+fi
+if [[ "${alloy_expectations_file}" != /* ]]; then
+  alloy_expectations_file="${REPO_ROOT}/${alloy_expectations_file}"
+fi
+if [[ ! -f "${alloy_expectations_file}" ]]; then
+  echo "Alloy expectations file not found: ${alloy_expectations_file}" >&2
   exit 1
 fi
 
@@ -244,6 +252,7 @@ for model in "${models[@]}"; do
   bash "${REPO_ROOT}/scripts/run_alloy_solver_check.sh" \
     --model "${model}" \
     --alloy-file "${alloy_file}" \
+    --expectations "${alloy_expectations_file}" \
     --output-dir "${alloy_solver_dir}" \
     --report "${alloy_solver_report_file}" \
     --json "${alloy_solver_json_file}" \

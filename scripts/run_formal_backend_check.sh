@@ -12,6 +12,7 @@ SOLVER_NAME="sat4j"
 REPEAT_COUNT=1
 COMMAND_SELECTOR=""
 ALLOY_JAR_PATH=""
+EXPECTATIONS_FILE="${PF_ALLOY_EXPECTATIONS_FILE:-${REPO_ROOT}/models/system/alloy_expectations.tsv}"
 
 usage() {
   cat <<'USAGE'
@@ -24,6 +25,7 @@ Options:
   --repeat <n>              Number of solutions per command (default: 1)
   --command <pattern>       Optional command selector passed to Alloy CLI
   --jar-path <path>         Explicit Alloy CLI jar path
+  --expectations <path>     Expectation manifest (model|command|SAT/UNSAT)
   -h, --help                Show this help
 
 Environment:
@@ -62,6 +64,10 @@ while [[ $# -gt 0 ]]; do
       ALLOY_JAR_PATH="$2"
       shift 2
       ;;
+    --expectations)
+      EXPECTATIONS_FILE="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -90,6 +96,13 @@ fi
 if [[ -n "${ALLOY_JAR_PATH}" && "${ALLOY_JAR_PATH}" != /* ]]; then
   ALLOY_JAR_PATH="${REPO_ROOT}/${ALLOY_JAR_PATH}"
 fi
+if [[ -n "${EXPECTATIONS_FILE}" && "${EXPECTATIONS_FILE}" != /* ]]; then
+  EXPECTATIONS_FILE="${REPO_ROOT}/${EXPECTATIONS_FILE}"
+fi
+if [[ -n "${EXPECTATIONS_FILE}" && ! -f "${EXPECTATIONS_FILE}" ]]; then
+  echo "Alloy expectations file not found: ${EXPECTATIONS_FILE}" >&2
+  exit 1
+fi
 
 mkdir -p "${OUTPUT_DIR}"
 SUMMARY_FILE="${OUTPUT_DIR}/formal-backend-summary.md"
@@ -113,6 +126,9 @@ solver_blocking_fail_count=0
     echo "- Command selector: \`${COMMAND_SELECTOR}\`"
   else
     echo "- Command selector: \`<all>\`"
+  fi
+  if [[ -n "${EXPECTATIONS_FILE}" ]]; then
+    echo "- Expectations file: \`${EXPECTATIONS_FILE}\`"
   fi
   if [[ "${ENFORCE_SOLVER_PASS}" -eq 1 ]]; then
     echo "- Solver policy: \`blocking\`"
@@ -160,6 +176,9 @@ while IFS= read -r model; do
   fi
   if [[ -n "${ALLOY_JAR_PATH}" ]]; then
     solver_cmd+=(--jar-path "${ALLOY_JAR_PATH}")
+  fi
+  if [[ -n "${EXPECTATIONS_FILE}" ]]; then
+    solver_cmd+=(--expectations "${EXPECTATIONS_FILE}")
   fi
   if [[ "${ENFORCE_SOLVER_PASS}" -eq 1 ]]; then
     solver_cmd+=(--enforce-pass)

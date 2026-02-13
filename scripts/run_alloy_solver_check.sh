@@ -20,6 +20,7 @@ Options:
   --solver <name>       Alloy solver id for `exec` (default: sat4j)
   --command <pattern>   Optional command selector for Alloy `exec`
   --repeat <n>          Number of solutions per command (default: 1)
+  --expectations <path> Expectation manifest (model|command|SAT/UNSAT)
   --enforce-pass        Exit non-zero when status is not PASS
   -h, --help            Show this help
 
@@ -43,6 +44,7 @@ JAR_PATH=""
 SOLVER_NAME="sat4j"
 COMMAND_SELECTOR=""
 REPEAT_COUNT=1
+EXPECTATIONS_FILE=""
 ENFORCE_PASS=0
 
 while [[ $# -gt 0 ]]; do
@@ -87,6 +89,10 @@ while [[ $# -gt 0 ]]; do
       REPEAT_COUNT="$2"
       shift 2
       ;;
+    --expectations)
+      EXPECTATIONS_FILE="$2"
+      shift 2
+      ;;
     --enforce-pass)
       ENFORCE_PASS=1
       shift
@@ -124,6 +130,9 @@ fi
 if [[ -n "${JAR_PATH}" && "${JAR_PATH}" != /* ]]; then
   JAR_PATH="${REPO_ROOT}/${JAR_PATH}"
 fi
+if [[ -n "${EXPECTATIONS_FILE}" && "${EXPECTATIONS_FILE}" != /* ]]; then
+  EXPECTATIONS_FILE="${REPO_ROOT}/${EXPECTATIONS_FILE}"
+fi
 
 if ! [[ "${REPEAT_COUNT}" =~ ^[0-9]+$ ]] || [[ "${REPEAT_COUNT}" -lt 1 ]]; then
   echo "Invalid --repeat value: ${REPEAT_COUNT}" >&2
@@ -153,10 +162,71 @@ solved_count=0
 unsolved_count=0
 unsolved_commands=""
 solver_exit_code=0
+expectation_mismatch_count=0
+expectation_mismatch_commands=""
+expectation_rules_used=0
+expectation_summary=""
+model_rel_path=""
 
 exec_dir="${OUTPUT_DIR}/exec"
 exec_stdout="${OUTPUT_DIR}/alloy-exec.stdout.log"
 exec_stderr="${OUTPUT_DIR}/alloy-exec.stderr.log"
+
+trim_field() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "${value}"
+}
+
+resolve_expected_verdict() {
+  local command_name="$1"
+  local row_model
+  local row_command
+  local row_expected
+  local row_note
+  local expected_upper
+
+  if [[ -z "${EXPECTATIONS_FILE}" ]]; then
+    printf '%s' ""
+    return 0
+  fi
+
+  while IFS='|' read -r row_model row_command row_expected row_note; do
+    row_model="$(trim_field "${row_model:-}")"
+    row_command="$(trim_field "${row_command:-}")"
+    row_expected="$(trim_field "${row_expected:-}")"
+
+    if [[ -z "${row_model}" ]]; then
+      continue
+    fi
+    if [[ "${row_model:0:1}" == "#" ]]; then
+      continue
+    fi
+    if [[ -z "${row_command}" ]]; then
+      row_command="*"
+    fi
+    if [[ -z "${row_expected}" ]]; then
+      continue
+    fi
+
+    expected_upper="${row_expected^^}"
+    if [[ "${expected_upper}" != "SAT" && "${expected_upper}" != "UNSAT" ]]; then
+      reason="invalid expectation verdict '${row_expected}' for rule ${row_model}|${row_command}"
+      printf '%s' ""
+      return 0
+    fi
+
+    if [[ "${model_rel_path}" == ${row_model} || "${MODEL_FILE}" == ${row_model} ]]; then
+      if [[ "${command_name}" == ${row_command} ]]; then
+        printf '%s' "${expected_upper}"
+        return 0
+      fi
+    fi
+  done < "${EXPECTATIONS_FILE}"
+
+  printf '%s' ""
+}
 
 write_outputs() {
   local generated_utc
@@ -181,6 +251,17 @@ write_outputs() {
     echo "- Status: \`${status}\`"
     if [[ -n "${reason}" ]]; then
       echo "- Reason: ${reason}"
+    fi
+    if [[ -n "${EXPECTATIONS_FILE}" ]]; then
+      echo "- Expectations file: \`${EXPECTATIONS_FILE}\`"
+      echo "- Expectation rules used: \`${expectation_rules_used}\`"
+      echo "- Expectation mismatches: \`${expectation_mismatch_count}\`"
+      if [[ -n "${expectation_summary}" ]]; then
+        echo "- Expectation summary: ${expectation_summary}"
+      fi
+      if [[ -n "${expectation_mismatch_commands}" ]]; then
+        echo "- Expectation mismatch commands: \`${expectation_mismatch_commands}\`"
+      fi
     fi
     echo "- Commands total: \`${command_count}\`"
     echo "- Commands solved: \`${solved_count}\`"
@@ -210,8 +291,25 @@ write_outputs() {
     else
       echo "  \"command_selector\": \"\","
     fi
+    if [[ -n "${EXPECTATIONS_FILE}" ]]; then
+      echo "  \"expectations_file\": \"${EXPECTATIONS_FILE}\","
+    else
+      echo "  \"expectations_file\": \"\","
+    fi
     echo "  \"repeat\": ${REPEAT_COUNT},"
     echo "  \"solver_exit_code\": ${solver_exit_code},"
+    echo "  \"expectation_rules_used\": ${expectation_rules_used},"
+    echo "  \"expectation_mismatch_count\": ${expectation_mismatch_count},"
+    if [[ -n "${expectation_summary}" ]]; then
+      echo "  \"expectation_summary\": \"${expectation_summary}\","
+    else
+      echo "  \"expectation_summary\": \"\","
+    fi
+    if [[ -n "${expectation_mismatch_commands}" ]]; then
+      echo "  \"expectation_mismatch_commands\": \"${expectation_mismatch_commands}\","
+    else
+      echo "  \"expectation_mismatch_commands\": \"\","
+    fi
     echo "  \"command_count\": ${command_count},"
     echo "  \"solved_count\": ${solved_count},"
     echo "  \"unsolved_count\": ${unsolved_count},"
@@ -230,6 +328,21 @@ write_outputs() {
 
 if [[ ! -f "${MODEL_FILE}" ]]; then
   reason="model file is missing"
+  write_outputs
+  if [[ "${ENFORCE_PASS}" -eq 1 ]]; then
+    exit 1
+  fi
+  exit 0
+fi
+
+if [[ "${MODEL_FILE}" == "${REPO_ROOT}/"* ]]; then
+  model_rel_path="${MODEL_FILE#${REPO_ROOT}/}"
+else
+  model_rel_path="${MODEL_FILE}"
+fi
+
+if [[ -n "${EXPECTATIONS_FILE}" && ! -f "${EXPECTATIONS_FILE}" ]]; then
+  reason="expectations file is missing"
   write_outputs
   if [[ "${ENFORCE_PASS}" -eq 1 ]]; then
     exit 1
@@ -314,44 +427,99 @@ if [[ "${solver_exit_code}" -ne 0 ]]; then
 elif [[ ! -f "${receipt_file}" ]]; then
   reason="receipt.json is missing after alloy exec"
 else
-  command_count="$(
-    {
-      grep -o '"source":"' "${receipt_file}" || true
-    } | wc -l | tr -d ' '
-  )"
-  unsolved_count="$(
-    {
-      grep -o '"solution":\\[\\]' "${receipt_file}" || true
-    } | wc -l | tr -d ' '
-  )"
-
-  if [[ -z "${command_count}" ]]; then
-    command_count=0
-  fi
-  if [[ -z "${unsolved_count}" ]]; then
+  if command -v jq >/dev/null 2>&1; then
+    mapfile -t command_results < <(
+      jq -r '.commands | to_entries[] | [.key, (if ((.value.solution | length) > 0) then "SAT" else "UNSAT" end)] | @tsv' "${receipt_file}"
+    )
+    command_count="${#command_results[@]}"
+    solved_count=0
     unsolved_count=0
-  fi
-  if [[ "${command_count}" -lt "${unsolved_count}" ]]; then
-    unsolved_count="${command_count}"
-  fi
+    unsolved_commands=""
+    expectation_mismatch_count=0
+    expectation_mismatch_commands=""
+    expectation_rules_used=0
 
-  solved_count=$((command_count - unsolved_count))
+    for command_result in "${command_results[@]}"; do
+      command_name="${command_result%%$'\t'*}"
+      actual_verdict="${command_result#*$'\t'}"
 
-  if [[ "${command_count}" -eq 0 ]]; then
-    reason="no executable Alloy commands were found"
-  elif [[ "${unsolved_count}" -gt 0 ]]; then
-    reason="${unsolved_count} command(s) returned no solution"
-    if command -v jq >/dev/null 2>&1; then
-      unsolved_commands="$(
-        jq -r '.commands | to_entries[] | select((.value.solution | length) == 0) | .key' "${receipt_file}" \
-          | paste -sd ',' - \
-          || true
-      )"
-      unsolved_commands="${unsolved_commands:-}"
+      expected_verdict="SAT"
+      if [[ -n "${EXPECTATIONS_FILE}" ]]; then
+        resolved_verdict="$(resolve_expected_verdict "${command_name}")"
+        if [[ -n "${reason}" ]]; then
+          break
+        fi
+        if [[ -n "${resolved_verdict}" ]]; then
+          expected_verdict="${resolved_verdict}"
+          expectation_rules_used=$((expectation_rules_used + 1))
+        fi
+      fi
+
+      if [[ "${actual_verdict}" == "SAT" ]]; then
+        solved_count=$((solved_count + 1))
+      else
+        unsolved_count=$((unsolved_count + 1))
+        if [[ -z "${unsolved_commands}" ]]; then
+          unsolved_commands="${command_name}"
+        else
+          unsolved_commands="${unsolved_commands},${command_name}"
+        fi
+      fi
+
+      if [[ "${actual_verdict}" != "${expected_verdict}" ]]; then
+        expectation_mismatch_count=$((expectation_mismatch_count + 1))
+        mismatch_label="${command_name}:${expected_verdict}/${actual_verdict}"
+        if [[ -z "${expectation_mismatch_commands}" ]]; then
+          expectation_mismatch_commands="${mismatch_label}"
+        else
+          expectation_mismatch_commands="${expectation_mismatch_commands},${mismatch_label}"
+        fi
+      fi
+    done
+
+    if [[ -n "${EXPECTATIONS_FILE}" ]]; then
+      expectation_summary="default=SAT; matched_rules=${expectation_rules_used}"
     fi
   else
-    status="PASS"
-    reason="all commands produced at least one solution"
+    command_count="$(
+      {
+        grep -Eo '"overall"[[:space:]]*:' "${receipt_file}" || true
+      } | wc -l | tr -d ' '
+    )"
+    unsolved_count="$(
+      {
+        grep -Eo '"solution"[[:space:]]*:[[:space:]]*\\[\\]' "${receipt_file}" || true
+      } | wc -l | tr -d ' '
+    )"
+
+    if [[ -z "${command_count}" ]]; then
+      command_count=0
+    fi
+    if [[ -z "${unsolved_count}" ]]; then
+      unsolved_count=0
+    fi
+    if [[ "${command_count}" -lt "${unsolved_count}" ]]; then
+      unsolved_count="${command_count}"
+    fi
+    solved_count=$((command_count - unsolved_count))
+    if [[ -n "${EXPECTATIONS_FILE}" ]]; then
+      reason="jq is required when --expectations is used"
+    fi
+  fi
+
+  if [[ -z "${reason}" ]]; then
+    if [[ "${command_count}" -eq 0 ]]; then
+      reason="no executable Alloy commands were found"
+    elif [[ "${expectation_mismatch_count}" -gt 0 ]]; then
+      reason="${expectation_mismatch_count} command(s) violated SAT/UNSAT expectations"
+    else
+      status="PASS"
+      if [[ "${unsolved_count}" -gt 0 ]]; then
+        reason="all commands matched expectations (includes expected UNSAT)"
+      else
+        reason="all commands produced SAT as expected"
+      fi
+    fi
   fi
 fi
 
