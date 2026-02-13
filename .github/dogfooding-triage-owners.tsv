@@ -1,0 +1,5 @@
+# model_regex	requirement_regex	owner	due_days	status
+^roadmap_q1\.pf$	^RoadmapPrioritization$	@kirill-0440	7	Planned
+^roadmap_q1\.pf$	.*	@kirill-0440	14	Planned
+^tool_spec\.pf$	.*	@kirill-0440	10	Planned
+.*	.*	@kirill-0440	21	Planned

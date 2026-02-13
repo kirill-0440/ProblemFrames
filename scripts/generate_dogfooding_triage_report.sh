@@ -7,9 +7,15 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 INPUT_DIR="${DOGFOODING_INPUT_DIR:-${REPO_ROOT}/crates/pf_dsl/dogfooding}"
 OUTPUT_DIR="${1:-${REPO_ROOT}/docs/dogfooding-reports}"
 OUTPUT_FILE="${OUTPUT_DIR}/dogfooding-triage.md"
+OWNERS_FILE="${DOGFOODING_OWNERS_FILE:-${REPO_ROOT}/.github/dogfooding-triage-owners.tsv}"
 
 if [[ ! -d "${INPUT_DIR}" ]]; then
   echo "Dogfooding directory not found: ${INPUT_DIR}" >&2
+  exit 1
+fi
+
+if [[ ! -f "${OWNERS_FILE}" ]]; then
+  echo "Dogfooding owners mapping file not found: ${OWNERS_FILE}" >&2
   exit 1
 fi
 
@@ -39,6 +45,9 @@ emit_row() {
   local constraint="$6"
   local priority="P3"
   local action="Review semantics coverage and add a targeted fixture."
+  local owner="TBD"
+  local due_date="TBD"
+  local status="Open"
 
   if [[ "${frame}" == "CommandedBehavior" ]]; then
     priority="P1"
@@ -51,13 +60,92 @@ emit_row() {
     action="Add regression fixture for information projection rules."
   fi
 
-  printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+  assign_owner_due_status "${model}" "${req}" "${priority}" owner due_date status
+
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
     "${priority}" \
     "$(escape_md "${model}")" \
     "$(escape_md "${req}")" \
     "$(escape_md "${frame}")" \
     "$(escape_md "${action}")" \
-    "$(escape_md "${constraint}")" >> "${raw_rows}"
+    "$(escape_md "${constraint}")" \
+    "$(escape_md "${owner}")" \
+    "$(escape_md "${due_date}")" \
+    "$(escape_md "${status}")" >> "${raw_rows}"
+}
+
+date_plus_days_utc() {
+  local days="$1"
+  if date -u -d "+${days} days" +"%Y-%m-%d" >/dev/null 2>&1; then
+    date -u -d "+${days} days" +"%Y-%m-%d"
+  else
+    date -u -v+"${days}"d +"%Y-%m-%d"
+  fi
+}
+
+default_due_days_for_priority() {
+  local priority="$1"
+  case "${priority}" in
+    P1) echo 7 ;;
+    P2) echo 14 ;;
+    *) echo 21 ;;
+  esac
+}
+
+assign_owner_due_status() {
+  local model="$1"
+  local req="$2"
+  local priority="$3"
+  local -n owner_ref="$4"
+  local -n due_ref="$5"
+  local -n status_ref="$6"
+  local matched=0
+  local line=""
+  local model_re=""
+  local req_re=""
+  local owner_override=""
+  local due_override=""
+  local status_override=""
+
+  owner_ref="TBD"
+  due_ref="TBD"
+  status_ref="Open"
+
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    line="$(trim_line "${line}")"
+    if [[ -z "${line}" || "${line}" == \#* ]]; then
+      continue
+    fi
+
+    IFS=$'\t' read -r model_re req_re owner_override due_override status_override <<< "${line}"
+    if [[ -z "${model_re}" || -z "${req_re}" ]]; then
+      continue
+    fi
+
+    if [[ "${model}" =~ ${model_re} && "${req}" =~ ${req_re} ]]; then
+      matched=1
+      if [[ -n "${owner_override}" ]]; then
+        owner_ref="${owner_override}"
+      fi
+      if [[ -n "${status_override}" ]]; then
+        status_ref="${status_override}"
+      else
+        status_ref="Planned"
+      fi
+
+      if [[ -n "${due_override}" ]]; then
+        due_ref="$(date_plus_days_utc "${due_override}")"
+      else
+        due_ref="$(date_plus_days_utc "$(default_due_days_for_priority "${priority}")")"
+      fi
+      break
+    fi
+  done < "${OWNERS_FILE}"
+
+  if [[ "${matched}" -eq 0 ]]; then
+    due_ref="$(date_plus_days_utc "$(default_due_days_for_priority "${priority}")")"
+    status_ref="Planned"
+  fi
 }
 
 while IFS= read -r model_path; do
@@ -150,18 +238,21 @@ p3_count="$(awk -F'\t' '$1=="P3"{c++} END{print c+0}' "${sorted_rows}")"
     echo "| n/a | n/a | n/a | n/a | No requirements found in dogfooding models. | n/a | n/a | n/a | n/a |"
   else
     row_count=0
-    while IFS=$'\t' read -r priority model requirement frame_name action_text constraint_text; do
+    while IFS=$'\t' read -r priority model requirement frame_name action_text constraint_text owner due status; do
       row_count=$((row_count + 1))
       if [[ "${row_count}" -gt 12 ]]; then
         break
       fi
-      printf '| %s | `%s` | `%s` | `%s` | %s | %s | TBD | TBD | Open |\n' \
+      printf '| %s | `%s` | `%s` | `%s` | %s | %s | %s | %s | %s |\n' \
         "${priority}" \
         "${model}" \
         "${requirement}" \
         "${frame_name}" \
         "${action_text}" \
-        "${constraint_text}"
+        "${constraint_text}" \
+        "${owner}" \
+        "${due}" \
+        "${status}"
     done < "${sorted_rows}"
   fi
 
@@ -169,7 +260,8 @@ p3_count="$(awk -F'\t' '$1=="P3"{c++} END{print c+0}' "${sorted_rows}")"
   echo "## Usage"
   echo
   echo "- Review this table in weekly triage."
-  echo "- Replace \`TBD\` with concrete owner and due date for accepted actions."
+  echo "- Owners/due dates are auto-assigned from \`.github/dogfooding-triage-owners.tsv\`."
+  echo "- Adjust routing/SLA by updating mapping rules in that file."
   echo "- Replan or close stale actions in the next cycle."
 } > "${OUTPUT_FILE}"
 
