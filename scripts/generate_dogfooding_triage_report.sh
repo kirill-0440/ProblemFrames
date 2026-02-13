@@ -5,8 +5,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 INPUT_DIR="${DOGFOODING_INPUT_DIR:-${REPO_ROOT}/crates/pf_dsl/dogfooding}"
-OUTPUT_DIR="${1:-${REPO_ROOT}/docs/dogfooding-reports}"
+OUTPUT_DIR="${1:-${REPO_ROOT}/docs/dogfooding-triage}"
 OUTPUT_FILE="${OUTPUT_DIR}/dogfooding-triage.md"
+TRIAGE_MODE="${DOGFOODING_TRIAGE_MODE:-all}"
 OWNERS_FILE="${DOGFOODING_OWNERS_FILE:-${REPO_ROOT}/.github/dogfooding-triage-owners.tsv}"
 
 if [[ ! -d "${INPUT_DIR}" ]]; then
@@ -18,6 +19,24 @@ if [[ ! -f "${OWNERS_FILE}" ]]; then
   echo "Dogfooding owners mapping file not found: ${OWNERS_FILE}" >&2
   exit 1
 fi
+
+find_pf_models() {
+  local mode="$1"
+
+  if [[ "${mode}" == "core" ]]; then
+    find "${INPUT_DIR}" \
+      -type f \
+      -name "*.pf" \
+      ! -path "*/import_test/*" \
+      ! -path "*/std_test/*" \
+      | sort
+  else
+    find "${INPUT_DIR}" \
+      -type f \
+      -name "*.pf" \
+      | sort
+  fi
+}
 
 mkdir -p "${OUTPUT_DIR}"
 
@@ -176,19 +195,30 @@ while IFS= read -r model_path; do
       continue
     fi
 
-    if [[ "${line}" =~ ^frame:[[:space:]]*([A-Za-z0-9_]+) ]]; then
+    if [[ "${line}" =~ ^frame:[[:space:]]*\"([^\"]+)\" ]]; then
       frame="${BASH_REMATCH[1]}"
       continue
     fi
-    if [[ "${line}" =~ ^constrains:[[:space:]]*([A-Za-z0-9_]+) ]]; then
+
+    if [[ "${line}" =~ ^frame:[[:space:]]*([^[:space:]]+) ]]; then
+      frame="${BASH_REMATCH[1]}"
+      continue
+    fi
+    if [[ "${line}" =~ ^constrains:[[:space:]]*([^[:space:]]+) ]]; then
       constrains="${BASH_REMATCH[1]}"
       continue
     fi
-    if [[ "${line}" =~ ^reference:[[:space:]]*([A-Za-z0-9_]+) ]]; then
+    if [[ "${line}" =~ ^reference:[[:space:]]*([^[:space:]]+) ]]; then
       reference="${BASH_REMATCH[1]}"
       continue
     fi
     if [[ "${line}" =~ ^constraint:[[:space:]]*\"(.*)\"$ ]]; then
+      constraint="${BASH_REMATCH[1]}"
+      continue
+    elif [[ "${line}" =~ ^constraint:[[:space:]]*'(.*)'$ ]]; then
+      constraint="${BASH_REMATCH[1]}"
+      continue
+    elif [[ "${line}" =~ ^constraint:[[:space:]]*(.+)$ ]]; then
       constraint="${BASH_REMATCH[1]}"
       continue
     fi
@@ -198,12 +228,7 @@ while IFS= read -r model_path; do
     fi
   done < "${model_path}"
 done < <(
-  find "${INPUT_DIR}" \
-    -type f \
-    -name "*.pf" \
-    ! -path "*/import_test/*" \
-    ! -path "*/std_test/*" \
-    | sort
+  find_pf_models "${TRIAGE_MODE}"
 )
 
 sort -t$'\t' -k1,1 -k2,2 -k3,3 "${raw_rows}" > "${sorted_rows}"

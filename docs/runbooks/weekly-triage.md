@@ -21,6 +21,8 @@ This runbook establishes a weekly triage cadence for engineering health signals.
    - security audit
 5. Dogfooding triage backlog (`dogfooding-triage.md`).
    - owner/SLA rules are configured in `.github/dogfooding-triage-owners.tsv`
+   - generate mode is controlled by `DOGFOODING_TRIAGE_MODE` (defaults to `all` in this workflow)
+   - `core` mode excludes `import_test` and `std_test`; `all` keeps them.
 
 ## Triage Agenda
 

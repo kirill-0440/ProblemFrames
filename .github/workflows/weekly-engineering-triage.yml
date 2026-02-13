@@ -28,6 +28,8 @@ jobs:
         run: bash ./scripts/generate_engineering_metrics_report.sh .ci-artifacts/metrics
 
       - name: Generate dogfooding triage backlog
+        env:
+          DOGFOODING_TRIAGE_MODE: all
         run: bash ./scripts/generate_dogfooding_triage_report.sh .ci-artifacts/metrics
 
       - name: Upload metrics report artifact
