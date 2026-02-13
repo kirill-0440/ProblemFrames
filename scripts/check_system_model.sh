@@ -87,9 +87,9 @@ cp "${OUTPUT_DIR}/lean-formal/lean-check.json" "${LEAN_CHECK_JSON_FILE}"
 cp "${OUTPUT_DIR}/lean-formal/lean-check.status" "${LEAN_CHECK_STATUS_FILE}"
 cp "${OUTPUT_DIR}/lean-formal/lean-coverage.json" "${LEAN_COVERAGE_JSON_FILE}"
 bash "${REPO_ROOT}/scripts/check_requirement_formal_closure.sh" \
+  --model "${MODEL_FILE}" \
   --requirements-file "${REPO_ROOT}/models/system/requirements.pf" \
   --arguments-file "${REPO_ROOT}/models/system/arguments.pf" \
-  --map-file "${REPO_ROOT}/models/system/formal_closure_map.tsv" \
   --lean-coverage-json "${LEAN_COVERAGE_JSON_FILE}" \
   --output "${FORMAL_CLOSURE_REPORT_FILE}" \
   --json "${FORMAL_CLOSURE_JSON_FILE}" \

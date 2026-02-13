@@ -218,7 +218,11 @@ fn validate_requirement_marks(requirement: &Requirement, errors: &mut Vec<Valida
         return;
     }
 
-    let allowed_marks = ["sysml.requirement", "ddd.application_service"];
+    let allowed_marks = [
+        "sysml.requirement",
+        "ddd.application_service",
+        "formal.argument",
+    ];
     let mut seen_marks = HashSet::new();
 
     for mark in &requirement.marks {
@@ -261,6 +265,20 @@ fn validate_requirement_marks(requirement: &Requirement, errors: &mut Vec<Valida
                         requirement.name.clone(),
                         "mark 'ddd.application_service' requires non-empty string value"
                             .to_string(),
+                        mark.span,
+                    ));
+                }
+            }
+            "formal.argument" => {
+                let is_missing = mark
+                    .value
+                    .as_ref()
+                    .map(|value| value.trim().is_empty())
+                    .unwrap_or(true);
+                if is_missing {
+                    errors.push(ValidationError::InvalidRequirementMark(
+                        requirement.name.clone(),
+                        "mark 'formal.argument' requires non-empty string value".to_string(),
                         mark.span,
                     ));
                 }

@@ -21,6 +21,7 @@ requirement "R1" {
   marks: {
     @sysml.requirement
     @ddd.application_service("ShowDashboard")
+    @formal.argument("A_roadmap_alignment")
   }
 }
 ```
@@ -39,6 +40,7 @@ requirement "R1" {
 
 - `@sysml.requirement`
 - `@ddd.application_service("...")` (value required)
+- `@formal.argument("...")` (value required; binds requirement to correctness argument for closure reports)
 
 ## Validation Rules
 
@@ -51,5 +53,6 @@ requirement "R1" {
 ## Anti-patterns
 
 - Adding values where mark arity forbids it, e.g. `@sysml.requirement("x")`.
+- Omitting values where required, e.g. `@formal.argument`.
 - Using requirement marks on domains or domain-only marks on requirements.
 - Assuming marks replace PF constraints; they only refine generation targets.

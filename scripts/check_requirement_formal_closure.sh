@@ -10,9 +10,10 @@ Usage:
   bash ./scripts/check_requirement_formal_closure.sh [options]
 
 Options:
+  --model <path>              PF model path used for generated mapping (default: models/system/tool_spec.pf)
   --requirements-file <path>  requirements source file (default: models/system/requirements.pf)
   --arguments-file <path>     correctness-arguments source file (default: models/system/arguments.pf)
-  --map-file <path>           requirement->argument map TSV (default: models/system/formal_closure_map.tsv)
+  --map-file <path>           optional explicit requirement->argument map TSV (default: generated from model)
   --lean-coverage-json <path> Lean coverage JSON (default: .ci-artifacts/system-model/tool_spec.lean-coverage.json)
   --output <path>             markdown report output (default: .ci-artifacts/system-model/tool_spec.formal-closure.md)
   --json <path>               JSON summary output (default: .ci-artifacts/system-model/tool_spec.formal-closure.json)
@@ -22,9 +23,10 @@ Options:
 USAGE
 }
 
+model_file="${REPO_ROOT}/models/system/tool_spec.pf"
 requirements_file="${REPO_ROOT}/models/system/requirements.pf"
 arguments_file="${REPO_ROOT}/models/system/arguments.pf"
-map_file="${REPO_ROOT}/models/system/formal_closure_map.tsv"
+map_file=""
 lean_coverage_json="${REPO_ROOT}/.ci-artifacts/system-model/tool_spec.lean-coverage.json"
 output_file="${REPO_ROOT}/.ci-artifacts/system-model/tool_spec.formal-closure.md"
 json_file="${REPO_ROOT}/.ci-artifacts/system-model/tool_spec.formal-closure.json"
@@ -33,6 +35,10 @@ enforce_pass=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --model)
+      model_file="$2"
+      shift 2
+      ;;
     --requirements-file)
       requirements_file="$2"
       shift 2
@@ -77,14 +83,17 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for path_var in requirements_file arguments_file map_file lean_coverage_json output_file json_file status_file; do
+for path_var in model_file requirements_file arguments_file lean_coverage_json output_file json_file status_file; do
   current_path="${!path_var}"
   if [[ "${current_path}" != /* ]]; then
     printf -v "${path_var}" '%s/%s' "${REPO_ROOT}" "${current_path}"
   fi
 done
+if [[ -n "${map_file}" && "${map_file}" != /* ]]; then
+  map_file="${REPO_ROOT}/${map_file}"
+fi
 
-for input in "${requirements_file}" "${arguments_file}" "${map_file}" "${lean_coverage_json}"; do
+for input in "${model_file}" "${requirements_file}" "${arguments_file}" "${lean_coverage_json}"; do
   if [[ ! -f "${input}" ]]; then
     echo "Required file not found: ${input}" >&2
     exit 1
@@ -94,6 +103,24 @@ done
 mkdir -p "$(dirname -- "${output_file}")"
 mkdir -p "$(dirname -- "${json_file}")"
 mkdir -p "$(dirname -- "${status_file}")"
+
+resolved_map_file=""
+map_source_label=""
+
+if [[ -n "${map_file}" ]]; then
+  if [[ ! -f "${map_file}" ]]; then
+    echo "Explicit map file not found: ${map_file}" >&2
+    exit 1
+  fi
+  resolved_map_file="${map_file}"
+  map_source_label="${map_file#${REPO_ROOT}/}"
+else
+  tmp_map_file="$(mktemp)"
+  trap 'rm -f "${tmp_map_file}"' EXIT
+  cargo run -p pf_dsl -- "${model_file}" --formal-closure-map-tsv > "${tmp_map_file}"
+  resolved_map_file="${tmp_map_file}"
+  map_source_label="generated:${model_file#${REPO_ROOT}/}"
+fi
 
 mapfile -t requirements < <(
   grep '^requirement "' "${requirements_file}" \
@@ -151,7 +178,7 @@ while IFS='|' read -r requirement_id argument_name extra; do
     continue
   fi
   requirement_to_argument["${requirement_id}"]="${argument_name}"
-done < "${map_file}"
+done < "${resolved_map_file}"
 
 total_requirements="${#requirements[@]}"
 closed_count=0
@@ -169,9 +196,10 @@ declare -a invalid_argument_requirements=()
   echo "# Requirement Formal Closure Report"
   echo
   echo "- Generated (UTC): \`$(date -u +"%Y-%m-%dT%H:%M:%SZ")\`"
+  echo "- Model source: \`${model_file#${REPO_ROOT}/}\`"
   echo "- Requirements source: \`${requirements_file#${REPO_ROOT}/}\`"
   echo "- Arguments source: \`${arguments_file#${REPO_ROOT}/}\`"
-  echo "- Mapping source: \`${map_file#${REPO_ROOT}/}\`"
+  echo "- Mapping source: \`${map_source_label}\`"
   echo "- Lean coverage source: \`${lean_coverage_json#${REPO_ROOT}/}\`"
   echo
   echo "| Requirement | Correctness argument | Status |"

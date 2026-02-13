@@ -2258,6 +2258,7 @@ mod tests {
                 marks: {
                     @sysml.requirement
                     @ddd.application_service("RenderPaymentState")
+                    @formal.argument("A1")
                 }
             }
         "#;
@@ -2337,6 +2338,39 @@ mod tests {
                 error,
                 ValidationError::InvalidRequirementMark(name, message, _)
                     if name == "R1" && message.contains("requires non-empty string value")
+            )
+        }));
+    }
+
+    #[test]
+    fn test_mark_contract_rejects_formal_argument_with_missing_value() {
+        let input = r#"
+            problem: MarkContractFormalArgumentMissingValue
+            domain Tool kind causal role machine
+            domain Store kind lexical role given
+            interface "Tool-Store" connects Tool, Store {
+                shared: {
+                    phenomenon Persist : event [Tool -> Store] controlledBy Tool
+                }
+            }
+            requirement "R1" {
+                frame: SimpleWorkpieces
+                constrains: Store
+                marks: {
+                    @formal.argument
+                }
+            }
+        "#;
+
+        let problem = parse(input).expect("failed to parse marked model");
+        let result = validate(&problem);
+        assert!(result.is_err());
+        let errors = result.unwrap_err();
+        assert!(errors.iter().any(|error| {
+            matches!(
+                error,
+                ValidationError::InvalidRequirementMark(name, message, _)
+                    if name == "R1" && message.contains("mark 'formal.argument' requires non-empty string value")
             )
         }));
     }

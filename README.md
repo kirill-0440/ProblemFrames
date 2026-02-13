@@ -46,7 +46,7 @@ Guides:
 Available modes:
 
 ```bash
-pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --lean-model | --lean-coverage-json | --traceability-md | --traceability-csv | --decomposition-closure | --concern-coverage | --wrspm-report | --wrspm-json | --ddd-pim | --sysml2-text | --sysml2-json | --trace-map-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]
+pf_dsl <file.pf> [--dot | --dot-context | --dot-problem | --dot-decomposition | --report | --gen-rust | --obligations | --alloy | --lean-model | --lean-coverage-json | --formal-closure-map-tsv | --traceability-md | --traceability-csv | --decomposition-closure | --concern-coverage | --wrspm-report | --wrspm-json | --ddd-pim | --sysml2-text | --sysml2-json | --trace-map-json] [--impact=requirement:<name>,domain:<name>] [--impact-hops=<n>]
 ```
 
 Artifact generation currently includes:
@@ -58,6 +58,7 @@ Artifact generation currently includes:
 - Alloy model export (`--alloy`)
 - Lean model export for research track (`--lean-model`)
 - Lean formal coverage export (`--lean-coverage-json`)
+- Requirement-to-correctness-argument closure map export (`--formal-closure-map-tsv`)
 - traceability markdown/CSV exports (`--traceability-md`, `--traceability-csv`)
 - WRSPM bridge report (`--wrspm-report`)
 - WRSPM bridge JSON (`--wrspm-json`)
@@ -208,7 +209,7 @@ bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh
 bash ./scripts/run_lean_formal_check.sh --model models/system/tool_spec.pf --min-formalized-args 2
 bash ./scripts/run_lean_differential_check.sh --model models/system/tool_spec.pf
-bash ./scripts/check_requirement_formal_closure.sh --requirements-file models/system/requirements.pf --arguments-file models/system/arguments.pf --map-file models/system/formal_closure_map.tsv --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json
+bash ./scripts/check_requirement_formal_closure.sh --model models/system/tool_spec.pf --requirements-file models/system/requirements.pf --arguments-file models/system/arguments.pf --lean-coverage-json .ci-artifacts/system-model/tool_spec.lean-coverage.json
 ```
 
 Generate engineering metrics:

@@ -21,7 +21,7 @@ Use this gate for any PR that changes one or more PF models (`*.pf`) or model se
 11. Generate implementation trace evidence (`implemented/partial/planned`) against model requirements.
 12. Generate WRSPM bridge artifacts (`W/R/S/P/M` projection) for contract review.
 13. Generate Lean research-track artifacts (`--lean-model`, `--lean-coverage-json`, non-blocking Lean smoke, differential report).
-14. For the canonical system model, run `check_system_model.sh` to generate per-requirement formal closure report (requirement-to-correctness-argument mapping + formalized status).
+14. For the canonical system model, run `check_system_model.sh` to generate per-requirement formal closure report (mapping derived from requirement `@formal.argument(...)` marks + formalized status).
 
 ## One-command Gate
 
