@@ -147,24 +147,106 @@ fn frame_name(frame: &FrameType) -> &str {
 }
 
 fn sanitize_name(name: &str) -> String {
-    let mut output = String::new();
+    let mut output = String::with_capacity(name.len());
     for ch in name.chars() {
-        if ch.is_ascii_alphanumeric() {
+        if ch.is_ascii_alphanumeric() || ch == '_' {
             output.push(ch);
         } else {
             output.push('_');
         }
     }
-    if output.is_empty() {
-        "unnamed".to_string()
+
+    let mut output = if output.is_empty() {
+        "Generated".to_string()
     } else {
-        output
+        let mut collapsed = String::new();
+        let mut prev_underscore = false;
+        for ch in output.chars() {
+            if ch == '_' {
+                if prev_underscore {
+                    continue;
+                }
+                prev_underscore = true;
+            } else {
+                prev_underscore = false;
+            }
+            collapsed.push(ch);
+        }
+        collapsed.trim_matches('_').to_string()
+    };
+
+    if let Some(first) = output.chars().next() {
+        if first.is_ascii_digit() {
+            output.insert(0, 'R');
+        } else if first.is_ascii_lowercase() {
+            if let Some(upper) = first.to_uppercase().next() {
+                output.replace_range(0..first.len_utf8(), &upper.to_string());
+            }
+        }
+    } else {
+        output = "Generated".to_string();
     }
+
+    if is_alloy_keyword(&output) || is_alloy_keyword(&output.to_ascii_lowercase()) {
+        output.push('_');
+    }
+
+    output
+}
+
+fn is_alloy_keyword(name: &str) -> bool {
+    matches!(
+        name,
+        "abstract"
+            | "all"
+            | "and"
+            | "as"
+            | "assert"
+            | "at"
+            | "but"
+            | "check"
+            | "disj"
+            | "else"
+            | "event"
+            | "exactly"
+            | "iff"
+            | "implies"
+            | "in"
+            | "let"
+            | "module"
+            | "no"
+            | "not"
+            | "none"
+            | "one"
+            | "or"
+            | "run"
+            | "set"
+            | "sig"
+            | "some"
+            | "sum"
+            | "this"
+            | "univ"
+            | "Int"
+            | "Boolean"
+            | "seq"
+            | "String"
+            | "fact"
+            | "pred"
+            | "fun"
+            | "assertion"
+            | "enum"
+            | "open"
+            | "private"
+            | "protected"
+            | "public"
+            | "extends"
+            | "id"
+    )
 }
 
 #[cfg(test)]
 mod tests {
-    use super::generate_alloy;
+    use super::{generate_alloy, sanitize_name};
     use crate::ast::*;
 
     fn span() -> Span {
@@ -179,6 +261,87 @@ mod tests {
             span: span(),
             source_path: None,
         }
+    }
+
+    #[test]
+    fn sanitize_name_maps_invalid_identifiers() {
+        assert_eq!(sanitize_name("1value"), "R1value");
+        assert_eq!(sanitize_name("my domain"), "My_domain");
+        assert_eq!(sanitize_name(""), "Generated");
+        assert_eq!(sanitize_name("sig"), "Sig_");
+    }
+
+    #[test]
+    fn emits_alloy_with_sanitized_names() {
+        let problem = Problem {
+            name: "1 bad thermostat".to_string(),
+            span: span(),
+            imports: vec![],
+            domains: vec![
+                domain("my domain", DomainKind::Causal, DomainRole::Machine),
+                domain("sig", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![],
+            requirements: vec![Requirement {
+                name: "req".to_string(),
+                frame: FrameType::RequiredBehavior,
+                phenomena: vec![],
+                constraint: "ok".to_string(),
+                constrains: None,
+                reference: None,
+                span: span(),
+                source_path: None,
+            }],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![],
+                    span: span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![],
+                    span: span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![],
+                    span: span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "oblig".to_string(),
+                specification_set: "S".to_string(),
+                world_set: "W".to_string(),
+                requirement_set: "R".to_string(),
+                specification_ref: Reference {
+                    name: "S".to_string(),
+                    span: span(),
+                },
+                world_ref: Reference {
+                    name: "W".to_string(),
+                    span: span(),
+                },
+                requirement_ref: Reference {
+                    name: "R".to_string(),
+                    span: span(),
+                },
+                span: span(),
+                source_path: None,
+            }],
+        };
+
+        let output = generate_alloy(&problem);
+        assert!(output.contains("module R1_bad_thermostat"));
+        assert!(output.contains("one sig My_domain extends Domain {}"));
+        assert!(output.contains("one sig Sig_ extends Domain {}"));
     }
 
     fn reference(name: &str) -> Reference {

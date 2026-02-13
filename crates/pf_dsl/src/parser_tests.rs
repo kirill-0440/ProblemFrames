@@ -37,6 +37,23 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_error_diagnostic_for_duplicate_problem_decl() {
+        let input = r#"
+            problem: First
+            problem: Second
+            domain M kind causal role machine
+        "#;
+
+        let result = parse_error_diagnostic(input).expect("Expected diagnostic");
+        let (span, message) = result;
+        let expected = token_span(input, "problem: Second");
+
+        assert!(message.contains("multiple problem declarations"));
+        assert!(span.start >= expected.start);
+        assert!(span.start < expected.end);
+    }
+
+    #[test]
     fn test_parse_interface() {
         let input = r#"
             problem: I

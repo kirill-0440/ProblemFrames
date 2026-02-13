@@ -9,7 +9,7 @@ use pf_dsl::validator::{validate_with_sources, validation_error_span};
 use pf_lsp::completion::get_completions;
 use serde_json::Value;
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 const JSONRPC_METHOD_NOT_FOUND: i32 = -32601;
@@ -18,6 +18,7 @@ const JSONRPC_INVALID_PARAMS: i32 = -32602;
 #[derive(Default)]
 struct ServerState {
     documents: HashMap<Uri, String>,
+    diagnostic_targets_by_owner: HashMap<String, HashSet<String>>,
 }
 
 impl ServerState {
@@ -31,6 +32,31 @@ impl ServerState {
 
     fn document_text(&self, uri: &Uri) -> Option<&str> {
         self.documents.get(uri).map(String::as_str)
+    }
+
+    fn update_diagnostic_targets(
+        &mut self,
+        owner_uri: &Uri,
+        current_targets: HashSet<String>,
+    ) -> Vec<String> {
+        let owner_key = owner_uri.as_str().to_string();
+        let previous_targets = self
+            .diagnostic_targets_by_owner
+            .insert(owner_key, current_targets.clone())
+            .unwrap_or_default();
+
+        previous_targets
+            .into_iter()
+            .filter(|uri| !current_targets.contains(uri))
+            .collect()
+    }
+
+    fn clear_diagnostic_targets(&mut self, owner_uri: &Uri) -> Vec<String> {
+        self.diagnostic_targets_by_owner
+            .remove(owner_uri.as_str())
+            .unwrap_or_default()
+            .into_iter()
+            .collect()
     }
 }
 
@@ -146,7 +172,7 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                         );
                         if let Err(err) = validate_document(
                             &connection,
-                            &state,
+                            &mut state,
                             params.text_document.uri,
                             &params.text_document.text,
                         ) {
@@ -170,7 +196,7 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                             );
                             if let Err(err) = validate_document(
                                 &connection,
-                                &state,
+                                &mut state,
                                 params.text_document.uri,
                                 &change.text,
                             ) {
@@ -188,10 +214,20 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                                 }
                             };
                         state.remove_document(&params.text_document.uri);
-                        if let Err(err) =
-                            publish_diagnostics(&connection, params.text_document.uri, Vec::new())
+                        let mut targets = state.clear_diagnostic_targets(&params.text_document.uri);
+                        let owner_uri = params.text_document.uri.as_str().to_string();
+                        if !targets.contains(&owner_uri) {
+                            targets.push(owner_uri);
+                        }
+                        for target_uri in targets
+                            .into_iter()
+                            .filter_map(|target| target.parse::<Uri>().ok())
                         {
-                            eprintln!("Failed to clear diagnostics on close: {err}");
+                            if let Err(err) =
+                                publish_diagnostics(&connection, target_uri, Vec::new())
+                            {
+                                eprintln!("Failed to clear diagnostics on close: {err}");
+                            }
                         }
                     }
                     _ => {}
@@ -355,7 +391,7 @@ fn push_diagnostic_for_uri(
 
 fn validate_document(
     connection: &Connection,
-    state: &ServerState,
+    state: &mut ServerState,
     uri: Uri,
     text: &str,
 ) -> Result<()> {
@@ -397,19 +433,21 @@ fn validate_document(
             }
         }
         Err(e) => {
-            let (range, message) = parse_error_range(text).unwrap_or((
-                Range {
-                    start: Position {
-                        line: 0,
-                        character: 0,
+            let (range, message) = parse_error_range(text).unwrap_or_else(|| {
+                (
+                    Range {
+                        start: Position {
+                            line: 0,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: 0,
+                            character: 1,
+                        },
                     },
-                    end: Position {
-                        line: 0,
-                        character: 1,
-                    },
-                },
-                e.to_string(),
-            ));
+                    e.to_string(),
+                )
+            });
 
             let diagnostic = Diagnostic {
                 range,
@@ -426,8 +464,21 @@ fn validate_document(
         }
     }
 
+    let current_targets: HashSet<String> = diagnostics_by_uri
+        .iter()
+        .map(|(target_uri, _)| target_uri.as_str().to_string())
+        .collect();
+
     for (target_uri, diagnostics) in diagnostics_by_uri {
         publish_diagnostics(connection, target_uri, diagnostics)?;
+    }
+
+    for stale_uri in state
+        .update_diagnostic_targets(&uri, current_targets)
+        .into_iter()
+        .filter_map(|target| target.parse::<Uri>().ok())
+    {
+        publish_diagnostics(connection, stale_uri, Vec::new())?;
     }
 
     Ok(())

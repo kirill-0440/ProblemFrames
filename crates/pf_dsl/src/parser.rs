@@ -136,6 +136,7 @@ fn parse_internal(input: &str) -> std::result::Result<Problem, ParseDiagnostic> 
         assertion_sets: vec![],
         correctness_arguments: vec![],
     };
+    let mut has_problem_decl = false;
 
     for pair in program_pair.into_inner() {
         let span = pair_to_span(&pair);
@@ -147,8 +148,15 @@ fn parse_internal(input: &str) -> std::result::Result<Problem, ParseDiagnostic> 
                     .push(path_literal.trim_matches('"').to_string());
             }
             Rule::problem_decl => {
+                if has_problem_decl {
+                    return Err(ParseDiagnostic::new(
+                        span,
+                        "multiple problem declarations are not allowed",
+                    ));
+                }
                 let name_pair = next_inner(pair, "problem name", span)?;
                 problem.name = name_pair.as_str().trim().to_string();
+                has_problem_decl = true;
             }
             Rule::domain_decl => {
                 let mut inner = pair.into_inner();
