@@ -248,3 +248,23 @@ R011-H2-DiffBasedModelFirstGate|file_contains|scripts/check_codex_self_model_con
 R011-H2-DiffBasedModelFirstGate|file_contains|scripts/check_codex_self_model_contract.sh|Model-first contract violation|model-first contract rejects implementation-only diffs without canonical model updates
 R011-H2-DiffBasedModelFirstGate|file_contains|models/system/subproblems.pf|R011-H2-DiffBasedModelFirstGate|diff-based model-first requirement is mapped in canonical PF decomposition
 R011-H2-DiffBasedModelFirstGate|command_passes|bash ./scripts/check_codex_self_model_contract.sh||diff-based model-first contract check executes successfully
+
+R011-H4-ProblemDeclarationStrictness|file_contains|crates/pf_dsl/src/parser.rs|missing required top-level 'problem:' declaration|strict parser rejects models without explicit top-level problem declaration
+R011-H4-ProblemDeclarationStrictness|file_contains|crates/pf_dsl/src/resolver.rs|parse_module|imported modules are parsed in non-entrypoint mode while entrypoint parsing remains strict
+R011-H4-ProblemDeclarationStrictness|file_contains|crates/pf_dsl/src/parser_tests.rs|test_parse_rejects_missing_problem_declaration|parser strictness is covered by regression test
+
+R011-H5-CoverageGateCalibration|file_contains|.github/workflows/ci.yml|RUST_COVERAGE_MIN: "80"|Rust coverage threshold is calibrated above placeholder baseline
+R011-H5-CoverageGateCalibration|file_contains|models/system/requirements.pf|R011-H5-CoverageGateCalibration|coverage calibration requirement is modeled in canonical self-model
+
+R011-H6-AlloyBinaryIntegrityVerification|file_exists|models/system/alloy_checksums.tsv||Alloy versioned checksum manifest exists
+R011-H6-AlloyBinaryIntegrityVerification|file_contains|scripts/run_alloy_solver_check.sh|load_expected_jar_sha256|solver script requires expected checksum before execution
+R011-H6-AlloyBinaryIntegrityVerification|file_contains|scripts/run_alloy_solver_check.sh|verify_jar_integrity|solver script performs fail-closed checksum verification for Alloy jar
+
+R011-H7-GeneratedArtifactTrackingDiscipline|file_contains|.gitignore|editors/code/pf_lsp|generated editor binary path is ignored in repository policy
+R011-H7-GeneratedArtifactTrackingDiscipline|file_contains|scripts/check_codex_self_model_contract.sh|Generated editor binary is tracked in git|self-model contract rejects tracked generated editor binaries
+R011-H7-GeneratedArtifactTrackingDiscipline|command_passes|test ! -f editors/code/pf_lsp||tracked platform-specific editor binary is absent from repository workspace
+
+R011-H8-AuditRemediationBacklogTrace|file_exists|models/system/audit_remediation_backlog.tsv||audit remediation backlog artifact is versioned
+R011-H8-AuditRemediationBacklogTrace|file_exists|scripts/check_audit_remediation_backlog.sh||audit remediation backlog validation script exists
+R011-H8-AuditRemediationBacklogTrace|file_contains|scripts/check_system_model.sh|tool_spec.audit-remediation.md|system-model gate publishes audit remediation status artifact
+R011-H8-AuditRemediationBacklogTrace|command_passes|bash ./scripts/check_audit_remediation_backlog.sh --model models/system/tool_spec.pf --backlog models/system/audit_remediation_backlog.tsv --enforce-pass||audit remediation backlog remains requirement-traceable and PASS

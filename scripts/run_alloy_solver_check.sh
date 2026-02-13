@@ -32,6 +32,9 @@ Environment:
   PF_ALLOY_VERSION      Alloy release version (default: 6.2.0)
   PF_ALLOY_JAR_URL      Alloy CLI jar URL
   PF_ALLOY_CACHE_DIR    Cache directory for Alloy jar
+  PF_ALLOY_JAR_SHA256   Expected SHA-256 for Alloy CLI jar (optional override)
+  PF_ALLOY_CHECKSUM_MANIFEST
+                        Versioned checksum manifest path (default: models/system/alloy_checksums.tsv)
 USAGE
 }
 
@@ -46,6 +49,8 @@ CLOSURE_MATRIX_MD=""
 ALLOY_VERSION="${PF_ALLOY_VERSION:-6.2.0}"
 ALLOY_JAR_URL="${PF_ALLOY_JAR_URL:-https://github.com/AlloyTools/org.alloytools.alloy/releases/download/v${ALLOY_VERSION}/org.alloytools.alloy.dist.jar}"
 ALLOY_CACHE_DIR="${PF_ALLOY_CACHE_DIR:-${HOME}/.cache/problemframes/alloy}"
+ALLOY_JAR_SHA256="${PF_ALLOY_JAR_SHA256:-}"
+ALLOY_CHECKSUM_MANIFEST="${PF_ALLOY_CHECKSUM_MANIFEST:-${REPO_ROOT}/models/system/alloy_checksums.tsv}"
 JAR_PATH=""
 SOLVER_NAME="sat4j"
 COMMAND_SELECTOR=""
@@ -153,6 +158,9 @@ fi
 if [[ -n "${EXPECTATIONS_FILE}" && "${EXPECTATIONS_FILE}" != /* ]]; then
   EXPECTATIONS_FILE="${REPO_ROOT}/${EXPECTATIONS_FILE}"
 fi
+if [[ "${ALLOY_CHECKSUM_MANIFEST}" != /* ]]; then
+  ALLOY_CHECKSUM_MANIFEST="${REPO_ROOT}/${ALLOY_CHECKSUM_MANIFEST}"
+fi
 
 if ! [[ "${REPEAT_COUNT}" =~ ^[0-9]+$ ]] || [[ "${REPEAT_COUNT}" -lt 1 ]]; then
   echo "Invalid --repeat value: ${REPEAT_COUNT}" >&2
@@ -200,6 +208,10 @@ required_expectation_rules_missing=0
 required_expectation_missing_rules=""
 model_rel_path=""
 expectation_rule_count=0
+expected_jar_sha256=""
+actual_jar_sha256=""
+checksum_source=""
+checksum_verified=0
 
 declare -a expectation_models=()
 declare -a expectation_commands=()
@@ -218,6 +230,74 @@ trim_field() {
   value="${value#"${value%%[![:space:]]*}"}"
   value="${value%"${value##*[![:space:]]}"}"
   printf '%s' "${value}"
+}
+
+compute_sha256() {
+  local file_path="$1"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "${file_path}" | awk '{print tolower($1)}'
+    return 0
+  fi
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "${file_path}" | awk '{print tolower($1)}'
+    return 0
+  fi
+  if command -v openssl >/dev/null 2>&1; then
+    openssl dgst -sha256 "${file_path}" | sed -E 's/^.*= *//; s/[[:space:]]+$//' | tr '[:upper:]' '[:lower:]'
+    return 0
+  fi
+  return 1
+}
+
+load_expected_jar_sha256() {
+  local manifest_version
+  local manifest_sha
+  local manifest_extra
+  local normalized
+
+  if [[ -n "${ALLOY_JAR_SHA256}" ]]; then
+    normalized="$(trim_field "${ALLOY_JAR_SHA256}" | tr '[:upper:]' '[:lower:]')"
+    expected_jar_sha256="${normalized}"
+    checksum_source="env:PF_ALLOY_JAR_SHA256"
+  elif [[ -f "${ALLOY_CHECKSUM_MANIFEST}" ]]; then
+    while IFS='|' read -r manifest_version manifest_sha manifest_extra; do
+      manifest_version="$(trim_field "${manifest_version:-}")"
+      manifest_sha="$(trim_field "${manifest_sha:-}")"
+      if [[ -z "${manifest_version}" || "${manifest_version:0:1}" == "#" ]]; then
+        continue
+      fi
+      if [[ "${manifest_version}" == "${ALLOY_VERSION}" ]]; then
+        expected_jar_sha256="$(tr '[:upper:]' '[:lower:]' <<< "${manifest_sha}")"
+        checksum_source="${ALLOY_CHECKSUM_MANIFEST}:${ALLOY_VERSION}"
+        break
+      fi
+    done < "${ALLOY_CHECKSUM_MANIFEST}"
+  fi
+
+  if [[ -z "${expected_jar_sha256}" ]]; then
+    reason="missing expected Alloy jar checksum for version ${ALLOY_VERSION} (set PF_ALLOY_JAR_SHA256 or update ${ALLOY_CHECKSUM_MANIFEST})"
+    return 1
+  fi
+  if [[ ! "${expected_jar_sha256}" =~ ^[0-9a-f]{64}$ ]]; then
+    reason="invalid expected Alloy jar checksum '${expected_jar_sha256}'"
+    return 1
+  fi
+  return 0
+}
+
+verify_jar_integrity() {
+  local jar_path="$1"
+  actual_jar_sha256="$(compute_sha256 "${jar_path}" 2>/dev/null || true)"
+  if [[ -z "${actual_jar_sha256}" ]]; then
+    reason="unable to compute Alloy jar SHA-256 (sha256sum/shasum/openssl not available)"
+    return 1
+  fi
+  if [[ "${actual_jar_sha256}" != "${expected_jar_sha256}" ]]; then
+    reason="alloy CLI jar checksum mismatch (expected ${expected_jar_sha256}, got ${actual_jar_sha256})"
+    return 1
+  fi
+  checksum_verified=1
+  return 0
 }
 
 normalize_required_flag() {
@@ -376,6 +456,26 @@ write_outputs() {
     echo "- Alloy model: \`${ALLOY_FILE}\`"
     echo "- Alloy CLI jar: \`${JAR_PATH}\`"
     echo "- Alloy version: \`${ALLOY_VERSION}\`"
+    if [[ -n "${expected_jar_sha256}" ]]; then
+      echo "- Alloy jar SHA-256 (expected): \`${expected_jar_sha256}\`"
+    else
+      echo "- Alloy jar SHA-256 (expected): \`<missing>\`"
+    fi
+    if [[ -n "${checksum_source}" ]]; then
+      echo "- Alloy checksum source: \`${checksum_source}\`"
+    else
+      echo "- Alloy checksum source: \`<unset>\`"
+    fi
+    if [[ -n "${actual_jar_sha256}" ]]; then
+      echo "- Alloy jar SHA-256 (actual): \`${actual_jar_sha256}\`"
+    else
+      echo "- Alloy jar SHA-256 (actual): \`<unavailable>\`"
+    fi
+    if [[ "${checksum_verified}" -eq 1 ]]; then
+      echo "- Alloy jar integrity verification: \`PASS\`"
+    else
+      echo "- Alloy jar integrity verification: \`FAIL\`"
+    fi
     echo "- Solver: \`${SOLVER_NAME}\`"
     if [[ -n "${COMMAND_SELECTOR}" ]]; then
       echo "- Command selector: \`${COMMAND_SELECTOR}\`"
@@ -430,6 +530,10 @@ write_outputs() {
     echo "  \"alloy_model\": \"${ALLOY_FILE}\","
     echo "  \"jar\": \"${JAR_PATH}\","
     echo "  \"alloy_version\": \"${ALLOY_VERSION}\","
+    echo "  \"alloy_checksum_expected\": \"${expected_jar_sha256}\","
+    echo "  \"alloy_checksum_source\": \"${checksum_source}\","
+    echo "  \"alloy_checksum_actual\": \"${actual_jar_sha256}\","
+    echo "  \"alloy_checksum_verified\": ${checksum_verified},"
     echo "  \"solver\": \"${SOLVER_NAME}\","
     if [[ -n "${COMMAND_SELECTOR}" ]]; then
       echo "  \"command_selector\": \"${COMMAND_SELECTOR}\","
@@ -533,6 +637,15 @@ if [[ -z "${JAR_PATH}" ]]; then
   JAR_PATH="${ALLOY_CACHE_DIR}/org.alloytools.alloy.dist-${ALLOY_VERSION}.jar"
 fi
 
+if ! load_expected_jar_sha256; then
+  write_outputs
+  if [[ "${ENFORCE_PASS}" -eq 1 ]]; then
+    exit 1
+  fi
+  exit 0
+fi
+
+downloaded_jar=0
 if [[ ! -f "${JAR_PATH}" ]]; then
   mkdir -p "${ALLOY_CACHE_DIR}"
   if ! curl -fsSL -L --retry 3 --retry-delay 2 -o "${JAR_PATH}" "${ALLOY_JAR_URL}"; then
@@ -543,6 +656,18 @@ if [[ ! -f "${JAR_PATH}" ]]; then
     fi
     exit 0
   fi
+  downloaded_jar=1
+fi
+
+if ! verify_jar_integrity "${JAR_PATH}"; then
+  if [[ "${downloaded_jar}" -eq 1 ]]; then
+    rm -f "${JAR_PATH}" || true
+  fi
+  write_outputs
+  if [[ "${ENFORCE_PASS}" -eq 1 ]]; then
+    exit 1
+  fi
+  exit 0
 fi
 
 if ! java -jar "${JAR_PATH}" help exec >/dev/null 2>&1; then

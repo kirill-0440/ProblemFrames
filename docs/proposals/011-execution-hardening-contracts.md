@@ -6,23 +6,38 @@ Scope: implementation hardening for adequacy evidence and model-first governance
 
 ## Problem Statement
 
-Current quality signals pass, but three checks are weaker than the requirement intent:
+Current quality signals pass, but execution hardening remains incomplete in several areas:
 
 1. adequacy differential formal verdicts can be derived from predicate-shape heuristics instead of solver verdicts;
 2. adequacy expectations can be too coarse (fixture-level wildcard) and miss per-command obligation coverage gaps;
-3. model-first governance is asserted structurally but not enforced over the actual git diff boundary.
+3. model-first governance is asserted structurally but not enforced over the actual git diff boundary;
+4. parser accepts models without explicit `problem:` declaration in some paths;
+5. Alloy CLI jar download lacks explicit integrity verification;
+6. Rust coverage gate threshold can remain below meaningful regression sensitivity;
+7. generated editor binaries can drift into repository tracking without a strict guardrail;
+8. audit remediation findings are not consistently published as requirement-traceable backlog state.
 
 ## Goals
 
 - make adequacy evidence verdicts solver-backed and expectation-driven;
 - enforce command-level adequacy coverage with required expectation rules;
-- enforce model-first governance on changed artifacts, not only on static anchors.
+- enforce model-first governance on changed artifacts, not only on static anchors;
+- require strict parser entrypoint declaration for executable models;
+- enforce fail-closed integrity checks for downloaded Alloy execution artifacts;
+- keep CI coverage gate threshold calibrated to observed baseline coverage;
+- keep generated binaries out of source tracking unless explicitly release-scoped;
+- expose audit remediation backlog as a traceable status artifact.
 
 ## Contract Requirements
 
 - `R011-H1-SolverBackedAdequacyEvidence`
 - `R011-H3-CommandLevelAdequacyCoverage`
 - `R011-H2-DiffBasedModelFirstGate`
+- `R011-H4-ProblemDeclarationStrictness`
+- `R011-H5-CoverageGateCalibration`
+- `R011-H6-AlloyBinaryIntegrityVerification`
+- `R011-H7-GeneratedArtifactTrackingDiscipline`
+- `R011-H8-AuditRemediationBacklogTrace`
 
 ## Delivery
 
@@ -34,6 +49,8 @@ Current quality signals pass, but three checks are weaker than the requirement i
 6. Extend Codex self-model contract with git diff analysis:
    implementation changes under code/tooling paths require canonical model changes under `models/system/*.pf`.
 7. Wire evidence in `implementation_trace.tsv`.
+8. Add checksum-verified Alloy binary policy (`models/system/alloy_checksums.tsv`) and enforce fail-closed verification in `run_alloy_solver_check.sh`.
+9. Add audit-remediation backlog artifact (`models/system/audit_remediation_backlog.tsv`) and validate requirement linkage in canonical quality gates.
 
 ## Exit Criteria
 

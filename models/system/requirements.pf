@@ -544,3 +544,58 @@ requirement "R011-H2-DiffBasedModelFirstGate" {
     constrains: CI
     reference: Codex
 }
+
+requirement "R011-H4-ProblemDeclarationStrictness" {
+    frame: RequiredBehavior
+    constraint: "Parser rejects models without explicit problem declaration and emits source-aware diagnostics instead of allowing anonymous model execution"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+    reference: Developer
+}
+
+requirement "R011-H5-CoverageGateCalibration" {
+    frame: RequiredBehavior
+    constraint: "Rust coverage gate threshold is calibrated to observed baseline coverage and blocks regressions instead of relying on placeholder minimums"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: CI
+    reference: Developer
+}
+
+requirement "R011-H6-AlloyBinaryIntegrityVerification" {
+    frame: SimpleWorkpieces
+    constraint: "Alloy solver execution verifies downloaded binary integrity via checksum or signature and fails closed on verification mismatch"
+    marks: {
+        @formal.argument("A_roadmap_alignment_formal")
+        @mda.layer("PSM")
+    }
+    constrains: SecurityEvidence
+    reference: Developer
+}
+
+requirement "R011-H7-GeneratedArtifactTrackingDiscipline" {
+    frame: SimpleWorkpieces
+    constraint: "Repository tracking excludes platform-specific generated binaries and CI enforces clean editor artifact tracking discipline"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("PSM")
+    }
+    constrains: SourceFile
+    reference: Developer
+}
+
+requirement "R011-H8-AuditRemediationBacklogTrace" {
+    frame: InformationDisplay
+    constraint: "Repository deep-audit findings are recorded as prioritized remediation backlog items with requirement-level traceability and status visibility"
+    marks: {
+        @formal.argument("A_roadmap_alignment")
+        @mda.layer("CIM")
+    }
+    constrains: ProposalBacklog
+    reference: Developer
+}

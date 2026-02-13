@@ -20,6 +20,8 @@ roadmap alignment.
 - `adequacy_selection.env`: selected M7 adequacy obligation class and pass/fail fixture bindings.
 - `adequacy_expectations.tsv`: command-level adequacy expectation manifest with required-rule coverage (generated from selected fixtures via `scripts/generate_adequacy_expectations.sh`).
 - `alloy_expectations.tsv`: SAT/UNSAT expectation contract for Alloy command verdicts.
+- `alloy_checksums.tsv`: versioned checksum policy for Alloy CLI jar integrity verification.
+- `audit_remediation_backlog.tsv`: requirement-linked remediation backlog with priority and status.
 - `roadmap_alignment.md`: mapping from system-model requirement IDs to proposal/backlog items (`001` through `011`).
 
 ## Development Workflow
@@ -62,6 +64,7 @@ bash ./scripts/run_sysml_api_smoke.sh
 bash ./scripts/check_model_implementation_trace.sh models/system/tool_spec.pf
 bash ./scripts/check_model_implementation_trace.sh --policy models/system/implementation_trace_policy.env --enforce-policy models/system/tool_spec.pf
 bash ./scripts/generate_model_progress_report.sh --model models/system/tool_spec.pf --output-dir .ci-artifacts/model-progress --enforce-pass
+bash ./scripts/check_audit_remediation_backlog.sh --model models/system/tool_spec.pf --backlog models/system/audit_remediation_backlog.tsv --enforce-pass
 bash ./scripts/run_pf_quality_gate.sh models/system/tool_spec.pf
 bash ./scripts/check_system_model.sh
 bash ./scripts/check_codex_self_model_contract.sh

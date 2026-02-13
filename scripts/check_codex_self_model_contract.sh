@@ -8,6 +8,8 @@ MODEL_FILE="${REPO_ROOT}/models/system/tool_spec.pf"
 DOMAINS_FILE="${REPO_ROOT}/models/system/domains.pf"
 REQUIREMENTS_FILE="${REPO_ROOT}/models/system/requirements.pf"
 SUBPROBLEMS_FILE="${REPO_ROOT}/models/system/subproblems.pf"
+AUDIT_BACKLOG_FILE="${REPO_ROOT}/models/system/audit_remediation_backlog.tsv"
+ALLOY_CHECKSUMS_FILE="${REPO_ROOT}/models/system/alloy_checksums.tsv"
 
 if [[ ! -f "${MODEL_FILE}" ]]; then
   echo "System model not found: ${MODEL_FILE}" >&2
@@ -47,6 +49,31 @@ grep -q '^requirement "R011-H2-DiffBasedModelFirstGate"' "${REQUIREMENTS_FILE}" 
 
 grep -q '^requirement "R011-H3-CommandLevelAdequacyCoverage"' "${REQUIREMENTS_FILE}" || {
   echo "R011-H3 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
+grep -q '^requirement "R011-H4-ProblemDeclarationStrictness"' "${REQUIREMENTS_FILE}" || {
+  echo "R011-H4 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
+grep -q '^requirement "R011-H5-CoverageGateCalibration"' "${REQUIREMENTS_FILE}" || {
+  echo "R011-H5 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
+grep -q '^requirement "R011-H6-AlloyBinaryIntegrityVerification"' "${REQUIREMENTS_FILE}" || {
+  echo "R011-H6 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
+grep -q '^requirement "R011-H7-GeneratedArtifactTrackingDiscipline"' "${REQUIREMENTS_FILE}" || {
+  echo "R011-H7 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
+  exit 1
+}
+
+grep -q '^requirement "R011-H8-AuditRemediationBacklogTrace"' "${REQUIREMENTS_FILE}" || {
+  echo "R011-H8 requirement declaration is missing in ${REQUIREMENTS_FILE}" >&2
   exit 1
 }
 
@@ -100,6 +127,40 @@ grep -q 'requirements: .*"R011-H3-CommandLevelAdequacyCoverage"' "${SUBPROBLEMS_
   exit 1
 }
 
+grep -q 'requirements: .*"R011-H4-ProblemDeclarationStrictness"' "${SUBPROBLEMS_FILE}" || {
+  echo "R011-H4 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+grep -q 'requirements: .*"R011-H5-CoverageGateCalibration"' "${SUBPROBLEMS_FILE}" || {
+  echo "R011-H5 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+grep -q 'requirements: .*"R011-H6-AlloyBinaryIntegrityVerification"' "${SUBPROBLEMS_FILE}" || {
+  echo "R011-H6 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+grep -q 'requirements: .*"R011-H7-GeneratedArtifactTrackingDiscipline"' "${SUBPROBLEMS_FILE}" || {
+  echo "R011-H7 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+grep -q 'requirements: .*"R011-H8-AuditRemediationBacklogTrace"' "${SUBPROBLEMS_FILE}" || {
+  echo "R011-H8 is not mapped in subproblem decomposition in ${SUBPROBLEMS_FILE}" >&2
+  exit 1
+}
+
+if [[ ! -f "${AUDIT_BACKLOG_FILE}" ]]; then
+  echo "Audit remediation backlog is missing: ${AUDIT_BACKLOG_FILE}" >&2
+  exit 1
+fi
+if [[ ! -f "${ALLOY_CHECKSUMS_FILE}" ]]; then
+  echo "Alloy checksum manifest is missing: ${ALLOY_CHECKSUMS_FILE}" >&2
+  exit 1
+fi
+
 ADEQUACY_EXPECTATIONS_FILE="${REPO_ROOT}/models/system/adequacy_expectations.tsv"
 if [[ ! -f "${ADEQUACY_EXPECTATIONS_FILE}" ]]; then
   echo "Adequacy expectations manifest is missing: ${ADEQUACY_EXPECTATIONS_FILE}" >&2
@@ -112,6 +173,13 @@ bash "${REPO_ROOT}/scripts/generate_adequacy_expectations.sh" \
 
 # 2) Diff-based model-first contract: implementation changes must include canonical model updates.
 if git -C "${REPO_ROOT}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  for tracked_binary in editors/code/pf_lsp editors/code/pf_lsp.exe; do
+    if git -C "${REPO_ROOT}" ls-files --error-unmatch "${tracked_binary}" >/dev/null 2>&1; then
+      echo "Generated editor binary is tracked in git: ${tracked_binary}" >&2
+      exit 1
+    fi
+  done
+
   base_ref="${PF_MODEL_FIRST_BASE_REF:-}"
   if [[ -z "${base_ref}" ]]; then
     for candidate in origin/main main origin/master master; do
