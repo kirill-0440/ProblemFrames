@@ -9,4 +9,8 @@ PF_DRY_RUN=1 "${REPO_ROOT}/scripts/build_vsix.sh"
 PF_DRY_RUN=1 "${REPO_ROOT}/scripts/install_extension.sh"
 bash "${REPO_ROOT}/scripts/verify_release_workflow_guardrails.sh"
 
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "${tmp_dir}"' EXIT
+bash "${REPO_ROOT}/scripts/generate_dogfooding_triage_report.sh" "${tmp_dir}"
+
 echo "Script smoke tests passed."
