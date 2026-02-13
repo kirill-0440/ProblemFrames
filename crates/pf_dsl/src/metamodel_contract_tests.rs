@@ -48,7 +48,7 @@ mod tests {
     }
 
     fn load_catalog() -> InvariantCatalog {
-        let raw = read_file("docs/metamodel/invariant-catalog.json");
+        let raw = read_file("metamodel/invariant-catalog.json");
         serde_json::from_str(&raw).expect("invariant-catalog.json must be valid JSON")
     }
 
@@ -126,7 +126,7 @@ mod tests {
     }
 
     fn load_matrix() -> Vec<MatrixRow> {
-        let raw = read_file("docs/metamodel/rule-test-matrix.tsv");
+        let raw = read_file("metamodel/rule-test-matrix.tsv");
         let mut rows = Vec::new();
 
         for (line_no, line) in raw.lines().enumerate() {
