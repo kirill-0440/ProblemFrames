@@ -21,7 +21,7 @@ Options:
                               Fail if implementation-trace policy status is not PASS.
   --min-lean-formalized-args <n>
                               Minimum number of formalized Lean correctness arguments (default: 0).
-  --enforce-formal-track      Fail on formal-track statuses (Lean coverage and formal closure).
+  --enforce-formal-track      Fail on formal-track statuses (adequacy, Lean coverage, formal closure, and Alloy solver).
   --impact <selectors>        Impact seeds for traceability export (e.g. requirement:R1,domain:D1).
   --impact-hops <n>           Max hops for impact traversal in traceability export.
   -h, --help                  Show this help.
@@ -207,6 +207,14 @@ for model in "${models[@]}"; do
   if [[ -n "${impact_hops}" ]]; then
     traceability_args+=("--impact-hops=${impact_hops}")
   fi
+  adequacy_args=(
+    --output "${adequacy_differential_file}"
+    --json "${adequacy_json_file}"
+    --status-file "${adequacy_status_file}"
+  )
+  if [[ "${enforce_formal_track}" -eq 1 ]]; then
+    adequacy_args+=(--enforce-pass)
+  fi
 
   cargo run -p pf_dsl -- "${model}" --report > "${report_file}"
   cargo run -p pf_dsl -- "${model}" --decomposition-closure > "${decomposition_file}"
@@ -219,10 +227,7 @@ for model in "${models[@]}"; do
   cargo run -p pf_dsl -- "${model}" --alloy > "${alloy_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-md "${traceability_args[@]}" > "${traceability_md_file}"
   cargo run -p pf_dsl -- "${model}" --traceability-csv "${traceability_args[@]}" > "${traceability_csv_file}"
-  bash "${REPO_ROOT}/scripts/run_adequacy_evidence.sh" \
-    --output "${adequacy_differential_file}" \
-    --json "${adequacy_json_file}" \
-    --status-file "${adequacy_status_file}"
+  bash "${REPO_ROOT}/scripts/run_adequacy_evidence.sh" "${adequacy_args[@]}"
   cargo run -p pf_dsl -- "${model}" --lean-model > "${lean_model_file}"
   bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
     --model "${model}" \
@@ -408,6 +413,10 @@ for model in "${models[@]}"; do
     failure_count=$((failure_count + 1))
   fi
   if [[ "${enforce_formal_track}" -eq 1 ]]; then
+    if [[ "${adequacy_status}" != "PASS" ]]; then
+      echo "Formal-track policy blocking: adequacy evidence status is ${adequacy_status} for ${model}." >&2
+      failure_count=$((failure_count + 1))
+    fi
     if [[ "${lean_coverage_status}" != "PASS" ]]; then
       echo "Formal-track policy blocking: Lean coverage is ${lean_coverage_status} for ${model}." >&2
       failure_count=$((failure_count + 1))

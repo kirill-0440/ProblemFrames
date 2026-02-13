@@ -24,12 +24,14 @@ Current quality signals pass, but two checks are weaker than the requirement int
 ## Delivery
 
 1. Update `run_adequacy_evidence.sh` to use Alloy solver checks with per-fixture SAT/UNSAT expectations.
-2. Extend Codex self-model contract with git diff analysis:
+2. Enforce fail-closed adequacy in canonical gates (`check_system_model.sh`) and in formal-track blocking mode (`run_pf_quality_gate.sh --enforce-formal-track`).
+3. Extend Codex self-model contract with git diff analysis:
    implementation changes under code/tooling paths require canonical model changes under `models/system/*.pf`.
-3. Wire evidence in `implementation_trace.tsv`.
+4. Wire evidence in `implementation_trace.tsv`.
 
 ## Exit Criteria
 
 - canonical system model quality gate remains PASS;
 - implementation trace policy remains PASS;
+- adequacy status is enforced as PASS in canonical checks (no accepted `OPEN`);
 - both `R011-*` requirements show executable evidence checks in trace report.

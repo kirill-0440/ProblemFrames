@@ -10,7 +10,7 @@
 The first executable adequacy-oriented class is the concern coverage contract:
 
 1. The model must provide requirement-to-subproblem mapping and at least one correctness argument (`rust_verdict` via `--concern-coverage`).
-2. The formal backend artifact must expose at least one obligation predicate (`formal_verdict` proxy via `--alloy` output containing `pred Obl_`).
+2. The formal backend verdict must come from Alloy SAT/UNSAT checks against explicit fixture expectations (`expected_pass` -> SAT, `expected_fail` -> UNSAT).
 
 This preserves alignment with existing PF quality artifacts while keeping the execution path deterministic and CI-friendly.
 
@@ -27,4 +27,4 @@ This preserves alignment with existing PF quality artifacts while keeping the ex
 - `adequacy-evidence.json`
 - `adequacy.status` (`PASS`/`OPEN`)
 
-The rollout is non-blocking by default; `--enforce-pass` turns it into a blocking gate.
+The generic rollout is non-blocking by default; `--enforce-pass` turns it into a blocking gate. Canonical system-model checks run in blocking mode and require `adequacy.status=PASS`.

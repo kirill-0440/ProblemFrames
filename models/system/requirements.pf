@@ -515,7 +515,7 @@ requirement "R010-M7-FormalTrackPolicySwitch" {
 // Proposal 011: execution-hardening contracts.
 requirement "R011-H1-SolverBackedAdequacyEvidence" {
     frame: Transformation
-    constraint: "Adequacy differential verdicts are derived from Alloy solver SAT/UNSAT expectation checks for the selected obligation class rather than predicate-presence heuristics"
+    constraint: "Adequacy differential verdicts are derived from Alloy solver SAT/UNSAT expectation checks for the selected obligation class, and canonical gates fail closed on non-PASS adequacy status"
     marks: {
         @formal.argument("A_roadmap_alignment_formal")
         @mda.layer("PSM")

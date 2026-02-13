@@ -75,7 +75,8 @@ cargo run -p pf_dsl -- "${MODEL_FILE}" --traceability-csv > "${TRACEABILITY_CSV_
 bash "${REPO_ROOT}/scripts/run_adequacy_evidence.sh" \
   --output "${ADEQUACY_DIFFERENTIAL_FILE}" \
   --json "${ADEQUACY_JSON_FILE}" \
-  --status-file "${ADEQUACY_STATUS_FILE}"
+  --status-file "${ADEQUACY_STATUS_FILE}" \
+  --enforce-pass
 cargo run -p pf_dsl -- "${MODEL_FILE}" --lean-model > "${LEAN_MODEL_FILE}"
 bash "${REPO_ROOT}/scripts/run_lean_formal_check.sh" \
   --model "${MODEL_FILE}" \
@@ -243,6 +244,11 @@ fi
 
 if [[ "${trace_map_coverage_status}" != "PASS" ]]; then
   echo "System model trace-map coverage failed (${trace_map_coverage_status})" >&2
+  exit 1
+fi
+
+if [[ "${adequacy_status}" != "PASS" ]]; then
+  echo "System model adequacy evidence failed (${adequacy_status})" >&2
   exit 1
 fi
 

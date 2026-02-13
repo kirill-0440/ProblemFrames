@@ -218,6 +218,8 @@ R010-M7-FormalTrackPolicySwitch|command_passes|PF_FORMAL_TRACK_BLOCKING=1 bash .
 R011-H1-SolverBackedAdequacyEvidence|file_contains|models/system/requirements.pf|R011-H1-SolverBackedAdequacyEvidence|solver-backed adequacy requirement is modeled
 R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_adequacy_evidence.sh|run_alloy_solver_check.sh|adequacy evidence formal verdict is backed by Alloy solver checks
 R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_adequacy_evidence.sh|expected_solver="UNSAT"|adequacy evidence defines explicit UNSAT expectation for failing fixture class
+R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/check_system_model.sh|--enforce-pass|canonical system-model gate fails closed on non-PASS adequacy status
+R011-H1-SolverBackedAdequacyEvidence|file_contains|scripts/run_pf_quality_gate.sh|adequacy_args+=(--enforce-pass)|formal-track blocking mode enforces PASS adequacy status
 R011-H1-SolverBackedAdequacyEvidence|file_contains|models/system/subproblems.pf|R011-H1-SolverBackedAdequacyEvidence|solver-backed adequacy requirement is mapped in canonical PF decomposition
 R011-H1-SolverBackedAdequacyEvidence|command_passes|bash ./scripts/run_adequacy_evidence.sh||solver-backed adequacy evidence generation executes end-to-end
 

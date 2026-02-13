@@ -53,7 +53,7 @@ This map links canonical system-model requirements to roadmap/proposal items in
 | `R010-M7-RequirementFormalClosureTrace` | `010-execution-backlog-m6-m7.md`, `004-lean-integration-proposal.md` | M7 per-requirement formal closure report mapped to declared correctness arguments from requirement marks with gate enforcement (`R010-M7-05`) |
 | `R010-M7-FormalGapReport` | `010-execution-backlog-m6-m7.md` | M7 formal gap report (`requirement -> frame -> subproblem`) in quality gate artifacts (`R010-M7-07`) |
 | `R010-M7-FormalTrackPolicySwitch` | `010-execution-backlog-m6-m7.md` | M7 formal-track policy switch (`non-blocking` default, explicit blocking mode) (`R010-M7-08`) |
-| `R011-H1-SolverBackedAdequacyEvidence` | `011-execution-hardening-contracts.md` | replace predicate-presence formal verdicts with solver-backed SAT/UNSAT expectation checks in adequacy evidence flow |
+| `R011-H1-SolverBackedAdequacyEvidence` | `011-execution-hardening-contracts.md` | replace predicate-presence formal verdicts with solver-backed SAT/UNSAT expectation checks and enforce fail-closed adequacy in canonical gates |
 | `R011-H2-DiffBasedModelFirstGate` | `011-execution-hardening-contracts.md`, `009-pf-canonical-retro-addendum.md` | enforce model-first governance via git-diff check: implementation changes require canonical `models/system/*.pf` update in same change set |
 
 ## Usage
