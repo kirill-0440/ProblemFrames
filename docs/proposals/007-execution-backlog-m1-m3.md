@@ -83,9 +83,9 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - Owner: `LSP Maintainer`
 - Priority: `P2`
 - Definition of Done:
-- [ ] Add one command or code action to query impacted requirements for selected symbol.
-- [ ] Add integration test for cross-file model with imports.
-- [ ] Ensure diagnostics/navigation performance is not regressed in current tests.
+- [x] Add one command or code action to query impacted requirements for selected symbol.
+- [x] Add integration test for cross-file model with imports.
+- [x] Ensure diagnostics/navigation performance is not regressed in current tests.
 
 #### R007-M2-04 - Explicit PF Views (Context / Problem / Decomposition)
 
@@ -115,9 +115,9 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - Owner: `Formal Track Owner`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Select one obligation class and document selection rationale.
-- [ ] Implement executable check path (Alloy-first unless decision memo changes).
-- [ ] Provide one expected-pass and one expected-fail model fixture.
+- [x] Select one obligation class and document selection rationale.
+- [x] Implement executable check path (Alloy-first unless decision memo changes).
+- [x] Provide one expected-pass and one expected-fail model fixture.
 
 #### R007-M3-02 - Differential Rust vs Formal Verdict Report
 
@@ -125,9 +125,9 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - Owner: `Formal Track Owner`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Generate report comparing Rust validator verdict and formal backend verdict.
-- [ ] Include mismatch categorization and model/obligation identifiers.
-- [ ] Publish report as CI artifact in non-blocking stage.
+- [x] Generate report comparing Rust validator verdict and formal backend verdict.
+- [x] Include mismatch categorization and model/obligation identifiers.
+- [x] Publish report as CI artifact in non-blocking stage.
 
 #### R007-M3-03 - CI Integration and Operational Guardrails
 
@@ -135,9 +135,9 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - Owner: `Tooling Maintainer`
 - Priority: `P2`
 - Definition of Done:
-- [ ] Add workflow job with explicit non-blocking behavior and artifact upload.
-- [ ] Document rerun procedure in `docs/formal-backend/README.md`.
-- [ ] Record go/no-go checkpoint criteria after two weeks of CI runs.
+- [x] Add workflow job with explicit non-blocking behavior and artifact upload.
+- [x] Document rerun procedure in `docs/formal-backend/README.md`.
+- [x] Record go/no-go checkpoint criteria after two weeks of CI runs.
 
 #### R007-M3-04 - Frame Concern Coverage Gate
 
@@ -145,9 +145,9 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - Owner: `Formal Track Owner`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add concern coverage report (`requirement -> correctness argument`) with explicit uncovered/deferred entries.
-- [ ] Add non-blocking CI artifact for concern coverage on dogfooding models.
-- [ ] Add fixture tests for covered and uncovered requirements.
+- [x] Add concern coverage report (`requirement -> correctness argument`) with explicit uncovered/deferred entries.
+- [x] Add non-blocking CI artifact for concern coverage on dogfooding models.
+- [x] Add fixture tests for covered and uncovered requirements.
 
 ## Sequencing and Dependencies
 

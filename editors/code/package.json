@@ -16,6 +16,10 @@
     "Programming Languages"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:pf",
+    "onCommand:problemFrames.showImpactedRequirements"
+  ],
   "contributes": {
     "languages": [
       {
@@ -35,6 +39,12 @@
         "language": "pf",
         "scopeName": "source.pf",
         "path": "./syntaxes/pf.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "problemFrames.showImpactedRequirements",
+        "title": "Problem Frames: Show Impacted Requirements"
       }
     ],
     "configuration": {

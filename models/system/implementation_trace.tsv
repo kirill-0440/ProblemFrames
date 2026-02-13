@@ -17,6 +17,10 @@ R007-M1-MetamodelContract|file_contains|crates/pf_dsl/src/metamodel_contract_tes
 R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/main.rs|--traceability-md|traceability markdown mode is exposed in CLI
 R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/main.rs|--traceability-csv|traceability CSV mode is exposed in CLI
 R007-M2-TraceabilityImpactExports|file_contains|crates/pf_dsl/src/traceability.rs|generate_traceability_markdown|traceability report generation exists
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_lsp/src/main.rs|problemFrames/impactRequirements|LSP impact request path exists
+R007-M2-TraceabilityImpactExports|file_contains|editors/code/src/extension.ts|showImpactedRequirements|VS Code command for impact query is wired
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_lsp/tests/lsp_integration.rs|impact_request_resolves_cross_file_import_model|cross-file import impact integration test exists
+R007-M2-TraceabilityImpactExports|file_contains|crates/pf_lsp/tests/lsp_integration.rs|impact_request_large_model_stays_under_timeout|impact request performance guard exists
 
 R007-M3-ExecutableObligationCheck|file_contains|scripts/run_formal_backend_check.sh|--alloy|formal backend check script exists
 R007-M3-ExecutableObligationCheck|file_contains|crates/pf_dsl/src/formal_alloy.rs|generate_alloy|alloy backend generator exists

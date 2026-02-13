@@ -2,11 +2,14 @@ use anyhow::Result;
 use lsp_server::{Connection, Message, Notification};
 use lsp_types::{
     Diagnostic, DiagnosticSeverity, InitializeParams, Position, PublishDiagnosticsParams, Range,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind, Uri,
+    ServerCapabilities, TextDocumentIdentifier, TextDocumentSyncCapability, TextDocumentSyncKind,
+    Uri,
 };
 use pf_dsl::resolver::resolve;
+use pf_dsl::traceability::{build_traceability_graph, TraceEntity};
 use pf_dsl::validator::{validate_with_sources, validation_error_span};
 use pf_lsp::completion::get_completions;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -14,6 +17,24 @@ use std::path::{Path, PathBuf};
 
 const JSONRPC_METHOD_NOT_FOUND: i32 = -32601;
 const JSONRPC_INVALID_PARAMS: i32 = -32602;
+const DEFAULT_IMPACT_HOPS: usize = 2;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ImpactRequirementsParams {
+    text_document: TextDocumentIdentifier,
+    position: Position,
+    max_hops: Option<usize>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ImpactRequirementsResponse {
+    seed_kind: String,
+    seed_id: String,
+    impacted_requirements: Vec<String>,
+    max_hops: usize,
+}
 
 #[derive(Default)]
 struct ServerState {
@@ -141,6 +162,38 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
                         let resp = lsp_server::Response::new_ok(req.id, response_payload);
                         connection.sender.send(Message::Response(resp))?;
                     }
+                    "problemFrames/impactRequirements" => {
+                        let params: ImpactRequirementsParams =
+                            match serde_json::from_value(req.params) {
+                                Ok(params) => params,
+                                Err(err) => {
+                                    send_response_error(
+                                        &connection,
+                                        req.id,
+                                        JSONRPC_INVALID_PARAMS,
+                                        format!("Invalid impact params: {err}"),
+                                    )?;
+                                    continue;
+                                }
+                            };
+
+                        let response_payload = match resolve_impact_requirements(&state, params) {
+                            Ok(Some(payload)) => serde_json::to_value(payload)?,
+                            Ok(None) => Value::Null,
+                            Err(err) => {
+                                send_response_error(
+                                    &connection,
+                                    req.id,
+                                    JSONRPC_INVALID_PARAMS,
+                                    format!("Impact resolution failed: {err}"),
+                                )?;
+                                continue;
+                            }
+                        };
+
+                        let resp = lsp_server::Response::new_ok(req.id, response_payload);
+                        connection.sender.send(Message::Response(resp))?;
+                    }
                     _ => {
                         send_response_error(
                             &connection,
@@ -236,6 +289,141 @@ fn main_loop(connection: Connection, params: Value) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn in_span(offset: usize, span: pf_dsl::ast::Span) -> bool {
+    offset >= span.start && offset < span.end
+}
+
+fn resolve_impact_seed(
+    problem: &pf_dsl::ast::Problem,
+    source_file: &Path,
+    offset: usize,
+) -> Option<TraceEntity> {
+    let source_matches = |entity_source: Option<&PathBuf>| -> bool {
+        entity_source
+            .map(|path| path.as_path() == source_file)
+            .unwrap_or(true)
+    };
+
+    // Prefer explicit references first.
+    for req in problem
+        .requirements
+        .iter()
+        .filter(|req| source_matches(req.source_path.as_ref()))
+    {
+        if let Some(constrains) = &req.constrains {
+            if in_span(offset, constrains.span) {
+                return Some(TraceEntity::Domain(constrains.name.clone()));
+            }
+        }
+        if let Some(reference) = &req.reference {
+            if in_span(offset, reference.span) {
+                return Some(TraceEntity::Domain(reference.name.clone()));
+            }
+        }
+    }
+
+    for subproblem in problem
+        .subproblems
+        .iter()
+        .filter(|subproblem| source_matches(subproblem.source_path.as_ref()))
+    {
+        if let Some(machine) = &subproblem.machine {
+            if in_span(offset, machine.span) {
+                return Some(TraceEntity::Domain(machine.name.clone()));
+            }
+        }
+        for participant in &subproblem.participants {
+            if in_span(offset, participant.span) {
+                return Some(TraceEntity::Domain(participant.name.clone()));
+            }
+        }
+        for requirement in &subproblem.requirements {
+            if in_span(offset, requirement.span) {
+                return Some(TraceEntity::Requirement(requirement.name.clone()));
+            }
+        }
+    }
+
+    for interface in problem
+        .interfaces
+        .iter()
+        .filter(|interface| source_matches(interface.source_path.as_ref()))
+    {
+        for domain_ref in &interface.connects {
+            if in_span(offset, domain_ref.span) {
+                return Some(TraceEntity::Domain(domain_ref.name.clone()));
+            }
+        }
+        for phenomenon in &interface.shared_phenomena {
+            if in_span(offset, phenomenon.from.span) {
+                return Some(TraceEntity::Domain(phenomenon.from.name.clone()));
+            }
+            if in_span(offset, phenomenon.to.span) {
+                return Some(TraceEntity::Domain(phenomenon.to.name.clone()));
+            }
+            if in_span(offset, phenomenon.controlled_by.span) {
+                return Some(TraceEntity::Domain(phenomenon.controlled_by.name.clone()));
+            }
+        }
+    }
+
+    // Fallback: declaration spans.
+    for domain in problem
+        .domains
+        .iter()
+        .filter(|domain| source_matches(domain.source_path.as_ref()))
+    {
+        if in_span(offset, domain.span) {
+            return Some(TraceEntity::Domain(domain.name.clone()));
+        }
+    }
+    for requirement in problem
+        .requirements
+        .iter()
+        .filter(|requirement| source_matches(requirement.source_path.as_ref()))
+    {
+        if in_span(offset, requirement.span) {
+            return Some(TraceEntity::Requirement(requirement.name.clone()));
+        }
+    }
+
+    None
+}
+
+fn resolve_impact_requirements(
+    state: &ServerState,
+    params: ImpactRequirementsParams,
+) -> Result<Option<ImpactRequirementsResponse>> {
+    let uri = params.text_document.uri;
+    let path = uri_to_path(&uri).ok_or_else(|| anyhow::anyhow!("Invalid URI scheme"))?;
+    let text = if let Some(buffer_text) = state.document_text(&uri) {
+        Cow::Borrowed(buffer_text)
+    } else {
+        Cow::Owned(std::fs::read_to_string(&path)?)
+    };
+
+    let offset = offset_at_position(text.as_ref(), params.position);
+    let problem = resolve(&path, Some(text.as_ref()))?;
+    let seed = match resolve_impact_seed(&problem, &path, offset) {
+        Some(seed) => seed,
+        None => return Ok(None),
+    };
+
+    let max_hops = params.max_hops.unwrap_or(DEFAULT_IMPACT_HOPS);
+    let graph = build_traceability_graph(&problem);
+    let impacted_requirements = graph
+        .impacted_requirements_within_hops(&seed, max_hops)
+        .into_iter()
+        .collect::<Vec<_>>();
+
+    Ok(Some(ImpactRequirementsResponse {
+        seed_kind: seed.kind().to_string(),
+        seed_id: seed.id(),
+        impacted_requirements,
+        max_hops,
+    }))
 }
 
 fn resolve_definition(
