@@ -172,12 +172,13 @@ Exit criteria:
 - `006-pf-dsl-machine-checkable-semantics-plan.md` remains the semantic execution backbone.
 - `007-execution-backlog-m1-m3.md` is the execution-ready backlog for near-term milestone delivery.
 - `009-pf-canonical-retro-addendum.md` captures retrospective PF-method alignment constraints for execution quality gates.
-- `008-pf-ddd-sysmlv2-integration.md` defines the follow-on integration track for DDD/SysML v2 after M1-M3 foundation.
-- `010-pf-wrspm-contract-bridge.md` defines the WRSPM contract bridge (`W/R/S/P/M`) to make concern adequacy evidence explicit before broad PIM/PSM expansion.
+- `010-pf-wrspm-contract-bridge.md` defines the WRSPM contract bridge (`W/R/S/P/M`) to make concern adequacy evidence explicit after `007` M3 baselines and before broad PIM/PSM expansion.
+- `008-pf-ddd-sysmlv2-integration.md` defines the follow-on integration track for DDD/SysML v2 after `007` foundation and `010` M6 contract outputs.
 - this proposal defines the paper-aligned prioritization order on top of `005/006`:
   - near-term: M1, M2, M3
-  - medium-term: M4, M5
-  - exploratory: M6 + optional process-model track
+  - contract-hardening: `010` M6/M7
+  - medium-term: M4, M5 and `008` execution
+  - exploratory: rationale-layer M6 from this proposal + optional process-model track
 
 ## Out of Scope
 

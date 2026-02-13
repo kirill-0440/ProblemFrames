@@ -154,7 +154,11 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
 - M1 items must close before M2 and M3 are considered release-candidate complete.
 - M2 and M3 can execute in parallel after `R007-M1-01` and `R007-M1-02` are merged.
 - `R007-M2-04`, `R007-M2-05`, and `R007-M3-04` are required by canonical PF alignment addendum `009`.
-- M3 remains non-blocking until mismatch rate and runtime are acceptable at triage.
+- M3 remains non-blocking until all promotion thresholds hold for two consecutive weeks:
+  - formal mismatch rate <= 5% across at least 20 CI runs
+  - p95 formal stage runtime <= 180 seconds
+  - artifact publication success rate >= 99%
+  - no unresolved `P0` mismatch older than 7 days
 
 ## Tracking Recommendation
 
@@ -162,3 +166,4 @@ Execution backlog for near-term milestones from `docs/proposals/007-paper-aligne
   - `roadmap:007`
   - `milestone:m1`, `milestone:m2`, `milestone:m3`
   - `owner:dsl`, `owner:tooling`, `owner:lsp`, `owner:formal`
+- Require one explicit DRI (GitHub handle) for each backlog item before status changes to `in_progress`.

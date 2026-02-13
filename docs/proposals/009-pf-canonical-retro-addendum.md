@@ -42,7 +42,11 @@ It updates execution priorities in proposals `007` and `008` to reduce drift fro
    - decomposition closure report
    - frame concern coverage gate and report
 2. Keep `008` dependency on `007` foundation, but require this addendum alignment to be reflected in acceptance checks.
-3. Keep formal backend path non-blocking until mismatch/quality thresholds are stable.
+3. Keep formal backend path non-blocking until explicit promotion thresholds are met:
+   - mismatch rate <= 5% across at least 20 CI runs
+   - p95 runtime <= 180 seconds
+   - artifact publication success rate >= 99%
+   - no unresolved `P0` mismatch older than 7 days
 
 ## Added Acceptance Constraints
 

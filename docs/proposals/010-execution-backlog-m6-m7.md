@@ -54,13 +54,13 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 
 #### R010-M6-04 - Concern Coverage Report and Gate Wiring
 
-- Proposed issue title: `R010 M6: Add requirement-to-correctness concern coverage report`
+- Proposed issue title: `R010 M6: Extend concern coverage baseline with WRSPM contract mapping`
 - Owner: `Tooling Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add report section mapping `requirement -> correctnessArgument -> W/S/R sets` with uncovered entries.
-- [ ] Expose standalone CLI output mode for concern coverage.
-- [ ] Integrate concern coverage in `scripts/run_pf_quality_gate.sh` with controlled exception path.
+- [ ] Reuse `R007-M3-04` concern coverage output as baseline input (no duplicate engine).
+- [ ] Extend output with WRSPM contract links (`W/R/S` plus unresolved `P/M` placeholders).
+- [ ] Integrate extended concern coverage in `scripts/run_pf_quality_gate.sh` with controlled exception path.
 
 ### M7 - Executable Adequacy Evidence
 
@@ -116,3 +116,4 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
   - `roadmap:010`
   - `milestone:m6`, `milestone:m7`
   - `owner:dsl`, `owner:tooling`, `owner:formal`, `owner:platform`
+- Require one explicit DRI (GitHub handle) for each backlog item before status changes to `in_progress`.

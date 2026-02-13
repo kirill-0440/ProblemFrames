@@ -6,9 +6,14 @@ Draft
 
 ## Planning Window
 
-- Start: February 13, 2026
+- Planning start: February 13, 2026
 - Target design freeze: June 30, 2026
 - Target first delivery checkpoint: October 31, 2026
+
+## Execution Preconditions
+
+- `R007-M3-04` (frame concern coverage baseline) is closed.
+- `010` M6 contract outputs are available for reuse in transformation trace quality checks.
 
 ## Problem Statement
 
@@ -191,7 +196,8 @@ Exit criteria:
 - Proposal `007` (traceability and design bridge foundation)
 - Proposal `009` (PF canonical alignment addendum for concern/decomposition gates)
 - Proposal `006` (validator semantics baseline)
-- Proposal `010` (WRSPM contract bridge for explicit `W/R/S/P/M` evidence and adequacy checks)
+- Backlog prerequisite: `R007-M3-04` from `007-execution-backlog-m1-m3.md`
+- Proposal `010` outputs are consumed as quality inputs, but `008` is not a dependency of `010`.
 
 ## Decision Needed
 

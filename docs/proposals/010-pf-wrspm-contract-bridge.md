@@ -6,9 +6,14 @@ Draft
 
 ## Planning Window
 
-- Start: February 13, 2026
+- Planning start: February 13, 2026
 - Target design freeze: July 31, 2026
 - Target first delivery checkpoint: November 30, 2026
+
+## Execution Preconditions
+
+- `R007-M3-01` and `R007-M3-04` are closed as baseline capabilities.
+- This track is independent from `008` delivery; it should complete M6 before `008` quality hardening consumes WRSPM outputs.
 
 ## Problem Statement
 
@@ -124,6 +129,13 @@ Exit criteria:
 - mismatch report is deterministic and triage-ready;
 - go/no-go memo defines criteria for moving from non-blocking to blocking.
 
+Blocking-promotion criteria:
+
+- mismatch rate <= 5% across at least 20 CI runs
+- p95 formal stage runtime <= 180 seconds
+- artifact publication success rate >= 99%
+- no unresolved `P0` mismatch older than 7 days
+
 ## Risks
 
 - over-modeling `P/M` too early and slowing adoption;
@@ -147,7 +159,7 @@ Exit criteria:
 
 - Proposal `007` and backlog `007-execution-backlog-m1-m3.md` (`R007-M3-01`, `R007-M3-04`).
 - Proposal `009` for canonical PF quality constraints.
-- Proposal `008` for downstream PIM generation and transformation trace contracts.
+- `008` may consume WRSPM outputs, but is not a prerequisite dependency for `010`.
 
 ## Decision Needed
 
