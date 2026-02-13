@@ -48,9 +48,9 @@ Execution backlog for milestones from `docs/proposals/010-pf-wrspm-contract-brid
 - Owner: `DSL Maintainer`
 - Priority: `P1`
 - Definition of Done:
-- [ ] Add validator rules ensuring `S` references only shared interface vocabulary representation.
-- [ ] Add valid/invalid fixtures including one intentional violation case.
-- [ ] Register rule IDs and test mapping in metamodel contract files.
+- [x] Add validator rules ensuring `S` references only shared interface vocabulary representation.
+- [x] Add valid/invalid fixtures including one intentional violation case.
+- [x] Register rule IDs and test mapping in metamodel contract files.
 
 #### R010-M6-04 - Concern Coverage Report and Gate Wiring
 

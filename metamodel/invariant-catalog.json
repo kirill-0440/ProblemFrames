@@ -385,6 +385,22 @@
       "invalid_tests": [
         "test_duplicate_correctness_argument_uses_duplicate_source_path"
       ]
+    },
+    {
+      "rule_id": "PF-VAL-025",
+      "error_variant": "InvalidSpecificationVocabulary",
+      "severity": "error",
+      "title": "Specification assertions reference only shared interface vocabulary",
+      "rationale": "WRSPM S vocabulary must stay anchored to shared interface phenomena using [[Interface.Phenomenon]] references.",
+      "validator_paths": [
+        "crates/pf_dsl/src/validator.rs::validate (specification assertion interface vocabulary checks)"
+      ],
+      "valid_tests": [
+        "test_specification_vocabulary_accepts_shared_interface_refs"
+      ],
+      "invalid_tests": [
+        "test_specification_vocabulary_rejects_non_interface_ref_uses_assertion_set_source_path"
+      ]
     }
   ]
 }

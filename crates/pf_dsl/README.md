@@ -53,7 +53,7 @@ worldProperties W_base {
 }
 
 specification S_controller {
-    assert "operator command eventually triggers control output" @LTL
+    assert "operator command [[Operator-Controller.OpenCommand]] eventually triggers control output" @LTL
 }
 
 requirementAssertions R_safe {
@@ -64,6 +64,10 @@ correctnessArgument A1 {
     prove S_controller and W_base entail R_safe
 }
 ```
+
+For WRSPM-oriented specification discipline, interface vocabulary references in
+`specification` assertions can be marked as `[[Interface.Phenomenon]]`. The
+validator rejects unknown references.
 
 ## Related Guides
 

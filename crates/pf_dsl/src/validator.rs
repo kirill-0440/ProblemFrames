@@ -53,6 +53,10 @@ pub enum ValidationError {
     InvalidCorrectnessArgument(String, String, Span),
     #[error("Duplicate correctness argument definition: '{0}'")]
     DuplicateCorrectnessArgument(String, Span, usize),
+    #[error(
+        "Specification assertion set '{0}' references non-shared interface vocabulary '{1}'. Use [[Interface.Phenomenon]] from declared shared phenomena."
+    )]
+    InvalidSpecificationVocabulary(String, String, Span),
 }
 
 #[derive(Debug)]
@@ -82,6 +86,36 @@ fn connected_to_machine(problem: &Problem, domain_name: &str) -> bool {
     problem.domains.iter().any(|domain| {
         domain.role == DomainRole::Machine && is_connected(problem, domain_name, &domain.name)
     })
+}
+
+fn shared_interface_vocabulary(problem: &Problem) -> HashSet<String> {
+    let mut vocabulary = HashSet::new();
+    for interface in &problem.interfaces {
+        for phenomenon in &interface.shared_phenomena {
+            vocabulary.insert(format!("{}.{}", interface.name, phenomenon.name));
+        }
+    }
+    vocabulary
+}
+
+fn extract_interface_vocab_tokens(assertion: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut cursor = 0;
+
+    while let Some(start_offset) = assertion[cursor..].find("[[") {
+        let start = cursor + start_offset + 2;
+        let Some(end_offset) = assertion[start..].find("]]") else {
+            break;
+        };
+        let end = start + end_offset;
+        let token = assertion[start..end].trim();
+        if !token.is_empty() {
+            tokens.push(token.to_string());
+        }
+        cursor = end + 2;
+    }
+
+    tokens
 }
 
 pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
@@ -424,6 +458,25 @@ pub fn validate(problem: &Problem) -> Result<(), Vec<ValidationError>> {
                 assertion_set.name.clone(),
                 assertion_set.span,
             ));
+        }
+    }
+
+    let interface_vocabulary = shared_interface_vocabulary(problem);
+    for assertion_set in &problem.assertion_sets {
+        if assertion_set.scope != AssertionScope::Specification {
+            continue;
+        }
+
+        for assertion in &assertion_set.assertions {
+            for token in extract_interface_vocab_tokens(&assertion.text) {
+                if !interface_vocabulary.contains(&token) {
+                    errors.push(ValidationError::InvalidSpecificationVocabulary(
+                        assertion_set.name.clone(),
+                        token,
+                        assertion.span,
+                    ));
+                }
+            }
         }
     }
 
@@ -841,7 +894,8 @@ pub fn validation_error_span(error: &ValidationError) -> Span {
         | ValidationError::InvalidSubproblem(_, _, span)
         | ValidationError::DuplicateAssertionSet(_, span, _)
         | ValidationError::EmptyAssertionSet(_, span)
-        | ValidationError::InvalidCorrectnessArgument(_, _, span) => *span,
+        | ValidationError::InvalidCorrectnessArgument(_, _, span)
+        | ValidationError::InvalidSpecificationVocabulary(_, _, span) => *span,
         ValidationError::DuplicateCorrectnessArgument(_, span, _) => *span,
     }
 }
@@ -1019,6 +1073,15 @@ fn source_path_for_error(problem: &Problem, error: &ValidationError) -> Option<P
                     .find(|argument| argument.name == *name)
             })
             .and_then(|argument| argument.source_path.clone()),
+        ValidationError::InvalidSpecificationVocabulary(name, _, span) => problem
+            .assertion_sets
+            .iter()
+            .find(|set| {
+                set.name == *name
+                    && (set.span == *span || set.assertions.iter().any(|a| a.span == *span))
+            })
+            .or_else(|| problem.assertion_sets.iter().find(|set| set.name == *name))
+            .and_then(|set| set.source_path.clone()),
         ValidationError::MissingSubproblemField(name, _, span)
         | ValidationError::InvalidSubproblem(name, _, span) => problem
             .subproblems

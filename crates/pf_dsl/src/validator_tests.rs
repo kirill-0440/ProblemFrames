@@ -1367,6 +1367,167 @@ mod tests {
     }
 
     #[test]
+    fn test_specification_vocabulary_accepts_shared_interface_refs() {
+        let problem = Problem {
+            name: "SpecificationVocabularyValid".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("Plant", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-Plant",
+                &["M", "Plant"],
+                vec![
+                    phenomenon("Sense", PhenomenonType::Event, "Plant", "M", "Plant"),
+                    phenomenon("Act", PhenomenonType::Event, "M", "Plant", "M"),
+                ],
+            )],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "controller uses [[M-Plant.Sense]] and emits [[M-Plant.Act]]"
+                            .to_string(),
+                        language: Some("LTL".to_string()),
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "plant follows causal dynamics".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "target behavior achieved".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A1".to_string(),
+                specification_set: "S".to_string(),
+                world_set: "W".to_string(),
+                requirement_set: "R".to_string(),
+                specification_ref: mock_ref("S"),
+                world_ref: mock_ref("W"),
+                requirement_ref: mock_ref("R"),
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_specification_vocabulary_rejects_non_interface_ref_uses_assertion_set_source_path() {
+        let problem = Problem {
+            name: "SpecificationVocabularyInvalid".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("Plant", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-Plant",
+                &["M", "Plant"],
+                vec![phenomenon(
+                    "Sense",
+                    PhenomenonType::Event,
+                    "Plant",
+                    "M",
+                    "Plant",
+                )],
+            )],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "controller claims [[M-Plant.Missing]]".to_string(),
+                        language: Some("LTL".to_string()),
+                        span: Span { start: 50, end: 70 },
+                    }],
+                    span: Span { start: 40, end: 80 },
+                    source_path: Some(PathBuf::from("spec.pf")),
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world fact".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "requirement fact".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A1".to_string(),
+                specification_set: "S".to_string(),
+                world_set: "W".to_string(),
+                requirement_set: "R".to_string(),
+                specification_ref: mock_ref("S"),
+                world_ref: mock_ref("W"),
+                requirement_ref: mock_ref("R"),
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let invalid = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InvalidSpecificationVocabulary(ref set, ref token, _)
+                    if set == "S" && token == "M-Plant.Missing"
+            )
+        });
+        assert!(invalid.is_some());
+        assert_eq!(
+            invalid.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("spec.pf"))
+        );
+    }
+
+    #[test]
     fn test_empty_assertion_set_is_invalid() {
         let problem = Problem {
             name: "Assertions".to_string(),
