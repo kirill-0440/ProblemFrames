@@ -29,14 +29,17 @@ subproblem Execution {
 }
 
 worldProperties W_base {
+  assert "some Machine and some Device and some Operator" @Alloy
   assert "device can be actuated"
 }
 
 specification S_control {
+  assert "some Machine" @Alloy
   assert "[[Operator-Machine.Command]] implies [[Machine-Device.Actuate]]"
 }
 
 requirementAssertions R_goal {
+  assert "some Device" @Alloy
   assert "commanded behavior reaches device"
 }
 

@@ -20,6 +20,11 @@ This preserves alignment with existing PF quality artifacts while keeping the ex
 - Expected fail fixture: `models/dogfooding/adequacy/fail.pf`
 - Command-level expectations: `models/system/adequacy_expectations.tsv`
 
+Counterexample semantics for selected command `Obl_A_exec`:
+
+- pass fixture expects `UNSAT` (`S ∧ W ∧ ¬R` is not satisfiable);
+- fail fixture also expects `UNSAT`, but is intentionally modeled so the solver finds a counterexample (`SAT`) and the adequacy verdict opens.
+
 ## Differential Contract
 
 `scripts/run_adequacy_evidence.sh` publishes:

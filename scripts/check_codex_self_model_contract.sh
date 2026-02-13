@@ -105,11 +105,11 @@ if [[ ! -f "${ADEQUACY_EXPECTATIONS_FILE}" ]]; then
   echo "Adequacy expectations manifest is missing: ${ADEQUACY_EXPECTATIONS_FILE}" >&2
   exit 1
 fi
-grep -q '^models/dogfooding/adequacy/pass.pf|Obl_A_exec|SAT|.*|required$' "${ADEQUACY_EXPECTATIONS_FILE}" || {
+grep -q '^models/dogfooding/adequacy/pass.pf|Obl_A_exec|UNSAT|.*|required$' "${ADEQUACY_EXPECTATIONS_FILE}" || {
   echo "Adequacy expectations manifest is missing required pass obligation rule" >&2
   exit 1
 }
-grep -q '^models/dogfooding/adequacy/fail.pf|Obl_\*|SAT|.*|required$' "${ADEQUACY_EXPECTATIONS_FILE}" || {
+grep -q '^models/dogfooding/adequacy/fail.pf|Obl_A_exec|UNSAT|.*|required$' "${ADEQUACY_EXPECTATIONS_FILE}" || {
   echo "Adequacy expectations manifest is missing required fail coverage rule" >&2
   exit 1
 }

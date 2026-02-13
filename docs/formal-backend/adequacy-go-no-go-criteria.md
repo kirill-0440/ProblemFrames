@@ -18,7 +18,7 @@ Promote adequacy checks from non-blocking to blocking only when all criteria bel
    - `mismatches=0` for selected obligation class across the last 10 main-branch runs.
 
 3. **Fixture health**
-   - Both canonical fixtures (`pass.pf`, `fail.pf`) keep deterministic verdicts and command-level required-rule coverage behavior.
+   - Both canonical fixtures (`pass.pf`, `fail.pf`) keep deterministic counterexample semantics (`UNSAT` closure for pass, stable `SAT` counterexample mismatch for fail) and command-level required-rule coverage behavior.
 
 4. **Operational recoverability**
    - Triage and rerun procedure is documented and validated by at least one dry incident drill.

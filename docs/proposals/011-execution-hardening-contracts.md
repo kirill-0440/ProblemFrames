@@ -28,10 +28,11 @@ Current quality signals pass, but three checks are weaker than the requirement i
 
 1. Update `run_adequacy_evidence.sh` to use Alloy solver checks with command-level expectation manifests and required-rule coverage extraction.
 2. Extend `run_alloy_solver_check.sh` to validate required expectation-rule coverage (missing required command checks produce OPEN).
-3. Enforce fail-closed adequacy in canonical gates (`check_system_model.sh`) and in formal-track blocking mode (`run_pf_quality_gate.sh --enforce-formal-track`).
-4. Extend Codex self-model contract with git diff analysis:
+3. Use counterexample-style adequacy expectations (`UNSAT` for selected `Obl_*` commands) so pass/fail fixtures differentiate closure vs counterexample.
+4. Enforce fail-closed adequacy in canonical gates (`check_system_model.sh`) and in formal-track blocking mode (`run_pf_quality_gate.sh --enforce-formal-track`).
+5. Extend Codex self-model contract with git diff analysis:
    implementation changes under code/tooling paths require canonical model changes under `models/system/*.pf`.
-5. Wire evidence in `implementation_trace.tsv`.
+6. Wire evidence in `implementation_trace.tsv`.
 
 ## Exit Criteria
 
