@@ -325,6 +325,65 @@ mod tests {
     }
 
     #[test]
+    fn test_missing_required_field_uses_matching_requirement_source_path() {
+        let problem = Problem {
+            name: "RequirementSourceMapping".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("C", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-C",
+                &["M", "C"],
+                vec![phenomenon("Observe", PhenomenonType::Event, "C", "M", "C")],
+            )],
+            requirements: vec![
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::RequiredBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: Span { start: 1, end: 2 },
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Requirement {
+                    name: "R1".to_string(),
+                    frame: FrameType::CommandedBehavior,
+                    constrains: Some(mock_ref("C")),
+                    reference: None,
+                    constraint: "".to_string(),
+                    phenomena: vec![],
+                    span: Span { start: 10, end: 11 },
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let missing_reference = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::MissingRequiredField(ref name, ref field, _)
+                    if name == "R1" && field == "reference"
+            )
+        });
+        assert!(missing_reference.is_some());
+        assert_eq!(
+            missing_reference.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
     fn test_missing_connection_commanded() {
         let problem = Problem {
             name: "Test".to_string(),
@@ -1089,6 +1148,94 @@ mod tests {
     }
 
     #[test]
+    fn test_invalid_correctness_argument_uses_matching_source_path() {
+        let problem = Problem {
+            name: "CorrectnessSourceMapping".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "spec".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "req".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![
+                CorrectnessArgument {
+                    name: "A1".to_string(),
+                    specification_set: "S".to_string(),
+                    world_set: "W".to_string(),
+                    requirement_set: "R".to_string(),
+                    specification_ref: mock_ref("S"),
+                    world_ref: mock_ref("W"),
+                    requirement_ref: mock_ref("R"),
+                    span: Span { start: 1, end: 2 },
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                CorrectnessArgument {
+                    name: "A1".to_string(),
+                    specification_set: "S".to_string(),
+                    world_set: "W_missing".to_string(),
+                    requirement_set: "R".to_string(),
+                    specification_ref: mock_ref("S"),
+                    world_ref: mock_ref("W_missing"),
+                    requirement_ref: mock_ref("R"),
+                    span: Span { start: 10, end: 11 },
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let invalid = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InvalidCorrectnessArgument(ref name, ref message, _)
+                    if name == "A1" && message.contains("W_missing")
+            )
+        });
+        assert!(invalid.is_some());
+        assert_eq!(
+            invalid.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
     fn test_subproblem_missing_machine_is_invalid() {
         let problem = Problem {
             name: "SubproblemMissingMachine".to_string(),
@@ -1180,6 +1327,70 @@ mod tests {
         assert!(duplicate.is_some());
         assert_eq!(
             duplicate.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_missing_subproblem_field_uses_matching_source_path() {
+        let problem = Problem {
+            name: "SubproblemSourceMapping".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-A",
+                &["M", "A"],
+                vec![phenomenon("Control", PhenomenonType::Event, "M", "A", "M")],
+            )],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("A")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            subproblems: vec![
+                Subproblem {
+                    name: "Core".to_string(),
+                    machine: Some(mock_ref("M")),
+                    participants: vec![mock_ref("M"), mock_ref("A")],
+                    requirements: vec![mock_ref("R1")],
+                    span: Span { start: 1, end: 2 },
+                    source_path: Some(PathBuf::from("a.pf")),
+                },
+                Subproblem {
+                    name: "Core".to_string(),
+                    machine: None,
+                    participants: vec![mock_ref("M"), mock_ref("A")],
+                    requirements: vec![mock_ref("R1")],
+                    span: Span { start: 10, end: 11 },
+                    source_path: Some(PathBuf::from("b.pf")),
+                },
+            ],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let missing_machine = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::MissingSubproblemField(ref name, ref field, _)
+                    if name == "Core" && field == "machine"
+            )
+        });
+        assert!(missing_machine.is_some());
+        assert_eq!(
+            missing_machine.and_then(|issue| issue.source_path.as_deref()),
             Some(std::path::Path::new("b.pf"))
         );
     }
