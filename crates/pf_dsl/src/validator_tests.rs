@@ -86,6 +86,42 @@ mod tests {
     }
 
     #[test]
+    fn test_invalid_domain_role_lexical_machine_uses_domain_source_path() {
+        let problem = Problem {
+            name: "InvalidDomainRoleSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![Domain {
+                name: "M".to_string(),
+                kind: DomainKind::Lexical,
+                role: DomainRole::Machine,
+                span: mock_span(),
+                source_path: Some(PathBuf::from("domain.pf")),
+            }],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let invalid_role = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InvalidDomainRole(ref name, _, _) if name == "M"
+            )
+        });
+        assert!(invalid_role.is_some());
+        assert_eq!(
+            invalid_role.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("domain.pf"))
+        );
+    }
+
+    #[test]
     fn test_duplicate_domain_uses_duplicate_source_path() {
         let problem = Problem {
             name: "DuplicateDomainSources".to_string(),
@@ -292,6 +328,84 @@ mod tests {
     }
 
     #[test]
+    fn test_interface_requires_at_least_two_connections() {
+        let problem = Problem {
+            name: "InterfaceConnectionsSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![Interface {
+                name: "I1".to_string(),
+                connects: vec![mock_ref("M")],
+                shared_phenomena: vec![phenomenon("P1", PhenomenonType::Event, "M", "A", "M")],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("i.pf")),
+            }],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let insufficient = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InterfaceInsufficientConnections(ref name, _, _) if name == "I1"
+            )
+        });
+        assert!(insufficient.is_some());
+        assert_eq!(
+            insufficient.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("i.pf"))
+        );
+    }
+
+    #[test]
+    fn test_interface_requires_at_least_one_phenomenon() {
+        let problem = Problem {
+            name: "InterfacePhenomenaSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![Interface {
+                name: "I1".to_string(),
+                connects: vec![mock_ref("M"), mock_ref("A")],
+                shared_phenomena: vec![],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("i.pf")),
+            }],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let missing_phenomena = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::InterfaceWithoutPhenomena(ref name, _, _) if name == "I1"
+            )
+        });
+        assert!(missing_phenomena.is_some());
+        assert_eq!(
+            missing_phenomena.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("i.pf"))
+        );
+    }
+
+    #[test]
     fn test_invalid_causality_uses_matching_source_path() {
         let problem = Problem {
             name: "InterfaceCausalitySource".to_string(),
@@ -490,6 +604,46 @@ mod tests {
         assert_eq!(
             duplicate.and_then(|issue| issue.source_path.as_deref()),
             Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_undefined_domain_in_requirement_uses_matching_source_path() {
+        let problem = Problem {
+            name: "RequirementUndefinedDomainSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("Missing")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("req.pf")),
+            }],
+            subproblems: vec![],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let undefined = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::UndefinedDomainInRequirement(ref domain, ref requirement, _)
+                    if domain == "Missing" && requirement == "R1"
+            )
+        });
+        assert!(undefined.is_some());
+        assert_eq!(
+            undefined.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("req.pf"))
         );
     }
 
@@ -1151,6 +1305,68 @@ mod tests {
     }
 
     #[test]
+    fn test_correctness_argument_valid_contract() {
+        let problem = Problem {
+            name: "CorrectnessValid".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![domain("M", DomainKind::Causal, DomainRole::Machine)],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                AssertionSet {
+                    name: "S".to_string(),
+                    scope: AssertionScope::Specification,
+                    assertions: vec![Assertion {
+                        text: "machine strategy".to_string(),
+                        language: Some("FOL".to_string()),
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "W".to_string(),
+                    scope: AssertionScope::WorldProperties,
+                    assertions: vec![Assertion {
+                        text: "world remains stable".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+                AssertionSet {
+                    name: "R".to_string(),
+                    scope: AssertionScope::RequirementAssertions,
+                    assertions: vec![Assertion {
+                        text: "requirement is met".to_string(),
+                        language: None,
+                        span: mock_span(),
+                    }],
+                    span: mock_span(),
+                    source_path: None,
+                },
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A1".to_string(),
+                specification_set: "S".to_string(),
+                world_set: "W".to_string(),
+                requirement_set: "R".to_string(),
+                specification_ref: mock_ref("S"),
+                world_ref: mock_ref("W"),
+                requirement_ref: mock_ref("R"),
+                span: mock_span(),
+                source_path: None,
+            }],
+        };
+
+        let result = validate(&problem);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_empty_assertion_set_is_invalid() {
         let problem = Problem {
             name: "Assertions".to_string(),
@@ -1626,6 +1842,101 @@ mod tests {
         assert_eq!(
             missing_machine.and_then(|issue| issue.source_path.as_deref()),
             Some(std::path::Path::new("b.pf"))
+        );
+    }
+
+    #[test]
+    fn test_undefined_domain_in_subproblem_uses_matching_source_path() {
+        let problem = Problem {
+            name: "SubproblemUndefinedDomainSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![interface(
+                "M-A",
+                &["M", "A"],
+                vec![phenomenon("Observe", PhenomenonType::Event, "A", "M", "A")],
+            )],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                constrains: Some(mock_ref("A")),
+                reference: None,
+                constraint: "".to_string(),
+                phenomena: vec![],
+                span: mock_span(),
+                source_path: None,
+            }],
+            subproblems: vec![Subproblem {
+                name: "Core".to_string(),
+                machine: Some(mock_ref("M")),
+                participants: vec![mock_ref("M"), mock_ref("A"), mock_ref("Ghost")],
+                requirements: vec![mock_ref("R1")],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("sub.pf")),
+            }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let undefined = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::UndefinedDomainInSubproblem(ref domain, ref name, _)
+                    if domain == "Ghost" && name == "Core"
+            )
+        });
+        assert!(undefined.is_some());
+        assert_eq!(
+            undefined.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("sub.pf"))
+        );
+    }
+
+    #[test]
+    fn test_undefined_requirement_in_subproblem_uses_matching_source_path() {
+        let problem = Problem {
+            name: "SubproblemUndefinedRequirementSource".to_string(),
+            span: mock_span(),
+            imports: vec![],
+            domains: vec![
+                domain("M", DomainKind::Causal, DomainRole::Machine),
+                domain("A", DomainKind::Causal, DomainRole::Given),
+            ],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![Subproblem {
+                name: "Core".to_string(),
+                machine: Some(mock_ref("M")),
+                participants: vec![mock_ref("M"), mock_ref("A")],
+                requirements: vec![mock_ref("R_missing")],
+                span: mock_span(),
+                source_path: Some(PathBuf::from("sub.pf")),
+            }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let result = validate_with_sources(&problem);
+        assert!(result.is_err());
+        let issues = result.unwrap_err();
+        let undefined = issues.iter().find(|issue| {
+            matches!(
+                issue.error,
+                ValidationError::UndefinedRequirementInSubproblem(ref requirement, ref name, _)
+                    if requirement == "R_missing" && name == "Core"
+            )
+        });
+        assert!(undefined.is_some());
+        assert_eq!(
+            undefined.and_then(|issue| issue.source_path.as_deref()),
+            Some(std::path::Path::new("sub.pf"))
         );
     }
 

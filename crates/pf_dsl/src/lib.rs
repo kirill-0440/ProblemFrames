@@ -3,6 +3,7 @@ pub mod codegen;
 pub mod dot_export;
 pub mod formal_alloy;
 pub mod language;
+mod metamodel_contract_tests;
 pub mod obligations;
 pub mod parser;
 mod parser_tests;
