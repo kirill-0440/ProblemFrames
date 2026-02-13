@@ -56,6 +56,11 @@ This map links canonical system-model requirements to roadmap/proposal items in
 | `R011-H1-SolverBackedAdequacyEvidence` | `011-execution-hardening-contracts.md` | replace predicate-presence formal verdicts with solver-backed SAT/UNSAT expectation checks and enforce fail-closed adequacy in canonical gates |
 | `R011-H3-CommandLevelAdequacyCoverage` | `011-execution-hardening-contracts.md` | auto-generate command-level expectation manifests from selected adequacy fixtures, enforce required-rule coverage, and publish command→expected→actual closure matrices in gate artifacts |
 | `R011-H2-DiffBasedModelFirstGate` | `011-execution-hardening-contracts.md`, `009-pf-canonical-retro-addendum.md` | enforce model-first governance via git-diff check: implementation changes require canonical `models/system/*.pf` update in same change set |
+| `R011-H4-ProblemDeclarationStrictness` | `011-execution-hardening-contracts.md`, `006-pf-dsl-machine-checkable-semantics-plan.md` | reject models without explicit `problem` declaration and keep parser diagnostics source-aware |
+| `R011-H5-CoverageGateCalibration` | `011-execution-hardening-contracts.md`, `001-product-maturity-roadmap.md` | keep Rust coverage threshold aligned with observed baseline to block regressions without placeholder floors |
+| `R011-H6-AlloyBinaryIntegrityVerification` | `011-execution-hardening-contracts.md`, `001-product-maturity-roadmap.md` | verify Alloy solver binary integrity (checksum/signature) before execution and fail closed on mismatch |
+| `R011-H7-GeneratedArtifactTrackingDiscipline` | `011-execution-hardening-contracts.md`, `009-pf-canonical-retro-addendum.md` | keep platform-specific generated editor artifacts out of repository tracking and CI update paths |
+| `R011-H8-AuditRemediationBacklogTrace` | `011-execution-hardening-contracts.md` | record deep-audit findings as prioritized remediation backlog with requirement-level traceability and status visibility |
 
 ## Usage
 

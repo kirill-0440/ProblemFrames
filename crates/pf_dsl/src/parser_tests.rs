@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::ast::*;
-    use crate::parser::{parse, parse_error_diagnostic};
+    use crate::parser::{parse, parse_error_diagnostic, parse_module};
 
     fn token_span(input: &str, token: &str) -> Span {
         let start = input
@@ -111,6 +111,44 @@ mod tests {
         assert!(message.contains("multiple problem declarations"));
         assert!(span.start >= expected.start);
         assert!(span.start < expected.end);
+    }
+
+    #[test]
+    fn test_parse_rejects_missing_problem_declaration() {
+        let input = r#"
+            domain M kind causal role machine
+        "#;
+
+        let err = parse(input).expect_err("Expected missing problem declaration error");
+        let message = err.to_string();
+        assert!(message.contains("missing required top-level 'problem:' declaration"));
+    }
+
+    #[test]
+    fn test_parse_module_allows_missing_problem_declaration() {
+        let input = r#"
+            domain M kind causal role machine
+            domain U kind biddable role given
+        "#;
+
+        let module = parse_module(input).expect("Expected module parse to succeed");
+        assert_eq!(module.name, "");
+        assert_eq!(module.domains.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_error_diagnostic_for_missing_problem_declaration() {
+        let input = r#"
+            domain M kind causal role machine
+        "#;
+
+        let result = parse_error_diagnostic(input).expect("Expected diagnostic");
+        let (span, message) = result;
+        let expected = token_span(input, "domain");
+
+        assert!(message.contains("missing required top-level 'problem:' declaration"));
+        assert_eq!(span.start, expected.start);
+        assert!(span.end > span.start);
     }
 
     #[test]

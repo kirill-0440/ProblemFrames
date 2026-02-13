@@ -1,5 +1,5 @@
 use crate::ast::*;
-use crate::parser::parse;
+use crate::parser::{parse, parse_module};
 use anyhow::{Context, Result};
 use std::collections::HashSet;
 use std::fs;
@@ -109,7 +109,7 @@ fn resolve_recursive(
             (content, canonical_path)
         };
 
-        let mut imported_problem = parse(&content)
+        let mut imported_problem = parse_module(&content)
             .with_context(|| format!("Failed to parse imported file: {:?}", import_source_path))?;
 
         // Recursively resolve imports of the imported problem

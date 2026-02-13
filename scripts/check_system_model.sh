@@ -65,6 +65,10 @@ FORMAL_GAP_REPORT_FILE="${OUTPUT_DIR}/tool_spec.formal-gap.md"
 FORMAL_GAP_JSON_FILE="${OUTPUT_DIR}/tool_spec.formal-gap.json"
 FORMAL_GAP_STATUS_FILE="${OUTPUT_DIR}/tool_spec.formal-gap.status"
 IMPLEMENTATION_POLICY_FILE="${REPO_ROOT}/models/system/implementation_trace_policy.env"
+AUDIT_REMEDIATION_BACKLOG_FILE="${REPO_ROOT}/models/system/audit_remediation_backlog.tsv"
+AUDIT_REMEDIATION_REPORT_FILE="${OUTPUT_DIR}/tool_spec.audit-remediation.md"
+AUDIT_REMEDIATION_JSON_FILE="${OUTPUT_DIR}/tool_spec.audit-remediation.json"
+AUDIT_REMEDIATION_STATUS_FILE="${OUTPUT_DIR}/tool_spec.audit-remediation.status"
 
 cargo run -p pf_dsl -- "${MODEL_FILE}" --report > "${REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --decomposition-closure > "${DECOMPOSITION_FILE}"
@@ -147,6 +151,12 @@ bash "${REPO_ROOT}/scripts/generate_model_progress_report.sh" \
   --policy "${IMPLEMENTATION_POLICY_FILE}" \
   --selection "${REPO_ROOT}/models/system/adequacy_selection.env" \
   --skip-generate-inputs
+bash "${REPO_ROOT}/scripts/check_audit_remediation_backlog.sh" \
+  --model "${MODEL_FILE}" \
+  --backlog "${AUDIT_REMEDIATION_BACKLOG_FILE}" \
+  --output "${AUDIT_REMEDIATION_REPORT_FILE}" \
+  --json "${AUDIT_REMEDIATION_JSON_FILE}" \
+  --status-file "${AUDIT_REMEDIATION_STATUS_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-report > "${WRSPM_REPORT_FILE}"
 cargo run -p pf_dsl -- "${MODEL_FILE}" --wrspm-json > "${WRSPM_JSON_FILE}"
 bash "${REPO_ROOT}/scripts/check_codex_self_model_contract.sh"
@@ -203,6 +213,8 @@ formal_gap_status="$(cat "${FORMAL_GAP_STATUS_FILE}" 2>/dev/null || true)"
 formal_gap_status="${formal_gap_status:-UNKNOWN}"
 alloy_solver_status="$(cat "${ALLOY_SOLVER_STATUS_FILE}" 2>/dev/null || true)"
 alloy_solver_status="${alloy_solver_status:-UNKNOWN}"
+audit_remediation_status="$(cat "${AUDIT_REMEDIATION_STATUS_FILE}" 2>/dev/null || true)"
+audit_remediation_status="${audit_remediation_status:-UNKNOWN}"
 
 {
   echo "# System Model Quality Gate"
@@ -222,6 +234,7 @@ alloy_solver_status="${alloy_solver_status:-UNKNOWN}"
   echo "- Requirement formal closure status: \`${formal_closure_status}\`"
   echo "- Formal gap status: \`${formal_gap_status}\`"
   echo "- Alloy solver status: \`${alloy_solver_status}\`"
+  echo "- Audit remediation backlog status: \`${audit_remediation_status}\`"
   echo
   echo "## Artifacts"
   echo
@@ -259,6 +272,8 @@ alloy_solver_status="${alloy_solver_status:-UNKNOWN}"
   echo "- \`tool_spec.formal-gap.json\`"
   echo "- \`tool_spec.alloy-solver.md\`"
   echo "- \`tool_spec.alloy-solver.json\`"
+  echo "- \`tool_spec.audit-remediation.md\`"
+  echo "- \`tool_spec.audit-remediation.json\`"
   echo "- \`alloy-solver/exec/receipt.json\`"
   echo "- \`tool_spec.wrspm.md\`"
   echo "- \`tool_spec.wrspm.json\`"
@@ -308,5 +323,10 @@ fi
 
 if [[ "${alloy_solver_status}" != "PASS" ]]; then
   echo "System model Alloy solver check failed (${alloy_solver_status})" >&2
+  exit 1
+fi
+
+if [[ "${audit_remediation_status}" != "PASS" ]]; then
+  echo "System model audit remediation backlog check failed (${audit_remediation_status})" >&2
   exit 1
 fi

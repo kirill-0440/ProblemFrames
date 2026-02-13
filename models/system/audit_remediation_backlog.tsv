@@ -1,0 +1,6 @@
+# item_id|requirement_id|priority|status|owner|note
+AUD-2026-001|R011-H4-ProblemDeclarationStrictness|P0|in_progress|toolchain|Make parser reject models without top-level problem declaration and add regression tests.
+AUD-2026-002|R011-H5-CoverageGateCalibration|P1|in_progress|toolchain|Raise CI coverage threshold from placeholder baseline to a regression-sensitive value.
+AUD-2026-003|R011-H6-AlloyBinaryIntegrityVerification|P0|in_progress|toolchain|Verify Alloy jar SHA-256 before execution and fail closed on mismatch.
+AUD-2026-004|R011-H7-GeneratedArtifactTrackingDiscipline|P1|in_progress|toolchain|Remove tracked platform-specific LSP binary and block future reintroduction in self-model contract checks.
+AUD-2026-005|R011-H8-AuditRemediationBacklogTrace|P1|in_progress|toolchain|Publish machine-checkable remediation backlog artifact with requirement linkage and status rollup.

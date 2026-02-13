@@ -138,17 +138,27 @@ fn parse_marks_block(
 }
 
 pub fn parse_error_diagnostic(input: &str) -> Option<(Span, String)> {
-    match parse_internal(input) {
+    if input.trim().is_empty() {
+        return None;
+    }
+    match parse_internal(input, true) {
         Ok(_) => None,
         Err(err) => Some((err.span, err.message)),
     }
 }
 
 pub fn parse(input: &str) -> Result<Problem> {
-    parse_internal(input).map_err(|err| anyhow!("{}", err.message))
+    parse_internal(input, true).map_err(|err| anyhow!("{}", err.message))
 }
 
-fn parse_internal(input: &str) -> std::result::Result<Problem, ParseDiagnostic> {
+pub fn parse_module(input: &str) -> Result<Problem> {
+    parse_internal(input, false).map_err(|err| anyhow!("{}", err.message))
+}
+
+fn parse_internal(
+    input: &str,
+    require_problem_decl: bool,
+) -> std::result::Result<Problem, ParseDiagnostic> {
     let mut pairs = PFParser::parse(Rule::program, input)
         .map_err(|err| ParseDiagnostic::new(span_from_pest_error(&err, input), err.to_string()))?;
     let program_pair = pairs.next().ok_or_else(|| {
@@ -596,6 +606,22 @@ fn parse_internal(input: &str) -> std::result::Result<Problem, ParseDiagnostic> 
             }
             _ => {}
         }
+    }
+
+    if require_problem_decl && !has_problem_decl {
+        let first_non_ws = input
+            .char_indices()
+            .find(|(_, ch)| !ch.is_whitespace())
+            .map(|(idx, _)| idx)
+            .unwrap_or(0);
+        let end = input.len().min(first_non_ws.saturating_add(1));
+        return Err(ParseDiagnostic::new(
+            Span {
+                start: first_non_ws,
+                end,
+            },
+            "missing required top-level 'problem:' declaration",
+        ));
     }
 
     Ok(problem)
