@@ -186,6 +186,10 @@ for model in "${models[@]}"; do
   formal_gap_report_file="${model_output_dir}/formal-gap.md"
   formal_gap_json_file="${model_output_dir}/formal-gap.json"
   formal_gap_status_file="${model_output_dir}/formal-gap.status"
+  alloy_solver_dir="${model_output_dir}/alloy-solver"
+  alloy_solver_report_file="${model_output_dir}/alloy-solver.md"
+  alloy_solver_json_file="${model_output_dir}/alloy-solver.json"
+  alloy_solver_status_file="${model_output_dir}/alloy-solver.status"
   summary_file="${model_output_dir}/summary.md"
 
   traceability_args=()
@@ -237,6 +241,13 @@ for model in "${models[@]}"; do
     --output "${formal_gap_report_file}" \
     --json "${formal_gap_json_file}" \
     --status-file "${formal_gap_status_file}"
+  bash "${REPO_ROOT}/scripts/run_alloy_solver_check.sh" \
+    --model "${model}" \
+    --alloy-file "${alloy_file}" \
+    --output-dir "${alloy_solver_dir}" \
+    --report "${alloy_solver_report_file}" \
+    --json "${alloy_solver_json_file}" \
+    --status-file "${alloy_solver_status_file}"
   trace_check_args=(
     --traceability-csv "${traceability_csv_file}"
     --output "${implementation_trace_file}"
@@ -305,6 +316,8 @@ for model in "${models[@]}"; do
   formal_closure_status="${formal_closure_status:-UNKNOWN}"
   formal_gap_status="$(cat "${formal_gap_status_file}" 2>/dev/null || true)"
   formal_gap_status="${formal_gap_status:-UNKNOWN}"
+  alloy_solver_status="$(cat "${alloy_solver_status_file}" 2>/dev/null || true)"
+  alloy_solver_status="${alloy_solver_status:-UNKNOWN}"
   formal_track_policy_mode="non_blocking"
   if [[ "${enforce_formal_track}" -eq 1 ]]; then
     formal_track_policy_mode="blocking"
@@ -326,6 +339,7 @@ for model in "${models[@]}"; do
     echo "- Lean differential status: \`${lean_differential_status}\`"
     echo "- Requirement formal closure status: \`${formal_closure_status}\`"
     echo "- Formal gap status: \`${formal_gap_status}\`"
+    echo "- Alloy solver status: \`${alloy_solver_status}\`"
     echo "- Formal track policy mode: \`${formal_track_policy_mode}\`"
     echo
     echo "## Artifacts"
@@ -355,6 +369,9 @@ for model in "${models[@]}"; do
     echo "- \`formal-closure.rows.tsv\`"
     echo "- \`formal-gap.md\`"
     echo "- \`formal-gap.json\`"
+    echo "- \`alloy-solver.md\`"
+    echo "- \`alloy-solver.json\`"
+    echo "- \`alloy-solver/exec/receipt.json\`"
     echo "- \`wrspm.md\`"
     echo "- \`wrspm.json\`"
   } > "${summary_file}"
@@ -392,6 +409,10 @@ for model in "${models[@]}"; do
     fi
     if [[ "${formal_gap_status}" != "PASS" ]]; then
       echo "Formal-track policy blocking: formal gap status is ${formal_gap_status} for ${model}." >&2
+      failure_count=$((failure_count + 1))
+    fi
+    if [[ "${alloy_solver_status}" != "PASS" ]]; then
+      echo "Formal-track policy blocking: Alloy solver status is ${alloy_solver_status} for ${model}." >&2
       failure_count=$((failure_count + 1))
     fi
   fi

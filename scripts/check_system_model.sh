@@ -25,6 +25,10 @@ SYSML2_JSON_FILE="${OUTPUT_DIR}/tool_spec.sysml2.json"
 TRACE_MAP_JSON_FILE="${OUTPUT_DIR}/tool_spec.trace-map.json"
 DOT_FILE="${OUTPUT_DIR}/tool_spec.dot"
 ALLOY_FILE="${OUTPUT_DIR}/tool_spec.als"
+ALLOY_SOLVER_DIR="${OUTPUT_DIR}/alloy-solver"
+ALLOY_SOLVER_REPORT_FILE="${OUTPUT_DIR}/tool_spec.alloy-solver.md"
+ALLOY_SOLVER_JSON_FILE="${OUTPUT_DIR}/tool_spec.alloy-solver.json"
+ALLOY_SOLVER_STATUS_FILE="${OUTPUT_DIR}/tool_spec.alloy-solver.status"
 TRACEABILITY_MD_FILE="${OUTPUT_DIR}/tool_spec.traceability.md"
 TRACEABILITY_CSV_FILE="${OUTPUT_DIR}/tool_spec.traceability.csv"
 ADEQUACY_DIFFERENTIAL_FILE="${OUTPUT_DIR}/tool_spec.adequacy-differential.md"
@@ -96,6 +100,13 @@ bash "${REPO_ROOT}/scripts/generate_formal_gap_report.sh" \
   --output "${FORMAL_GAP_REPORT_FILE}" \
   --json "${FORMAL_GAP_JSON_FILE}" \
   --status-file "${FORMAL_GAP_STATUS_FILE}"
+bash "${REPO_ROOT}/scripts/run_alloy_solver_check.sh" \
+  --model "${MODEL_FILE}" \
+  --alloy-file "${ALLOY_FILE}" \
+  --output-dir "${ALLOY_SOLVER_DIR}" \
+  --report "${ALLOY_SOLVER_REPORT_FILE}" \
+  --json "${ALLOY_SOLVER_JSON_FILE}" \
+  --status-file "${ALLOY_SOLVER_STATUS_FILE}"
 bash "${REPO_ROOT}/scripts/check_model_implementation_trace.sh" \
   --traceability-csv "${TRACEABILITY_CSV_FILE}" \
   --output "${IMPLEMENTATION_TRACE_FILE}" \
@@ -156,6 +167,8 @@ formal_closure_status="$(cat "${FORMAL_CLOSURE_STATUS_FILE}" 2>/dev/null || true
 formal_closure_status="${formal_closure_status:-UNKNOWN}"
 formal_gap_status="$(cat "${FORMAL_GAP_STATUS_FILE}" 2>/dev/null || true)"
 formal_gap_status="${formal_gap_status:-UNKNOWN}"
+alloy_solver_status="$(cat "${ALLOY_SOLVER_STATUS_FILE}" 2>/dev/null || true)"
+alloy_solver_status="${alloy_solver_status:-UNKNOWN}"
 
 {
   echo "# System Model Quality Gate"
@@ -173,6 +186,7 @@ formal_gap_status="${formal_gap_status:-UNKNOWN}"
   echo "- Lean differential status: \`${lean_differential_status}\`"
   echo "- Requirement formal closure status: \`${formal_closure_status}\`"
   echo "- Formal gap status: \`${formal_gap_status}\`"
+  echo "- Alloy solver status: \`${alloy_solver_status}\`"
   echo
   echo "## Artifacts"
   echo
@@ -202,6 +216,9 @@ formal_gap_status="${formal_gap_status:-UNKNOWN}"
   echo "- \`tool_spec.formal-closure.rows.tsv\`"
   echo "- \`tool_spec.formal-gap.md\`"
   echo "- \`tool_spec.formal-gap.json\`"
+  echo "- \`tool_spec.alloy-solver.md\`"
+  echo "- \`tool_spec.alloy-solver.json\`"
+  echo "- \`alloy-solver/exec/receipt.json\`"
   echo "- \`tool_spec.wrspm.md\`"
   echo "- \`tool_spec.wrspm.json\`"
 } > "${SUMMARY_FILE}"
@@ -235,5 +252,10 @@ fi
 
 if [[ "${formal_gap_status}" != "PASS" ]]; then
   echo "System model formal gap report is open (${formal_gap_status})" >&2
+  exit 1
+fi
+
+if [[ "${alloy_solver_status}" != "PASS" ]]; then
+  echo "System model Alloy solver check failed (${alloy_solver_status})" >&2
   exit 1
 fi

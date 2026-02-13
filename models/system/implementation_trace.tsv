@@ -21,8 +21,9 @@ R001-A4-WeeklyOpsMetricsCadence|file_exists|docs/runbooks/weekly-triage.md||week
 R002-F1-ProductionValidatorPrimaryPath|file_contains|docs/proposals/002-formal-verification-track.md|Keep Rust validator as production source of truth|formal track preserves Rust validator as primary production path
 R002-F1-ProductionValidatorPrimaryPath|file_contains|.github/workflows/ci.yml|Run formal backend check (non-blocking)|formal backend runs in non-blocking CI stage
 
-R002-F2-AlloyFirstExecutableBaseline|file_contains|scripts/run_formal_backend_check.sh|Formal Backend Check (Alloy)|Alloy-first formal backend check script exists
-R002-F2-AlloyFirstExecutableBaseline|file_contains|scripts/run_adequacy_evidence.sh|Adequacy Differential Report|executable adequacy differential report generation exists
+R002-F2-AlloyFirstExecutableBaseline|file_exists|scripts/run_alloy_solver_check.sh||Alloy solver check script exists
+R002-F2-AlloyFirstExecutableBaseline|file_contains|scripts/check_system_model.sh|run_alloy_solver_check.sh|canonical system-model gate executes Alloy solver check
+R002-F2-AlloyFirstExecutableBaseline|command_passes|tmp_dir="$(mktemp -d)" && bash ./scripts/run_alloy_solver_check.sh --model models/system/tool_spec.pf --output-dir "${tmp_dir}/alloy-solver" --report "${tmp_dir}/alloy-solver.md" --json "${tmp_dir}/alloy-solver.json" --status-file "${tmp_dir}/alloy-solver.status" && test "$(cat "${tmp_dir}/alloy-solver.status")" = "PASS"||Alloy-first formal backend path executes solver and yields PASS on canonical model
 
 R002-F3-FormalDifferentialTriaging|file_contains|scripts/run_adequacy_evidence.sh|category="rust_only_pass"|differential mismatch categories are explicit
 R002-F3-FormalDifferentialTriaging|file_exists|docs/formal-backend/adequacy-go-no-go-criteria.md||formal mismatch-governance criteria are documented
