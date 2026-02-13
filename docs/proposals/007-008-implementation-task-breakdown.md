@@ -14,6 +14,7 @@ Primary source proposals:
 - `docs/proposals/007-execution-backlog-m1-m3.md`
 - `docs/proposals/008-pf-ddd-sysmlv2-integration.md`
 - `docs/proposals/008-execution-backlog-m4-m5.md`
+- `docs/proposals/007-008-issue-drafts.md`
 
 ## Execution Window
 

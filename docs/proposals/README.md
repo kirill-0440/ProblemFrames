@@ -15,6 +15,7 @@ This directory contains product and engineering proposals for Problem Frames.
 - `008-pf-ddd-sysmlv2-integration.md`: integration track for extending PF-DSL from CIM authority to DDD and SysML v2 PIM outputs with mandatory transformation traces.
 - `008-execution-backlog-m4-m5.md`: execution-ready backlog for proposal `008` milestones (`M4a-M5a`) across marks, generators, trace contracts, and API spike.
 - `007-008-implementation-task-breakdown.md`: integrated sprint-by-sprint task plan that decomposes proposals `007` and `008` into execution-ready technical tasks.
+- `007-008-issue-drafts.md`: ready-to-copy GitHub issue drafts (titles, labels, dependencies, acceptance criteria) for tasks `T007-*` and `T008-*`.
 
 ## Proposal Status
 
