@@ -102,6 +102,13 @@ mod tests {
         Span { start: 0, end: 0 }
     }
 
+    fn reference(name: &str) -> Reference {
+        Reference {
+            name: name.to_string(),
+            span: span(),
+        }
+    }
+
     #[test]
     fn renders_obligations_from_correctness_arguments() {
         let problem = Problem {
@@ -152,6 +159,9 @@ mod tests {
                 specification_set: "S_control".to_string(),
                 world_set: "W_base".to_string(),
                 requirement_set: "R_goal".to_string(),
+                specification_ref: reference("S_control"),
+                world_ref: reference("W_base"),
+                requirement_ref: reference("R_goal"),
                 span: span(),
                 source_path: None,
             }],

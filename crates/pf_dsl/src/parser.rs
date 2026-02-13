@@ -364,6 +364,18 @@ pub fn parse(input: &str) -> Result<Problem> {
                     specification_set: specification_set.as_str().to_string(),
                     world_set: world_set.as_str().to_string(),
                     requirement_set: requirement_set.as_str().to_string(),
+                    specification_ref: Reference {
+                        name: specification_set.as_str().to_string(),
+                        span: pair_to_span(&specification_set),
+                    },
+                    world_ref: Reference {
+                        name: world_set.as_str().to_string(),
+                        span: pair_to_span(&world_set),
+                    },
+                    requirement_ref: Reference {
+                        name: requirement_set.as_str().to_string(),
+                        span: pair_to_span(&requirement_set),
+                    },
                     span,
                     source_path: None,
                 });

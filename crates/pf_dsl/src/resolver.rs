@@ -143,6 +143,28 @@ pub fn find_definition(
             .map(|d| (d.source_path.clone(), d.span))
     };
 
+    // Helper to find requirement definition
+    let find_requirement = |name: &str| -> Option<(Option<PathBuf>, Span)> {
+        problem
+            .requirements
+            .iter()
+            .find(|r| r.name == name)
+            .map(|r| (r.source_path.clone(), r.span))
+    };
+
+    // Helper to find assertion set definition by name and expected scope
+    let find_assertion_set =
+        |name: &str, scope: AssertionScope| -> Option<(Option<PathBuf>, Span)> {
+            problem
+                .assertion_sets
+                .iter()
+                .find(|set| set.name == name && set.scope == scope)
+                .map(|set| (set.source_path.clone(), set.span))
+        };
+
+    let is_offset_in_ref =
+        |reference: &Reference| offset >= reference.span.start && offset < reference.span.end;
+
     // 1. Check Interfaces (Phenomena)
     for interface in &problem.interfaces {
         if let Some(source_path) = interface.source_path.as_deref() {
@@ -189,6 +211,58 @@ pub fn find_definition(
         }
     }
 
+    // 3. Check Subproblems
+    for subproblem in &problem.subproblems {
+        if let Some(source_path) = subproblem.source_path.as_deref() {
+            if !path_eq(source_path, source_file) {
+                continue;
+            }
+        }
+
+        if let Some(machine_ref) = &subproblem.machine {
+            if is_offset_in_ref(machine_ref) {
+                return find_domain(&machine_ref.name);
+            }
+        }
+
+        for participant_ref in &subproblem.participants {
+            if is_offset_in_ref(participant_ref) {
+                return find_domain(&participant_ref.name);
+            }
+        }
+
+        for requirement_ref in &subproblem.requirements {
+            if is_offset_in_ref(requirement_ref) {
+                return find_requirement(&requirement_ref.name);
+            }
+        }
+    }
+
+    // 4. Check Correctness Arguments
+    for argument in &problem.correctness_arguments {
+        if let Some(source_path) = argument.source_path.as_deref() {
+            if !path_eq(source_path, source_file) {
+                continue;
+            }
+        }
+
+        if is_offset_in_ref(&argument.specification_ref) {
+            return find_assertion_set(
+                &argument.specification_ref.name,
+                AssertionScope::Specification,
+            );
+        }
+        if is_offset_in_ref(&argument.world_ref) {
+            return find_assertion_set(&argument.world_ref.name, AssertionScope::WorldProperties);
+        }
+        if is_offset_in_ref(&argument.requirement_ref) {
+            return find_assertion_set(
+                &argument.requirement_ref.name,
+                AssertionScope::RequirementAssertions,
+            );
+        }
+    }
+
     None
 }
 
@@ -204,6 +278,25 @@ mod tests {
         Reference {
             name: name.to_string(),
             span: mock_span(start, end),
+        }
+    }
+
+    fn mock_assertion_set(
+        name: &str,
+        scope: AssertionScope,
+        start: usize,
+        end: usize,
+    ) -> AssertionSet {
+        AssertionSet {
+            name: name.to_string(),
+            scope,
+            assertions: vec![Assertion {
+                text: "assertion".to_string(),
+                language: None,
+                span: mock_span(start + 1, end.saturating_sub(1)),
+            }],
+            span: mock_span(start, end),
+            source_path: None,
         }
     }
 
@@ -338,5 +431,104 @@ mod tests {
 
         let result = find_definition(&problem, Path::new("/tmp/root.pf"), 52);
         assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_find_definition_subproblem_fields() {
+        let problem = Problem {
+            name: "Test".to_string(),
+            span: mock_span(0, 200),
+            imports: vec![],
+            domains: vec![
+                Domain {
+                    name: "M".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Machine,
+                    span: mock_span(10, 20),
+                    source_path: None,
+                },
+                Domain {
+                    name: "A".to_string(),
+                    kind: DomainKind::Causal,
+                    role: DomainRole::Given,
+                    span: mock_span(21, 30),
+                    source_path: None,
+                },
+            ],
+            interfaces: vec![],
+            requirements: vec![Requirement {
+                name: "R1".to_string(),
+                frame: FrameType::RequiredBehavior,
+                phenomena: vec![],
+                constraint: String::new(),
+                constrains: Some(mock_ref("A", 50, 51)),
+                reference: None,
+                span: mock_span(40, 60),
+                source_path: None,
+            }],
+            subproblems: vec![Subproblem {
+                name: "Core".to_string(),
+                machine: Some(mock_ref("M", 100, 101)),
+                participants: vec![mock_ref("M", 110, 111), mock_ref("A", 112, 113)],
+                requirements: vec![mock_ref("R1", 120, 124)],
+                span: mock_span(90, 130),
+                source_path: None,
+            }],
+            assertion_sets: vec![],
+            correctness_arguments: vec![],
+        };
+
+        let machine_def = find_definition(&problem, Path::new("root.pf"), 100).unwrap();
+        assert_eq!(machine_def.1, mock_span(10, 20));
+
+        let participant_def = find_definition(&problem, Path::new("root.pf"), 112).unwrap();
+        assert_eq!(participant_def.1, mock_span(21, 30));
+
+        let requirement_def = find_definition(&problem, Path::new("root.pf"), 121).unwrap();
+        assert_eq!(requirement_def.1, mock_span(40, 60));
+    }
+
+    #[test]
+    fn test_find_definition_correctness_argument_fields() {
+        let problem = Problem {
+            name: "Test".to_string(),
+            span: mock_span(0, 240),
+            imports: vec![],
+            domains: vec![Domain {
+                name: "M".to_string(),
+                kind: DomainKind::Causal,
+                role: DomainRole::Machine,
+                span: mock_span(10, 20),
+                source_path: None,
+            }],
+            interfaces: vec![],
+            requirements: vec![],
+            subproblems: vec![],
+            assertion_sets: vec![
+                mock_assertion_set("S_control", AssertionScope::Specification, 30, 40),
+                mock_assertion_set("W_base", AssertionScope::WorldProperties, 41, 51),
+                mock_assertion_set("R_goal", AssertionScope::RequirementAssertions, 52, 62),
+            ],
+            correctness_arguments: vec![CorrectnessArgument {
+                name: "A1".to_string(),
+                specification_set: "S_control".to_string(),
+                world_set: "W_base".to_string(),
+                requirement_set: "R_goal".to_string(),
+                specification_ref: mock_ref("S_control", 100, 109),
+                world_ref: mock_ref("W_base", 114, 120),
+                requirement_ref: mock_ref("R_goal", 128, 134),
+                span: mock_span(90, 140),
+                source_path: None,
+            }],
+        };
+
+        let spec_def = find_definition(&problem, Path::new("root.pf"), 102).unwrap();
+        assert_eq!(spec_def.1, mock_span(30, 40));
+
+        let world_def = find_definition(&problem, Path::new("root.pf"), 116).unwrap();
+        assert_eq!(world_def.1, mock_span(41, 51));
+
+        let req_def = find_definition(&problem, Path::new("root.pf"), 130).unwrap();
+        assert_eq!(req_def.1, mock_span(52, 62));
     }
 }

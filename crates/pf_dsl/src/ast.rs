@@ -147,6 +147,9 @@ pub struct CorrectnessArgument {
     pub specification_set: String,
     pub world_set: String,
     pub requirement_set: String,
+    pub specification_ref: Reference,
+    pub world_ref: Reference,
+    pub requirement_ref: Reference,
     pub span: Span,
     pub source_path: Option<PathBuf>,
 }
