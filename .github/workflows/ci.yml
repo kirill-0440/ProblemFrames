@@ -47,7 +47,7 @@ jobs:
 
       - name: Upload SysML API smoke artifacts
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: sysml-api-smoke
           path: .ci-artifacts/sysml-api
@@ -79,7 +79,7 @@ jobs:
 
       - name: Upload Lean formal artifacts
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: lean-formal-smoke
           path: .ci-artifacts/lean-formal
@@ -112,7 +112,7 @@ jobs:
         run: bash ./scripts/generate_dogfooding_reports.sh .ci-artifacts/dogfooding-reports
 
       - name: Upload dogfooding reports
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: dogfooding-reports
           path: .ci-artifacts/dogfooding-reports
@@ -122,7 +122,7 @@ jobs:
         run: bash ./scripts/generate_obligation_reports.sh .ci-artifacts/dogfooding-obligations
 
       - name: Upload dogfooding obligation reports
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: dogfooding-obligations
           path: .ci-artifacts/dogfooding-obligations
@@ -132,7 +132,7 @@ jobs:
         run: bash ./scripts/check_system_model.sh .ci-artifacts/system-model
 
       - name: Upload system model gate artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: system-model
           path: .ci-artifacts/system-model
@@ -144,7 +144,7 @@ jobs:
 
       - name: Upload formal backend artifacts
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: formal-backend
           path: .ci-artifacts/formal-backend
